@@ -39,6 +39,25 @@ class SPIDRController(object):
 
 
     @property
+    def humidity(self):
+        return self.requestGetInt(SpidrCmds.CMD_GET_HUMIDITY,0)
+
+    @property
+    def pressure(self):
+        return self.requestGetInt(SpidrCmds.CMD_GET_PRESSURE,0)
+
+    @property
+    def chipboardFanSpeed(self):
+        return self.requestGetInt(SpidrCmds.CMD_GET_FANSPEED,0,0)
+
+    @property
+    def spidrFanSpeed(self):
+        return self.requestGetInt(SpidrCmds.CMD_GET_FANSPEED,0,1)
+
+
+
+
+    @property
     def deviceCount(self):
         return self.requestGetInt(SpidrCmds.CMD_GET_DEVICECOUNT,0)
 
@@ -57,7 +76,7 @@ class SPIDRController(object):
         for x in range(256):
             row,pixelcolumn = self.requestGetIntBytes(SpidrCmds.CMD_GET_PIXCONF,dev_nr,256,x)
             #print ('Column : {} Pixels: {}'.format(row,pixelcolumn))
-            self._pixel_config[row,:] = pixelcolumn
+            self._pixel_config[row,:] = pixelcolumn[:]
 
 
     def request(self,cmd,dev_nr,message_length,expected_bytes):
@@ -171,6 +190,10 @@ def main():
     for x in range(spidr.deviceCount):
         print ("Device {}: {}".format(x,spidr.getDeviceId(x)))
     
+    print ('CHIP Fanspeed: ',spidr.chipboardFanSpeed)
+    print ('SPIDR Fanspeed: ',spidr.spidrFanSpeed)
+    print ('Pressure: ',spidr.pressure, 'mbar')
+    print ('Humidity: ',spidr.humidity,'%')
     spidr.getPixelConfig(0)
 
     plt.matshow(spidr._pixel_config)
