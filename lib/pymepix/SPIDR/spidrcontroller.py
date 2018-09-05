@@ -14,6 +14,9 @@ class SPIDRController(object):
 
         self._vec_htonl = np.vectorize(self.convertHtonl)
         self._vec_ntohl = np.vectorize(self.convertNtohl)
+
+        self._pixel_config = np.ndarray(shape=(256,256),dtype=np.uint8)
+
     @property
     def softwareVersion(self):
         return self.requestGetInt(SpidrCmds.CMD_GET_SOFTWVERSION,0)
@@ -47,6 +50,15 @@ class SPIDRController(object):
 
     def getDeviceId(self,device_nr):
         return self.requestGetInt(SpidrCmds.CMD_GET_DEVICEID,device_nr)
+
+
+    def getPixelConfig(self,dev_nr):
+
+        for x in range(256):
+            row,pixelcolumn = self.requestGetIntBytes(SpidrCmds.CMD_GET_PIXCONF,dev_nr,256,x)
+            #print ('Column : {} Pixels: {}'.format(row,pixelcolumn))
+            self._pixel_config[row,:] = pixelcolumn
+
 
     def request(self,cmd,dev_nr,message_length,expected_bytes):
 
@@ -107,9 +119,49 @@ class SPIDRController(object):
 
         return self._vec_ntohl(reply[4:4+num_ints])
 
+    def requestGetBytes(self,cmd,dev_nr,expected_bytes,args=0):
+        msg_length = (4+1)*4
+        self._req_buffer[4]=0
+        expected_len = 16 + expected_bytes
+        #Cast reply as an uint8
+        reply = self.request(cmd,dev_nr,msg_length,expected_len)
+        return np.copy(reply[4:].view(dtype=np.uint8)[:expected_bytes])
+
+    def requestGetIntBytes(self,cmd,dev_nr,expected_bytes,args=0):
+        msg_length = (4+1)*4
+        self._req_buffer[4]=socket.htonl(args)
+        expected_len = 20 + expected_bytes
+        #Cast reply as an uint8
+        int_total = expected_bytes + ((expected_bytes) & 5)
+        reply = self.request(cmd,dev_nr,msg_length,expected_len)
+        int_val = socket.ntohl(int(reply[4]))
+
+        byte_val = np.copy(reply[5:].view(dtype=np.uint8)[:expected_bytes])
+
+        return int_val,byte_val
+    
+    def requestSetInt(self,cmd,dev_nr,value):
+        msg_length = (4+1)*4
+        self._req_buffer[4] = socket.htonl(value)
+
+        self.request(cmd,dev_nr,msg_length,msg_length)
 
 
+    def requestSetInts(self,cmd,dev_nr,num_ints,value):
+        msg_length = (4+num_ints)*4
+        self._req_buffer[4:4+num_ints] = self._vec_htonl(value)[:]
+
+        self.request(cmd,dev_nr,msg_length,msg_length)
+
+    def requestSetIntBytes(self,cmd,dev_nr,num_bytes,value_int,value_bytes):
+        msg_length = (4+1)*4 + num_bytes
+        self._req_buffer[4] = socket.htonl(value_int)
+
+        self._req_buffer[5:].view(dtype=np.uint8)[:num_bytes] = value_bytes[:]
+
+        self.request(cmd,dev_nr,msg_length,msg_length)
 def main():
+    import matplotlib.pyplot as plt
     spidr = SPIDRController(('192.168.1.10',50000))
     print('Local temp: {} C'.format(spidr.localTemperature))
 
@@ -118,6 +170,12 @@ def main():
     print ('Device Ids {}'.format(spidr.deviceIds))
     for x in range(spidr.deviceCount):
         print ("Device {}: {}".format(x,spidr.getDeviceId(x)))
+    
+    spidr.getPixelConfig(0)
+
+    plt.matshow(spidr._pixel_config)
+    plt.show()
+
 if __name__=="__main__":
     main()
 
