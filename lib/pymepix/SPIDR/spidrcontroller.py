@@ -3,6 +3,7 @@ import numpy as np
 from error import PymePixException
 from spidrcmds import SpidrCmds
 from spidrdevice import SpidrDevice
+from spidrdefs import SpidrRegs
 class SPIDRController(list):
 
     def __init__(self,ip_port):
@@ -79,15 +80,22 @@ class SPIDRController(list):
         return self.requestGetInts(SpidrCmds.CMD_GET_DEVICEIDS,0,device_count)
 
 
+    @property
+    def linkCounts(self):
+        links = self.getSpidrReg(SpidrRegs.SPIDR_DEVICES_AND_PORTS_I)
+
+        return ((links &0xF00) >> 8) + 1
+
+
 
 
 
     def getSpidrReg(self,addr):
         res = self.requestGetInts(SpidrCmds.CMD_GET_SPIDRREG,0,2,addr)
-        if socket.ntohl(res[0]) != addr:
-            raise Exception('Incorrect register address returned {} expected {}'.format(socket.ntohl(res[0]),addr))
+        if res[0] != addr:
+            raise Exception('Incorrect register address returned {} expected {}'.format(res[0],addr))
         
-        return socket.ntohl(res[1])
+        return res[1]
 
 
     def setSpidrReg(self,addr,value):
@@ -213,7 +221,7 @@ def main():
     print ('Pressure: ',spidr.pressure, 'mbar')
     print ('Humidity: ',spidr.humidity,'%')
     spidr[0].pixelConfig
-    #plt.matshow()
+    print ('Link COunts : ',spidr.linkCounts)
     #plt.show()
 
 if __name__=="__main__":
