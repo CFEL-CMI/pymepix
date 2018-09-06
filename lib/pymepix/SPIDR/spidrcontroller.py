@@ -2,7 +2,8 @@ import socket
 import numpy as np
 from error import PymePixException
 from spidrcmds import SpidrCmds
-class SPIDRController(object):
+from spidrdevice import SpidrDevice
+class SPIDRController(list):
 
     def __init__(self,ip_port):
 
@@ -16,6 +17,17 @@ class SPIDRController(object):
         self._vec_ntohl = np.vectorize(self.convertNtohl)
 
         self._pixel_config = np.ndarray(shape=(256,256),dtype=np.uint8)
+
+        self._initDevices()
+    
+    def _initDevices(self):
+        
+        count = self.deviceCount
+
+        for x in range(count):
+            self.append(SpidrDevice(self,x))
+        
+
 
     @property
     def softwareVersion(self):
@@ -67,16 +79,7 @@ class SPIDRController(object):
         return self.requestGetInts(SpidrCmds.CMD_GET_DEVICEIDS,0,device_count)
 
 
-    def getDeviceId(self,device_nr):
-        return self.requestGetInt(SpidrCmds.CMD_GET_DEVICEID,device_nr)
 
-
-    def getPixelConfig(self,dev_nr):
-
-        for x in range(256):
-            row,pixelcolumn = self.requestGetIntBytes(SpidrCmds.CMD_GET_PIXCONF,dev_nr,256,x)
-            #print ('Column : {} Pixels: {}'.format(row,pixelcolumn))
-            self._pixel_config[row,:] = pixelcolumn[:]
 
 
     def getSpidrReg(self,addr):
@@ -202,16 +205,16 @@ def main():
     print ('FW: {:8X}'.format(spidr.firmwareVersion))
     print ('SW: {:8X}'.format(spidr.softwareVersion))
     print ('Device Ids {}'.format(spidr.deviceIds))
-    for x in range(spidr.deviceCount):
-        print ("Device {}: {}".format(x,spidr.getDeviceId(x)))
+    for idx,dev in enumerate(spidr):
+        print ("Device {}: {}".format(idx,dev.deviceId))
     
     print ('CHIP Fanspeed: ',spidr.chipboardFanSpeed)
     print ('SPIDR Fanspeed: ',spidr.spidrFanSpeed)
     print ('Pressure: ',spidr.pressure, 'mbar')
     print ('Humidity: ',spidr.humidity,'%')
-    spidr.getPixelConfig(0)
-    plt.matshow(spidr._pixel_config)
-    plt.show()
+    spidr[0].pixelConfig
+    #plt.matshow()
+    #plt.show()
 
 if __name__=="__main__":
     main()
