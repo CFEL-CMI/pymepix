@@ -79,6 +79,18 @@ class SPIDRController(object):
             self._pixel_config[row,:] = pixelcolumn[:]
 
 
+    def getSpidrReg(self,addr):
+        res = self.requestGetInts(SpidrCmds.CMD_GET_SPIDRREG,0,2,addr)
+        if socket.ntohl(res[0]) != addr:
+            raise Exception('Incorrect register address returned {} expected {}'.format(socket.ntohl(res[0]),addr))
+        
+        return socket.ntohl(res[1])
+
+
+    def setSpidrReg(self,addr,value):
+        self.requestSetInts(SpidrCmds.CMD_SET_SPIDRREG,0,[addr,value])
+
+
     def request(self,cmd,dev_nr,message_length,expected_bytes):
 
         self._req_buffer[0] = socket.htonl(cmd)
@@ -166,13 +178,16 @@ class SPIDRController(object):
         self.request(cmd,dev_nr,msg_length,msg_length)
 
 
-    def requestSetInts(self,cmd,dev_nr,num_ints,value):
+    def requestSetInts(self,cmd,dev_nr,value):
+        num_ints = len(value)
         msg_length = (4+num_ints)*4
+
         self._req_buffer[4:4+num_ints] = self._vec_htonl(value)[:]
 
         self.request(cmd,dev_nr,msg_length,msg_length)
 
-    def requestSetIntBytes(self,cmd,dev_nr,num_bytes,value_int,value_bytes):
+    def requestSetIntBytes(self,cmd,dev_nr,value_int,value_bytes):
+        num_bytes = len(value_bytes)
         msg_length = (4+1)*4 + num_bytes
         self._req_buffer[4] = socket.htonl(value_int)
 
@@ -195,7 +210,6 @@ def main():
     print ('Pressure: ',spidr.pressure, 'mbar')
     print ('Humidity: ',spidr.humidity,'%')
     spidr.getPixelConfig(0)
-
     plt.matshow(spidr._pixel_config)
     plt.show()
 
