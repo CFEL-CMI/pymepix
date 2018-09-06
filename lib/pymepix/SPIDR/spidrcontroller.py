@@ -28,7 +28,81 @@ class SPIDRController(list):
         for x in range(count):
             self.append(SpidrDevice(self,x))
         
+    def resetModule(self,readout_speed):
+        self.requestGetInt(SpidrCmds.CMD_RESET_MODULE,0,readout_speed.value)
 
+    #-----------------Registers-----------------------
+    @property
+    def CpuToTpx(self):
+        return self.getSpidrReg(SpidrRegs.SPIDR_CPU2TPX_WR_I)
+    
+    @CpuToTpx.setter
+    def CpuToTpx(self,value):
+        return self.setSpidrReg(SpidrRegs.SPIDR_CPU2TPX_WR_I,value)
+    
+        #---------Shutter registers---------
+    @property
+    def ShutterTriggerCtrl(self):
+        return self.getSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_CTRL_I)
+    
+    @ShutterTriggerCtrl.setter
+    def ShutterTriggerCtrl(self,value):
+        return self.setSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_CTRL_I,value)  
+
+    @property
+    def ShutterTriggerCount(self):
+        return self.getSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_CNT_I)
+    
+    @ShutterTriggerCount.setter
+    def ShutterTriggerCount(self,value):
+        return self.setSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_CNT_I,value)  
+
+    @property
+    def ShutterTriggerFreq(self):
+        return self.getSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_FREQ_I)
+    
+    @ShutterTriggerFreq.setter
+    def ShutterTriggerFreq(self,value):
+        return self.setSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_FREQ_I,value)  
+
+    @property
+    def ShutterTriggerLength(self):
+        return self.getSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_LENGTH_I)
+    
+    @ShutterTriggerLength.setter
+    def ShutterTriggerLength(self,value):
+        return self.setSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_LENGTH_I,value)  
+
+    @property
+    def ShutterTriggerDelay(self):
+        return self.getSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_DELAY_I)
+    
+    @ShutterTriggerDelay.setter
+    def ShutterTriggerDelay(self,value):
+        return self.setSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_DELAY_I,value)  
+    
+    @property
+    def DeviceAndPorts(self):
+        return self.getSpidrReg(SpidrRegs.SPIDR_DEVICES_AND_PORTS_I)
+    
+    @property
+    def TdcTriggerCounter(self):
+        return self.getSpidrReg(SpidrRegs.SPIDR_TDC_TRIGGERCOUNTER_I)
+    
+    @property
+    def UdpPacketCounter(self):
+        return self.getSpidrReg(SpidrRegs.SPIDR_UDP_PKTCOUNTER_I)
+
+    @property
+    def UdpMonPacketCounter(self):
+        return self.getSpidrReg(SpidrRegs.SPIDR_UDPMON_PKTCOUNTER_I)
+
+    @property
+    def UdpPausePackerCounter(self):
+        return self.getSpidrReg(SpidrRegs.SPIDR_UDPPAUSE_PKTCOUNTER_I)    
+
+
+    #---------------------------------------------------
 
     @property
     def softwareVersion(self):
@@ -82,9 +156,56 @@ class SPIDRController(list):
 
     @property
     def linkCounts(self):
-        links = self.getSpidrReg(SpidrRegs.SPIDR_DEVICES_AND_PORTS_I)
+        links = self.DeviceAndPorts
 
         return ((links &0xF00) >> 8) + 1
+
+
+    @property
+    def chipboardId(self):
+        return self.requestGetInt(SpidrCmds.CMD_GET_CHIPBOARDID,0)
+
+
+
+
+    def resetDevices(self):
+        self.requestSetInt(SpidrCmds.CMD_RESET_DEVICES,0,0)
+    
+    def reinitDevices(self):
+        self.requestSetInt(SpidrCmds.CMD_REINIT_DEVICES,0,0)
+
+
+    def setPowerPulseEnable(self,enable):
+        self.requestSetInt(SpidrCmds.CMD_PWRPULSE_ENA,0,int(enable))
+    
+    def setTpxPowerPulseEnable(self,enable):
+        self.requestSetInt(SpidrCmds.CMD_TPX_POWER_ENA,0,int(enable))
+
+    def setBiasSupplyEnable(self,enable):
+        self.requestSetInt(SpidrCmds.CMD_BIAS_SUPPLY_ENA,0,int(enable))
+
+    def setBiasVoltage(self,volts):
+        if volts < 12: volts = 12
+        if volts > 104: volts = 104
+        
+        dac_value = ((volts-12)*4095)/(104-12)
+        self.requestSetInt(SpidrCmds.CMD_SET_BIAS_ADJUST,0,dac_value)
+
+
+    def enableDecoders(self,enable):
+        self.requestSetInt(SpidrCmds.CMD_DECODERS_ENA,0,enable)
+
+    def enablePeriphClk80Mhz(self):
+        self.CpuToTpx |= ( 1<<24)
+
+    def disablePeriphClk80Mhz(self):
+        self.CpuToTpx &= ~(1<<24)
+    
+    def enableExternalRefClock(self):
+        self.CpuToTpx |= ( 1<<25)
+
+    def disableExternalRefClock(self):
+        self.CpuToTpx &= ~(1<<25)
 
 
 
@@ -220,8 +341,10 @@ def main():
     print ('SPIDR Fanspeed: ',spidr.spidrFanSpeed)
     print ('Pressure: ',spidr.pressure, 'mbar')
     print ('Humidity: ',spidr.humidity,'%')
+    print ('Temperature: ',spidr.localTemperature,' C')
     spidr[0].pixelConfig
     print ('Link COunts : ',spidr.linkCounts)
+    print (spidr[0].cptr)
     #plt.show()
 
 if __name__=="__main__":
