@@ -292,3 +292,28 @@ class SpidrDevice(object):
         #Should be length 393216
         
 
+    @property
+    def timer(self):
+        return tuple(self._ctrl.requestGetInts(SpidrCmds.CMD_GET_TIMER,self._dev_num,2))
+    
+    @timer.setter
+    def timer(self,time):
+        if len(time) != 2:
+            raise ValueError(tuple)
+        self._ctrl.requestSetInts(SpidrCmds.CMD_SET_TIMER,self._dev_num,list(time))
+    
+    @property
+    def shutterStart(self):
+        return tuple(self._ctrl.requestGetInts(SpidrCmds.CMD_GET_SHUTTERSTART,self._dev_num,2))
+
+    @property
+    def shutterEnd(self):
+        return tuple(self._ctrl.requestGetInts(SpidrCmds.CMD_GET_SHUTTEREND,self._dev_num,2))
+
+    
+    def t0Sync(self):
+        self._ctrl.requestSetInt(SpidrCmds.CMD_T0_SYNC,self._dev_num,0)
+    
+    @property
+    def pixelPacketCounter(self):
+        return self._ctrl.getSpidrReg(SpidrRegs.SPIDR_PIXEL_PKTCOUNTER_I + self._dev_num)
