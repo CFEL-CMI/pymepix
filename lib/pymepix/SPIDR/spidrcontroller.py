@@ -3,7 +3,7 @@ import numpy as np
 from error import PymePixException
 from spidrcmds import SpidrCmds
 from spidrdevice import SpidrDevice
-from spidrdefs import SpidrRegs
+from spidrdefs import SpidrRegs,SpidrShutterMode
 class SPIDRController(list):
 
     def __init__(self,ip_port):
@@ -50,6 +50,18 @@ class SPIDRController(list):
         return self.setSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_CTRL_I,value)  
 
     @property
+    def ShutterTriggerMode(self):
+        return SpidrShutterMode(self.ShutterTriggerCtrl &0x7)
+    
+    @ShutterTriggerMode.setter
+    def ShutterTriggerMode(self,mode):
+        reg = self.ShutterTriggerCtrl
+        reg &= ~0x7
+        reg |= mode.value
+        self.ShutterTriggerCtrl = reg
+
+
+    @property
     def ShutterTriggerCount(self):
         return self.getSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_CNT_I)
     
@@ -59,27 +71,34 @@ class SPIDRController(list):
 
     @property
     def ShutterTriggerFreq(self):
-        return self.getSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_FREQ_I)
+        freq = self.getSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_FREQ_I)
+
+        mhz = 40000000000.0/freq
+        
+        return int(mhz)
     
     @ShutterTriggerFreq.setter
-    def ShutterTriggerFreq(self,value):
-        return self.setSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_FREQ_I,value)  
+    def ShutterTriggerFreq(self,mhz):
+
+
+        freq = 40000000000.0/mhz
+        return self.setSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_FREQ_I,freq)  
 
     @property
     def ShutterTriggerLength(self):
-        return self.getSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_LENGTH_I)
+        return self.getSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_LENGTH_I)*25
     
     @ShutterTriggerLength.setter
     def ShutterTriggerLength(self,value):
-        return self.setSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_LENGTH_I,value)  
+        return self.setSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_LENGTH_I,value//25)  
 
     @property
     def ShutterTriggerDelay(self):
-        return self.getSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_DELAY_I)
+        return self.getSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_DELAY_I)*25
     
     @ShutterTriggerDelay.setter
     def ShutterTriggerDelay(self,value):
-        return self.setSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_DELAY_I,value)  
+        return self.setSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_DELAY_I,value//25)  
     
     @property
     def DeviceAndPorts(self):
@@ -208,8 +227,50 @@ class SPIDRController(list):
         self.CpuToTpx &= ~(1<<25)
 
 
+    def setShutterTriggerConfig(self,mode,length_us,freq_hz,count,delay_ns):
+
+        data =  [mode,length_us,freq_hz,count,delay_ns]
+
+        if delay_ns == 0:
+            data.pop()
+        
+        self.requestSetInts(SpidrCmds.CMD_SET_TRIGCONFIG,0,data)
+
+    @property
+    def shutterTriggerConfig(self):
+        config = self.requestGetInts(SpidrCmds.CMD_GET_TRIGCONFIG,0,5)
+
+        return tuple(config)
+
+    def startAutoTrigger(self):
+        self.requestSetInt(SpidrCmds.CMD_AUTOTRIG_START,0,0)
+
+    def stopAutoTrigger(self):
+        self.requestSetInt(SpidrCmds.CMD_AUTOTRIG_STOP,0,0)
 
 
+    def openShutter(self):
+        self.ShutterTriggerMode = SpidrShutterMode.SHUTTERMODE_AUTO
+        self.ShutterTriggerCount = 0
+        self.ShutterTriggerLength = 10000
+        self.ShutterTriggerDelay = 1
+        self.startAutoTrigger()
+    
+    def closeShutter(self):
+        self.stopAutoTrigger()
+
+    @property
+    def externalShutterCounter(self):
+        return self.requestGetInt(SpidrCmds.CMD_GET_EXTSHUTTERCNTR,0)
+    
+    @property
+    def shutterCounter(self):
+        return self.requestGetInt(SpidrCmds.CMD_GET_SHUTTERCNTR,0)
+
+    def resetCounters(self):
+        self.requestSetInt(SpidrCmds.CMD_RESET_COUNTERS,0,0)
+
+    
 
     def getSpidrReg(self,addr):
         res = self.requestGetInts(SpidrCmds.CMD_GET_SPIDRREG,0,2,addr)
@@ -359,7 +420,7 @@ def main():
     spidr[0].resetPixels()
 
 
-    image = cv2.imread('Unknown.jpg', cv2.IMREAD_GRAYSCALE)
+    image = cv2.imread('images.png', cv2.IMREAD_GRAYSCALE)
     res_im = cv2.resize(image,(256,256))
     res_im = res_im/256
     res_im *= 16
@@ -367,8 +428,7 @@ def main():
     spidr[0].setPixelThreshold(res_im.astype(np.uint8))
     spidr[0].uploadPixelConfig(True,1)
     spidr[0].getPixelConfig()
-    plt.matshow(spidr[0].currentPixelConfig)
-    plt.show()
+    #plt.matshow(spidr[0].currentPixelConfig)
     #plt.show()
 
 if __name__=="__main__":
