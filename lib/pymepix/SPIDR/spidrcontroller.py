@@ -258,7 +258,16 @@ class SPIDRController(list):
             raise Exception('Unexpected device {}'.format(dev_nr))
         
         return _replyMsg
-    
+
+
+    def customRequest(self,request,total_bytes):
+        self._sock.send(self._req_buffer.tobytes()[0:total_bytes])
+        sock_recv= self._sock.recv(4096)
+        missing_bytes = ((len(sock_recv)//32) + 1)*32
+        buffer = sock_recv + b" "*missing_bytes
+
+        arr = np.frombuffer(buffer,dtype=np.uint32)
+        print(self._vec_ntohl(arr))
     def convertNtohl(self,x):
         return socket.ntohl(int(x))
 
@@ -307,7 +316,7 @@ class SPIDRController(list):
         msg_length = (4+1)*4
         self._req_buffer[4] = socket.htonl(value)
 
-        self.request(cmd,dev_nr,msg_length,msg_length)
+        self.request(cmd,dev_nr,msg_length,20)
 
 
     def requestSetInts(self,cmd,dev_nr,value):
@@ -316,7 +325,7 @@ class SPIDRController(list):
 
         self._req_buffer[4:4+num_ints] = self._vec_htonl(value)[:]
 
-        self.request(cmd,dev_nr,msg_length,msg_length)
+        self.request(cmd,dev_nr,msg_length,20)
 
     def requestSetIntBytes(self,cmd,dev_nr,value_int,value_bytes):
         num_bytes = len(value_bytes)
@@ -325,8 +334,9 @@ class SPIDRController(list):
 
         self._req_buffer[5:].view(dtype=np.uint8)[:num_bytes] = value_bytes[:]
 
-        self.request(cmd,dev_nr,msg_length,msg_length)
+        self.request(cmd,dev_nr,msg_length,20)
 def main():
+    import cv2
     import matplotlib.pyplot as plt
     spidr = SPIDRController(('192.168.1.10',50000))
     print('Local temp: {} C'.format(spidr.localTemperature))
@@ -342,9 +352,23 @@ def main():
     print ('Pressure: ',spidr.pressure, 'mbar')
     print ('Humidity: ',spidr.humidity,'%')
     print ('Temperature: ',spidr.localTemperature,' C')
-    spidr[0].pixelConfig
+    
     print ('Link COunts : ',spidr.linkCounts)
-    print (spidr[0].cptr)
+    spidr[0].reset()
+    spidr[0].reinitDevice()
+    spidr[0].resetPixels()
+
+
+    image = cv2.imread('Unknown.jpg', cv2.IMREAD_GRAYSCALE)
+    res_im = cv2.resize(image,(256,256))
+    res_im = res_im/256
+    res_im *= 16
+
+    spidr[0].setPixelThreshold(res_im.astype(np.uint8))
+    spidr[0].uploadPixelConfig(True,1)
+    spidr[0].getPixelConfig()
+    plt.matshow(spidr[0].currentPixelConfig)
+    plt.show()
     #plt.show()
 
 if __name__=="__main__":
