@@ -203,7 +203,14 @@ class SPIDRController(list):
     def setBiasSupplyEnable(self,enable):
         self.requestSetInt(SpidrCmds.CMD_BIAS_SUPPLY_ENA,0,int(enable))
 
-    def setBiasVoltage(self,volts):
+
+
+    @property
+    def biasVoltage(self):
+        adc_data = self.requestGetInt(SpidrCmds.CMD_GET_SPIDR_ADC,0,1)
+        return (((adc_data & 0xFFF)*1500 + 4095) / 4096) / 10
+    @biasVoltage.setter
+    def biasVoltage(self,volts):
         if volts < 12: volts = 12
         if volts > 104: volts = 104
         
@@ -270,8 +277,25 @@ class SPIDRController(list):
     def resetCounters(self):
         self.requestSetInt(SpidrCmds.CMD_RESET_COUNTERS,0,0)
 
-    
+    def resetTimers(self):
+        self.requestSetInt(SpidrCmds.CMD_RESET_TIMERS,0,0)
 
+    def getAdc(self,channel,nr_of_samples):
+        args = (channel & 0xFFFF) | ((nr_of_samples & 0xFFFF) << 16)
+        self.requestGetInt(SpidrCmds.CMD_GET_SPIDR_ADC,0,args)
+
+
+
+
+
+    def resetPacketCounters(self):
+        self.UdpPacketCounter = 0
+        self.UdpMonPacketCounter = 0
+        self.UdpPausePackerCounter = 0
+        self.setSpidrReg(SpidrRegs.SPIDR_PIXEL_PKTCOUNTER_I,0)
+
+
+    
     def getSpidrReg(self,addr):
         res = self.requestGetInts(SpidrCmds.CMD_GET_SPIDRREG,0,2,addr)
         if res[0] != addr:
@@ -396,6 +420,10 @@ class SPIDRController(list):
         self._req_buffer[5:].view(dtype=np.uint8)[:num_bytes] = value_bytes[:]
 
         self.request(cmd,dev_nr,msg_length,20)
+
+    
+
+
 def main():
     import cv2
     import matplotlib.pyplot as plt
