@@ -321,3 +321,59 @@ class SpidrDevice(object):
     
     def getDacOut(self,nr_samples):
         return self._ctrl.getAdc(self._dev_num,nr_samples)
+    @property
+    def ipAddrSrc(self):
+
+
+        val = self._ctrl.requestGetInt( SpidrCmds.CMD_GET_IPADDR_SRC, self._dev_num )
+
+        return "{}.{}.{}.{}".format((val>>24)&0xFF,(val>>16)&0xFF,(val>>8)&0xFF,(val>>0)&0xFF)
+    
+    @ipAddrSrc.setter
+    def ipAddrSrc(self,ipaddr ):
+
+        split = ipaddr.split['.']
+
+        first = int(split[0])&0xFF
+        second = int(split[1])&0xFF
+        third = int(split[2])&0xFF
+        forth = int(split[3])&0xFF
+
+        comb = (first<<24) | (second<<16) | (third<<8) | (forth<<0)
+        self._ctrl.requestSetInt( SpidrCmds.CMD_SET_IPADDR_SRC, self._dev_num, comb )
+
+
+
+    @property
+    def ipAddrDest(self):
+        val = self._ctrl.requestGetInt( SpidrCmds.CMD_GET_IPADDR_DEST, self._dev_num )
+
+        return "{}.{}.{}.{}".format((val>>24)&0xFF,(val>>16)&0xFF,(val>>8)&0xFF,(val>>0)&0xFF)
+
+
+
+    @ipAddrDest.setter
+    def ipAddrDest( self,ipaddr ):
+        split = ipaddr.split['.']
+
+        first = int(split[0])&0xFF
+        second = int(split[1])&0xFF
+        third = int(split[2])&0xFF
+        forth = int(split[3])&0xFF
+
+        comb = (first<<24) | (second<<16) | (third<<8) | (forth<<0)
+        self._ctrl.requestSetInt( SpidrCmds.CMD_SET_IPADDR_DEST, self._dev_num, comb )
+
+
+
+    @property
+    def devicePort(self ):
+        return self._ctrl.requestGetInt( SpidrCmds.CMD_GET_DEVICEPORT, self._dev_num )
+
+    @property
+    def serverPort(self ):
+        return self._ctrl.requestGetInt( SpidrCmds.CMD_GET_SERVERPORT, self._dev_num )
+
+    @serverPort.setter
+    def serverPort(self,value):
+        return self._ctrl.requestSetInt( SpidrCmds.CMD_SET_SERVERPORT, self._dev_num,value)

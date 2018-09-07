@@ -61,6 +61,7 @@ class SPIDRController(list):
         self.ShutterTriggerCtrl = reg
 
 
+
     @property
     def ShutterTriggerCount(self):
         return self.getSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_CNT_I)
@@ -487,24 +488,28 @@ def main():
     print ('Pressure: ',spidr.pressure, 'mbar')
     print ('Humidity: ',spidr.humidity,'%')
     print ('Temperature: ',spidr.localTemperature,' C')
-    
-    print ('Link COunts : ',spidr.linkCounts)
-    spidr[0].reset()
-    spidr[0].reinitDevice()
-    spidr[0].resetPixels()
+    print (spidr[0].ipAddrSrc)
+    print (spidr[0].ipAddrDest)
+    print (spidr[0].devicePort)
+    print(spidr[0].serverPort)
+    print (spidr[0].headerFilter)
+    # print ('Link COunts : ',spidr.linkCounts)
+    # spidr[0].reset()
+    # spidr[0].reinitDevice()
+    # spidr[0].resetPixels()
 
 
-    image = cv2.imread('images.png', cv2.IMREAD_GRAYSCALE)
-    res_im = cv2.resize(image,(256,256))
-    res_im = res_im/256
-    res_im *= 16
+    # image = cv2.imread('images.png', cv2.IMREAD_GRAYSCALE)
+    # res_im = cv2.resize(image,(256,256))
+    # res_im = res_im/256
+    # res_im *= 16
 
-    spidr[0].setPixelThreshold(res_im.astype(np.uint8))
-    spidr[0].uploadPixelConfig(True,1)
-    spidr[0].getPixelConfig()
-    print(spidr.vddNow)
-    plt.matshow(spidr[0].currentPixelConfig)
-    plt.show()
+    # spidr[0].setPixelThreshold(res_im.astype(np.uint8))
+    # spidr[0].uploadPixelConfig(True,1)
+    # spidr[0].getPixelConfig()
+    # print(spidr.vddNow)
+    # plt.matshow(spidr[0].currentPixelConfig)
+    # plt.show()
 
 if __name__=="__main__":
     main()
