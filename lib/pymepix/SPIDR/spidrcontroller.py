@@ -259,6 +259,27 @@ class SPIDRController(list):
         self.CpuToTpx &= ~(1<<25)
 
 
+    def sequentialReadout(self,tokens,now ):
+
+        if( now ): tokens |= 0x80000000
+        self.requestSetInt( SpidrCmds.CMD_SEQ_READOUT, 0, tokens )
+
+
+
+
+    def datadrivenReadout(self):
+
+        self.requestSetInt( SpidrCmds.CMD_DDRIVEN_READOUT, 0, 0 )
+
+
+
+
+    def pauseReadout(self):
+
+        self.requestSetInt( SpidrCmds.CMD_PAUSE_READOUT, 0, 0 )
+
+
+
     def setShutterTriggerConfig(self,mode,length_us,freq_hz,count,delay_ns):
 
         data =  [mode,length_us,freq_hz,count,delay_ns]
@@ -481,8 +502,9 @@ def main():
     spidr[0].setPixelThreshold(res_im.astype(np.uint8))
     spidr[0].uploadPixelConfig(True,1)
     spidr[0].getPixelConfig()
-    #plt.matshow(spidr[0].currentPixelConfig)
-    #plt.show()
+    print(spidr.vddNow)
+    plt.matshow(spidr[0].currentPixelConfig)
+    plt.show()
 
 if __name__=="__main__":
     main()
