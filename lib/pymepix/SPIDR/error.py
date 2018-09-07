@@ -33,6 +33,48 @@ class PymePixException(Exception):
             "ERR_MON_HARDW",
             "ERR_FLASH_STORAGE"
         ]
+
+
+    TPX3_ERR_STR =[
+            "no error",
+            "TPX3_ERR_SC_ILLEGAL",
+            "TPX3_ERR_SC_STATE",
+            "TPX3_ERR_SC_ERRSTATE",
+            "TPX3_ERR_SC_WORDS",
+            "TPX3_ERR_TX_TIMEOUT",
+            "TPX3_ERR_EMPTY",
+            "TPX3_ERR_NOTEMPTY",
+            "TPX3_ERR_FULL",
+            "TPX3_ERR_UNEXP_REPLY",
+            "TPX3_ERR_UNEXP_HEADER",
+            "TPX3_ERR_LINKS_UNLOCKED"
+        ]
+
+    SPIDR_ERR_STR=[
+        "SPIDR_ERR_I2C_INIT",
+        "SPIDR_ERR_LINK_INIT",
+        "SPIDR_ERR_MPL_INIT",
+        "SPIDR_ERR_MPU_INIT",
+        "SPIDR_ERR_MAX6642_INIT",
+        "SPIDR_ERR_INA219_0_INIT",
+        "SPIDR_ERR_INA219_1_INIT",
+        "SPIDR_ERR_I2C"
+    ]
+
+    STORE_ERR_STR=[
+        "no error",
+        "STORE_ERR_TPX",
+        "STORE_ERR_WRITE",
+        "STORE_ERR_WRITE_CHECK",
+        "STORE_ERR_READ",
+        "STORE_ERR_UNMATCHED_ID",
+        "STORE_ERR_NOFLASH"
+    ]
+
+    MONITOR_ERR_STR=[
+        "MON_ERR_TEMP_DAQ",
+        "MON_ERR_POWER_DAQ",
+    ]
     def __init__(self,error_code): 
 
         self.message = self.errorMessage(error_code)
@@ -43,8 +85,19 @@ class PymePixException(Exception):
         
         err_id = code &0xFF
 
+        message = ""
+
         if err_id >= len(self.ERR_STR) or err_id < 0:
             return 'Unknown error code {}'.format(err_id)
-
-        return "Recieved error code {}: {}".format(err_id,self.ERR_STR[err_id])
+        else:
+            message+= "Recieved error code {}: {}".format(err_id,self.ERR_STR[err_id])
         
+        if err_id == 6:
+            err = (code &0xFF00) >> 8
+            message+=', '
+            if err> len(self.TPX3_ERR_STR):
+                message+='<unknown>'
+            else:
+                message +=self.TPX3_ERR_STR[err]
+        
+        return message
