@@ -161,7 +161,30 @@ class SPIDRController(list):
         return self.requestGetInt(SpidrCmds.CMD_GET_FANSPEED,0,1)
 
 
+    @property
+    def avdd(self):
+        return tuple(self.requestGetInts(SpidrCmds.CMD_GET_AVDD,0,3)/1000)
 
+    @property
+    def vdd(self):
+        return tuple(self.requestGetInts(SpidrCmds.CMD_GET_VDD,0,3)/1000)
+
+    @property
+    def dvdd(self):
+        return tuple(self.requestGetInts(SpidrCmds.CMD_GET_DVDD,0,3)/1000)
+
+
+    @property
+    def avddNow(self):
+        return tuple(self.requestGetInts(SpidrCmds.CMD_GET_AVDD_NOW,0,3)/1000)
+
+    @property
+    def vddNow(self):
+        return tuple(self.requestGetInts(SpidrCmds.CMD_GET_VDD_NOW,0,3)/1000)
+
+    @property
+    def dvddNow(self):
+        return tuple(self.requestGetInts(SpidrCmds.CMD_GET_DVDD_NOW,0,3)/1000)
 
     @property
     def deviceCount(self):
@@ -178,6 +201,8 @@ class SPIDRController(list):
         links = self.DeviceAndPorts
 
         return ((links &0xF00) >> 8) + 1
+
+
 
 
     @property

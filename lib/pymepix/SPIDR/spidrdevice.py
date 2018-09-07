@@ -317,3 +317,7 @@ class SpidrDevice(object):
     @property
     def pixelPacketCounter(self):
         return self._ctrl.getSpidrReg(SpidrRegs.SPIDR_PIXEL_PKTCOUNTER_I + self._dev_num)
+
+    
+    def getDacOut(self,nr_samples):
+        return self._ctrl.getAdc(self._dev_num,nr_samples)
