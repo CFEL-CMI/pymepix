@@ -7,19 +7,17 @@ class SpidrDevice(object):
     def __init__(self,spidr_ctrl,device_num):
         self._ctrl = weakref.proxy(spidr_ctrl)
         self._dev_num = device_num
-        self._pixel_config = np.ndarray(shape=(256,256),dtype=np.uint8)
+        self._pixel_config = [np.ndarray(shape=(256,256),dtype=np.uint8)]*4
+        #self._cptr = self.cptr
+        self.selectPixelConfig(0)
 
-        self._cptr = self.cptr
+
+
     @property
     def deviceId(self):
         return self._ctrl.requestGetInt(SpidrCmds.CMD_GET_DEVICEID,self._dev_num)
 
-    def pixelConfig(self):
 
-        for x in range(256):
-            row,pixelcolumn = self._ctrl.requestGetIntBytes(SpidrCmds.CMD_GET_PIXCONF,self._dev_num,256,x)
-            #print ('Column : {} Pixels: {}'.format(row,pixelcolumn))
-            self._pixel_config[row,:] = pixelcolumn[:]
     
 
     @property
@@ -148,20 +146,149 @@ class SpidrDevice(object):
     
     @property
     def tpNumber(self):
-       tp_data = self._ctrl.requestGetInt(SpidrCmds.CMD_GET_TPNUMBER,self._dev_num) 
+       return self._ctrl.requestGetInt(SpidrCmds.CMD_GET_TPNUMBER,self._dev_num) 
     
     @tpNumber.setter
     def tpNumber(self,value):
         self._ctrl.requestSetInt(SpidrCmds.CMD_SET_TPNUMBER,self._dev_num,value)
 
     @property
-    def cptr(self):
+    def columnTestPulseRegister(self):
         _cptr = self._ctrl.requestGetBytes(SpidrCmds.CMD_GET_CTPR,self._dev_num,256//8)
         #Store it locally for use
         self._cptr = _cptr
         return _cptr
     
-    @cptr.setter
-    def cptr(self,_cptr):
+    @columnTestPulseRegister.setter
+    def columnTestPulseRegister(self,_cptr):
         self._ctrl.requestSetIntBytes(SpidrCmds.CMD_SET_CTPR,self._dev_num,0,_cptr)
-        self._cptr = self.cptr
+        self._cptr = self.columnTestPulseRegister
+
+
+    @property
+    def currentPixelConfig(self):
+        return self._selected_config
+
+
+    def selectPixelConfig(self,index):
+        self._selected_config = self._pixel_config[index]
+
+    def getPixelConfig(self):
+
+        for y in range(256):
+            column,pixelrow = self._ctrl.requestGetIntBytes(SpidrCmds.CMD_GET_PIXCONF,self._dev_num,256,y)
+            #print ('Column : {} Pixels: {}'.format(row,pixelcolumn))
+            self._selected_config[column,:] = pixelrow[:]
+
+    def resetPixels(self):
+        self._ctrl.requestSetInt(SpidrCmds.CMD_RESET_PIXELS,self._dev_num,0)
+
+
+    @property
+    def numPixelConfigs(self):
+        return len(self._pixel_config)
+    
+    def pixelConfig(self,index):
+        return self._pixel_config[index]
+    
+    def resetPixelConfig(self,index=-1,all_pixels=False):
+        
+        if all_pixels:
+            for x in self._pixel_config:
+                x[...] = 0
+
+        elif index == - 1:
+            self._selected_config[...] = 0
+        else:
+            self._pixel_config[index][...] = 0
+    
+
+
+
+    def setSinglePixelThreshold(self,x,y,threshold):
+
+        threshold &= 0xF
+        self._selected_config[x,y] =~0x1E
+        self._selected_config[x,y] |= threshold<<1
+    
+    def setPixelThreshold(self,threshold):
+
+        threshold &=0xF
+        self._selected_config[:,:] &=np.uint8(~0x1E)
+        print (threshold.shape)
+        self._selected_config[:,:] |= threshold<<np.uint8(1)
+
+    def setSinglePixelMask(self,x,y,mask):
+
+        self._selected_config[x,y] &= ~1
+        self._selected_config[x,y] += mask & 1
+    
+    def setPixelMask(self,mask):
+        self._selected_config[...] &= ~1
+        self._selected_config[...] += mask & 1
+
+    
+    def setSinglePixelTestBit(self,x,y,val):
+        val &=1
+        self._selected_config[x,y]&= ~(1<<5)
+        self._selected_config[x,y]|= (val << 5)
+    
+    def uploadPixelConfig(self,formatted,columns_per_packet):
+
+        columns_per_packet = max(1,columns_per_packet)
+        columns_per_packet = min(4,columns_per_packet)
+
+
+
+        if formatted:
+            self._uploadFormatted(columns_per_packet)
+            return
+        
+        raise NotImplementedError
+        
+
+    
+    def _uploadFormatted(self,columns_per_packet):
+        # TIMEPIX_BITS=6
+        # nbytes = columns_per_packet*(256*TIMEPIX_BITS)//8
+
+        # for x in range(0,256,columns_per_packet):
+        #     for col in range(0,columns_per_packet):
+        #         to_write = self._selected_config[x+col,:]
+        #         offset = 0
+        #         packet = np.packbits(np.unpackbits(to_write).reshape(-1,8)[:,2:8].reshape(-1))
+            
+        #     self._ctrl.req
+
+
+        #Flatten and unpack the bits of the matrix selecting only the necessary bits
+        for x in range(0,256,columns_per_packet):
+            
+            start_col = x
+            end_col = x + columns_per_packet
+            matrix_packet = np.packbits(np.unpackbits(self._selected_config[start_col:end_col,:].flatten()).reshape(-1,8)[:,2:8].reshape(-1))
+            #@print (matrix_packet.shape,matrix_packet.dtype)
+            #print ('Sending packet with columns {}-{}'.format(start_col,end_col))
+            self._ctrl.requestSetIntBytes(SpidrCmds.CMD_SET_PIXCONF,self._dev_num,x,matrix_packet)
+            
+
+            # request_packet = np.ndarray(shape=(512,),dtype=np.int32)
+
+            # request_packet[0] = socket.htonl(SpidrCmds.CMD_SET_PIXCONF)
+            # message_length = (4+1+matrix_packet_int.shape[0])*4
+            # request_packet[1] = socket.htonl(message_length)
+            # request_packet[2]=0
+            # request_packet[3] = socket.htonl(self._dev_num)
+            # request_packet[4] = 0
+            # #request_packet[4:4+column_mask.shape[0]] = column_mask[:]
+            # start= 5
+            # end = start + matrix_packet_int.shape[0]
+            # request_packet[start:end] = matrix_packet_int[:]
+
+
+            #self._ctrl.customRequest(request_packet,message_length)
+
+
+        #Should be length 393216
+        
+
