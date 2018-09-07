@@ -26,3 +26,10 @@ class SpidrRegs(object):
 
 
 ALL_PIXELS = 256
+
+class SpidrShutterMode(Enum):
+    SHUTTERMODE_POS_EXT       =0
+    SHUTTERMODE_NEG_EXT       =1
+    SHUTTERMODE_POS_EXT_TIMER =2
+    SHUTTERMODE_NEG_EXT_TIMER =3
+    SHUTTERMODE_AUTO          =4
