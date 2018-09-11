@@ -1,9 +1,9 @@
 import socket
 import numpy as np
-from error import PymePixException
-from spidrcmds import SpidrCmds
-from spidrdevice import SpidrDevice
-from spidrdefs import SpidrRegs,SpidrShutterMode
+from .error import PymePixException
+from .spidrcmds import SpidrCmds
+from .spidrdevice import SpidrDevice
+from .spidrdefs import SpidrRegs,SpidrShutterMode
 class SPIDRController(list):
 
     def __init__(self,ip_port):
@@ -210,8 +210,11 @@ class SPIDRController(list):
     def chipboardId(self):
         return self.requestGetInt(SpidrCmds.CMD_GET_CHIPBOARDID,0)
 
+    def setBusy(self):
+        return self.requestSetInt(SpidrCmds.CMD_SET_BUSY,0,0)
 
-
+    def clearBusy(self):
+        return self.requestSetInt(SpidrCmds.CMD_CLEAR_BUSY,0,0)
 
     def resetDevices(self):
         self.requestSetInt(SpidrCmds.CMD_RESET_DEVICES,0,0)
@@ -325,7 +328,7 @@ class SPIDRController(list):
         self.requestSetInt(SpidrCmds.CMD_RESET_COUNTERS,0,0)
 
     def resetTimers(self):
-        self.requestSetInt(SpidrCmds.CMD_RESET_TIMERS,0,0)
+        self.requestSetInt(SpidrCmds.CMD_RESET_TIMER,0,0)
 
     def getAdc(self,channel,nr_of_samples):
         args = (channel & 0xFFFF) | ((nr_of_samples & 0xFFFF) << 16)
@@ -506,10 +509,10 @@ def main():
 
     # spidr[0].setPixelThreshold(res_im.astype(np.uint8))
     # spidr[0].uploadPixelConfig(True,1)
-    # spidr[0].getPixelConfig()
+    spidr[0].getPixelConfig()
     # print(spidr.vddNow)
-    # plt.matshow(spidr[0].currentPixelConfig)
-    # plt.show()
+    plt.matshow(spidr[0].currentPixelConfig)
+    plt.show()
 
 if __name__=="__main__":
     main()

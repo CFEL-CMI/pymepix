@@ -1,7 +1,7 @@
 import weakref
-from spidrcmds import SpidrCmds
+from .spidrcmds import SpidrCmds
 import numpy as np
-from spidrdefs import SpidrRegs
+from .spidrdefs import SpidrRegs
 class SpidrDevice(object):
 
     def __init__(self,spidr_ctrl,device_num):
