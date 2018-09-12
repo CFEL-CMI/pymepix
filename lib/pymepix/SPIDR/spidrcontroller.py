@@ -118,9 +118,20 @@ class SPIDRController(list):
         return self.getSpidrReg(SpidrRegs.SPIDR_UDPMON_PKTCOUNTER_I)
 
     @property
-    def UdpPausePackerCounter(self):
+    def UdpPausePacketCounter(self):
         return self.getSpidrReg(SpidrRegs.SPIDR_UDPPAUSE_PKTCOUNTER_I)    
 
+    @UdpPacketCounter.setter
+    def UdpPacketCounter(self,value):
+        return self.setSpidrReg(SpidrRegs.SPIDR_UDP_PKTCOUNTER_I,0)
+
+    @UdpMonPacketCounter.setter
+    def UdpMonPacketCounter(self,value):
+        return self.setSpidrReg(SpidrRegs.SPIDR_UDPMON_PKTCOUNTER_I,0)
+
+    @UdpPausePacketCounter.setter
+    def UdpPausePacketCounter(self,value):
+        return self.setSpidrReg(SpidrRegs.SPIDR_UDPPAUSE_PKTCOUNTER_I,0)   
 
     #---------------------------------------------------
 
@@ -342,7 +353,8 @@ class SPIDRController(list):
         self.UdpPacketCounter = 0
         self.UdpMonPacketCounter = 0
         self.UdpPausePackerCounter = 0
-        self.setSpidrReg(SpidrRegs.SPIDR_PIXEL_PKTCOUNTER_I,0)
+        for idx,dev in enumerate(self):
+            self.setSpidrReg(SpidrRegs.SPIDR_PIXEL_PKTCOUNTER_I,idx)
 
 
     
