@@ -1,6 +1,7 @@
 import socket
 import numpy as np
 import threading
+
 class TimepixUDPListener(object):
 
     def __init__(self,udpipport):
@@ -12,7 +13,7 @@ class TimepixUDPListener(object):
         self.reset()
         self._run = True
 
-        self._raw_bytes = np.ndarray(shape=(2048,),dtype=np.uint64)
+        self._raw_bytes = np.ndarray(shape=(2048,),dtype='<u8')
 
         self.attachCallback(None)
     def reset(self):
@@ -30,6 +31,19 @@ class TimepixUDPListener(object):
     def stop(self):
         self._run = False
 
+
+    def processTriggers(self,trigger_data):
+        reserved = trigger_data & 0x1F
+        stamp = (trigger_data >> 5) &0xF
+        timestamp = (trigger_data >> 9) & 0x1FFFFFFFFF
+        trigger_counter = (trigger_data>>44) &0xFFF
+
+        print ('Trigger Counter: {} Timestamp: {} stamp: {}'.format(trigger_counter,timestamp,stamp))
+
+
+
+
+
     def run(self):
 
         while self._run:
@@ -40,6 +54,12 @@ class TimepixUDPListener(object):
             # #arr= raw_bytes.view(dtype='<I')
             # #print (raw_bytes)
             #Numpyize it!!!
+
+            trigger_header = raw_bytes &  0x6F00000000000000
+            trigger_data = raw_bytes[trigger_header!= 0]
+            if trigger_data.size !=0:
+                self.processTriggers(trigger_data)
+
             header = raw_bytes &  0xF000000000000000
 
             pixdata = raw_bytes[np.logical_or(header == 0xB000000000000000,header == 0xA000000000000000)]
