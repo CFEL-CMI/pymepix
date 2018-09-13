@@ -34,30 +34,30 @@ class TimepixUDPListener(object):
 
         while self._run:
             size = self._sock.recv_into(self._raw_bytes,16384) # buffer size is 1024 bytes
-            # raw_bytes =  np.frombuffer(data,dtype='u8')
+            raw_bytes = self._raw_bytes[0:size//8]
             self._packets_collected+=1
             # #print (np.unpackbits(raw_bytes.view(dtype=np.uint8))[0:64])
             # #arr= raw_bytes.view(dtype='<I')
             # #print (raw_bytes)
-            # #Numpyize it!!!
-            # header = raw_bytes &  0xF000000000000000
+            #Numpyize it!!!
+            header = raw_bytes &  0xF000000000000000
 
-            # pixdata = raw_bytes[np.logical_or(header == 0xB000000000000000,header == 0xA000000000000000)]
-            # if pixdata.size ==0:
-            #     continue
-            # dcol = ((pixdata & 0x0FE0000000000000) >> 52)
-            # spix  = ((pixdata & 0x001F800000000000) >> 45)
-            # pix   = ((pixdata & 0x0000700000000000) >> 44)
-            # pdata = ((pixdata & 0x00000FFFFFFF0000) >> 16)
-            # toa = (pdata >>14) &0x3FFF
-            # tot = (pdata >>4) & 0x3FF
-            # hit = pdata &0xF
-            # ts = (pixdata & 0x000000000000FFFF)
-            # x = dcol + pix//4
-            # y = spix + (pix &0x3)
+            pixdata = raw_bytes[np.logical_or(header == 0xB000000000000000,header == 0xA000000000000000)]
+            if pixdata.size ==0:
+                continue
+            dcol = ((pixdata & 0x0FE0000000000000) >> 52)
+            spix  = ((pixdata & 0x001F800000000000) >> 45)
+            pix   = ((pixdata & 0x0000700000000000) >> 44)
+            pdata = ((pixdata & 0x00000FFFFFFF0000) >> 16)
+            toa = (pdata >>14) &0x3FFF
+            tot = (pdata >>4) & 0x3FF
+            hit = pdata &0xF
+            ts = (pixdata & 0x000000000000FFFF)
+            x = dcol + pix//4
+            y = spix + (pix &0x3)
 
-            # if self._callback is not None:
-            #     self._callback(x,y,toa,tot,hit,ts)
+            if self._callback is not None:
+                self._callback(x,y,toa,tot,hit,ts)
 
 
 
@@ -101,7 +101,7 @@ if __name__=="__main__":
     calls = 0
 
     udp_thread = TimepixUDPListener((UDP_IP,UDP_PORT))
-    #udp_thread.attachCallback(print_data)
+    udp_thread.attachCallback(print_data)
 
     try:
         while True:
