@@ -1,2 +1,3 @@
 .vscode/settings.json
 *.pyc
+lib/pymepix/.DS_Store
