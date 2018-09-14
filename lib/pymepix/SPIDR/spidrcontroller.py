@@ -91,7 +91,7 @@ class SPIDRController(list):
     
     @ShutterTriggerLength.setter
     def ShutterTriggerLength(self,value):
-        return self.setSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_LENGTH_I,value//25)  
+        return self.setSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_LENGTH_I,(value+24)//25)  
 
     @property
     def ShutterTriggerDelay(self):
@@ -217,6 +217,8 @@ class SPIDRController(list):
 
 
 
+
+
     @property
     def chipboardId(self):
         return self.requestGetInt(SpidrCmds.CMD_GET_CHIPBOARDID,0)
@@ -318,7 +320,7 @@ class SPIDRController(list):
 
 
     def openShutter(self):
-        self.ShutterTriggerMode = SpidrShutterMode.SHUTTERMODE_AUTO
+        self.ShutterTriggerMode = SpidrShutterMode.Auto
         self.ShutterTriggerCount = 0
         self.ShutterTriggerLength = 10000
         self.ShutterTriggerDelay = 1
