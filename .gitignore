@@ -1,3 +1,7 @@
 .vscode/settings.json
 *.pyc
 lib/pymepix/.DS_Store
+build/*
+.DS_Store
+lib/pymepix.egg-info/*
+setup.cfg
