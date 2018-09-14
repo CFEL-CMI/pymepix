@@ -1,11 +1,14 @@
-from enum import IntEnum
+from enum import IntEnum,Enum
 
+
+class PacketType(Enum):
+    Trigger = 0
+    Pixel = 1
 
 
 class Polarity(IntEnum):
     Positive = 0x0
     Negative = 0x1
-
 
 class OperationMode(IntEnum):
     ToAandToT = 0x0
