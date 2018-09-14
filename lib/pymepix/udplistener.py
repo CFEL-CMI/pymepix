@@ -1,10 +1,11 @@
 import socket
 import numpy as np
 import threading
+from timepixdef import PacketType
 
 class TimepixUDPListener(threading.Thread):
 
-    def __init__(self,udpipport):
+    def __init__(self,udpipport,queue=None):
         threading.Thread.__init__(self)
         self._sock = socket.socket(socket.AF_INET, # Internet
                             socket.SOCK_DGRAM) # UDP
@@ -14,6 +15,8 @@ class TimepixUDPListener(threading.Thread):
         self._run = True
 
         self._raw_bytes = np.ndarray(shape=(2048,),dtype='<u8')
+
+        self._queue = queue
 
     def reset(self):
         self.stop()
@@ -30,11 +33,12 @@ class TimepixUDPListener(threading.Thread):
 
 
     def processTriggers(self,trigger_data):
-        reserved = trigger_data & 0x1F
+        #reserved = trigger_data & 0x1F
         stamp = (trigger_data >> 5) &0xF
         timestamp = (trigger_data >> 9) & 0x1FFFFFFFFF
         trigger_counter = (trigger_data>>44) &0xFFF
-
+        if self._queue is not None:
+            self._queue.put((PacketType.Trigger,trigger_counter,timestamp,stamp))
 
     def processPixels(self,pixdata):
         dcol = ((pixdata & 0x0FE0000000000000) >> 52)
@@ -47,7 +51,8 @@ class TimepixUDPListener(threading.Thread):
         ts = (pixdata & 0x000000000000FFFF)
         x = dcol + pix//4
         y = spix + (pix &0x3)
-
+        if self._queue is not None:
+            self._queue.put((PacketType.Pixel,x,y,toa,tot,hit,ts))
 
     def run(self):
 
