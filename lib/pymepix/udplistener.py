@@ -2,7 +2,7 @@ import socket
 import numpy as np
 import threading
 
-class TimepixUDPListener(object):
+class TimepixUDPListener(threading.Thread):
 
     def __init__(self,udpipport):
         threading.Thread.__init__(self)
