@@ -1,7 +1,7 @@
 import socket
 import numpy as np
 import threading
-from timepixdef import PacketType
+from .timepixdef import PacketType
 
 class TimepixUDPListener(threading.Thread):
 
@@ -18,17 +18,24 @@ class TimepixUDPListener(threading.Thread):
 
         self._queue = queue
 
+        self._in_acq = False
+
     def reset(self):
-        self.stop()
+        self.stopRunning()
         self._packets_collected = 0
 
 
+    def startAcquisition(self):
+        self._in_acq = True
+    
+    def stopAcquisition(self):
+        self._in_acq = False
 
     @property
     def packetsCollected(self):
         return self._packets_collected
     
-    def stop(self):
+    def stopRunning(self):
         self._run = False
 
 
@@ -38,8 +45,7 @@ class TimepixUDPListener(threading.Thread):
         timestamp = (trigger_data >> 9) & 0x1FFFFFFFFF
         trigger_counter = (trigger_data>>44) &0xFFF
         if self._queue is not None:
-            self._queue.put((PacketType.Trigger,trigger_counter,timestamp,stamp))
-
+            self._queue.put((PacketType.Trigger,(trigger_counter,timestamp,stamp)))
     def processPixels(self,pixdata):
         dcol = ((pixdata & 0x0FE0000000000000) >> 52)
         spix  = ((pixdata & 0x001F800000000000) >> 45)
@@ -52,12 +58,16 @@ class TimepixUDPListener(threading.Thread):
         x = dcol + pix//4
         y = spix + (pix &0x3)
         if self._queue is not None:
-            self._queue.put((PacketType.Pixel,x,y,toa,tot,hit,ts))
+            self._queue.put((PacketType.Pixel,(x,y,toa,tot,hit,ts)))
 
     def run(self):
 
         while self._run:
+            if not self._in_acq:
+                
+                continue
             size = self._sock.recv_into(self._raw_bytes,16384) # buffer size is 1024 bytes
+
             raw_bytes = self._raw_bytes[0:size//8]
             self._packets_collected+=1
             # #print (np.unpackbits(raw_bytes.view(dtype=np.uint8))[0:64])
@@ -80,7 +90,7 @@ class TimepixUDPListener(threading.Thread):
 
 
 if __name__=="__main__":
-    from SPIDR.spidrcontroller import SPIDRController
+    from .SPIDR.spidrcontroller import SPIDRController
     import time
     from pyqtgraph.Qt import QtGui, QtCore
     import numpy as np
