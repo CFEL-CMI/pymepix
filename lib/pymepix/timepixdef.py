@@ -52,4 +52,22 @@ class TimeofArrivalClock(IntEnum):
     Mask = 0x800
 
 
-
+class DacRegisterCodes(IntEnum):
+    Ibias_Preamp_ON = 1
+    Ibias_Preamp_OFF = 2
+    VPreamp_NCAS = 3
+    Ibias_Ikrum = 4
+    Vfbk = 5
+    Vthreshold_fine = 6
+    Vthreshold_coarse = 7
+    Ibias_DiscS1_ON = 8
+    Ibias_DiscS1_OFF = 9 
+    Ibias_DiscS2_ON = 10
+    Ibias_DiscS2_OFF = 11
+    Ibias_PixelDAC = 12
+    Ibias_TPbufferIn = 13
+    Ibias_TPbufferOut = 14
+    VTP_coarse = 15
+    VTP_fine = 16
+    Ibias_CP_PLL = 17
+    PLL_Vcntrl = 18
