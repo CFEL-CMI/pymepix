@@ -406,7 +406,7 @@ class TimePixAcq(object):
         self._device.setDac(DacRegisterCodes.Ibias_PixelDAC,nint & 0xFF)  
 
     @property
-    def Ibias_TPBufferIn(self):
+    def Ibias_TPbufferIn(self):
         """uA"""
         value = self._device.getDac(DacRegisterCodes.Ibias_TPbufferIn)
         return ((value & 0xFF)*40.0)/1000.0
@@ -419,7 +419,7 @@ class TimePixAcq(object):
         self._device.setDac(DacRegisterCodes.Ibias_TPbufferIn,nint & 0xFF) 
 
     @property
-    def Ibias_TPBufferOut(self):
+    def Ibias_TPbufferOut(self):
         """uA"""
         value = self._device.getDac(DacRegisterCodes.Ibias_TPbufferOut)
         return float((value & 0xFF))
@@ -443,9 +443,20 @@ class TimePixAcq(object):
         n = value*1000.0
         nint = int(n/5.0)
         self._device.setDac(DacRegisterCodes.VTP_coarse,nint & 0xFF) 
+    @property
+    def VTP_fine(self):
+        """V"""
+        value = self._device.getDac(DacRegisterCodes.VTP_fine)*2.5
+        return float((value & 0x1FF))/1000.0
 
+    @VTP_fine.setter
+    def VTP_fine(self,value):
+        """V"""
+        n = value*1000.0
+        nint = int(n/2.5)
+        self._device.setDac(DacRegisterCodes.VTP_fine,nint & 0x1FF) 
 
-    #TODO: VTP_fine,Ibias_CP_PLL, PLL_Vcntrl
+    #TODO: Ibias_CP_PLL, PLL_Vcntrl
 
 
     def startAcquisition(self):
