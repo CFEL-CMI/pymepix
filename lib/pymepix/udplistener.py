@@ -2,7 +2,7 @@ import socket
 import numpy as np
 import threading
 from .timepixdef import PacketType
-
+import time
 class TimepixUDPListener(threading.Thread):
 
     def __init__(self,udpipport,queue=None):
@@ -19,7 +19,8 @@ class TimepixUDPListener(threading.Thread):
         self._queue = queue
 
         self._in_acq = False
-
+        self._total_time = 0
+        self._calls = 0
     def reset(self):
         self.stopRunning()
         self._packets_collected = 0
@@ -27,9 +28,13 @@ class TimepixUDPListener(threading.Thread):
 
     def startAcquisition(self):
         self._in_acq = True
-    
+        self._total_time = 0
+        self._calls = 0
     def stopAcquisition(self):
         self._in_acq = False
+        
+        avg = self._total_time/self._calls
+        print ('Total time taken {} s Calls {} Avg: {} Rate {} Hz'.format(self._total_time,self._calls,avg,1/avg))
 
     @property
     def packetsCollected(self):
@@ -66,15 +71,19 @@ class TimepixUDPListener(threading.Thread):
             if not self._in_acq:
                 
                 continue
-            size = self._sock.recv_into(self._raw_bytes,16384) # buffer size is 1024 bytes
 
+
+            
+            size = self._sock.recv_into(self._raw_bytes,16384) # buffer size is 1024 bytes
+            start = time.time()
             raw_bytes = self._raw_bytes[0:size//8]
             self._packets_collected+=1
+
             # #print (np.unpackbits(raw_bytes.view(dtype=np.uint8))[0:64])
             # #arr= raw_bytes.view(dtype='<I')
             # #print (raw_bytes)
             #Numpyize it!!!
-
+            
             trigger_header = raw_bytes &  0x6F00000000000000
             trigger_data = raw_bytes[trigger_header!= 0]
             if trigger_data.size !=0:
@@ -85,8 +94,8 @@ class TimepixUDPListener(threading.Thread):
             pixdata = raw_bytes[np.logical_or(header == 0xB000000000000000,header == 0xA000000000000000)]
             if pixdata.size !=0:
                 self.processPixels(pixdata)
-
-
+            self._total_time+= time.time()-start
+            self._calls +=1
 
 
 if __name__=="__main__":
