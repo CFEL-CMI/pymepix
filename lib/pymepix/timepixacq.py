@@ -370,27 +370,79 @@ class TimePixAcq(object):
     def Ibias_DiscS2_ON(self):
         """uA"""
         value = self._device.getDac(DacRegisterCodes.Ibias_DiscS2_ON)
-        return ((value & 0xFF)*20.0)/1000.0
+        return ((value & 0xFF)*13.0)/1000.0
 
     @Ibias_DiscS2_ON.setter
     def Ibias_DiscS2_ON(self,value):
         """uA"""
         n = value*1000.0
-        nint = int(n/20.0)
+        nint = int(n/13.0)
         self._device.setDac(DacRegisterCodes.Ibias_DiscS2_ON,nint & 0xFF)  
 
     @property
     def Ibias_DiscS2_OFF(self):
         """nA"""
         value = self._device.getDac(DacRegisterCodes.Ibias_DiscS2_OFF)
-        return ((value & 0xF)*20.0)
+        return ((value & 0xF)*13.0)
 
     @Ibias_DiscS2_OFF.setter
     def Ibias_DiscS2_OFF(self,value):
         """nA"""
         n = value
-        nint = int(n/20.0)
+        nint = int(n/13.0)
         self._device.setDac(DacRegisterCodes.Ibias_DiscS2_OFF,nint & 0xF)  
+
+    @property
+    def Ibias_PixelDAC(self):
+        """nA"""
+        value = self._device.getDac(DacRegisterCodes.Ibias_PixelDAC)
+        return ((value & 0xFF)*1.08)
+
+    @Ibias_PixelDAC.setter
+    def Ibias_PixelDAC(self,value):
+        """nA"""
+        n = value
+        nint = int(n/1.08)
+        self._device.setDac(DacRegisterCodes.Ibias_PixelDAC,nint & 0xFF)  
+
+    @property
+    def Ibias_TPBufferIn(self):
+        """uA"""
+        value = self._device.getDac(DacRegisterCodes.Ibias_TPbufferIn)
+        return ((value & 0xFF)*40.0)/1000.0
+
+    @Ibias_TPbufferIn.setter
+    def Ibias_TPbufferIn(self,value):
+        """uA"""
+        n = value*1000.0
+        nint = int(n/40.0)
+        self._device.setDac(DacRegisterCodes.Ibias_TPbufferIn,nint & 0xFF) 
+
+    @property
+    def Ibias_TPBufferOut(self):
+        """uA"""
+        value = self._device.getDac(DacRegisterCodes.Ibias_TPbufferOut)
+        return float((value & 0xFF))
+
+    @Ibias_TPbufferOut.setter
+    def Ibias_TPbufferOut(self,value):
+        """uA"""
+        n = value
+        nint = int(n)
+        self._device.setDac(DacRegisterCodes.Ibias_TPbufferOut,nint & 0xFF) 
+
+    @property
+    def VTP_coarse(self):
+        """V"""
+        value = self._device.getDac(DacRegisterCodes.VTP_coarse)*5.0
+        return float((value & 0xFF))/1000.0
+
+    @VTP_coarse.setter
+    def VTP_coarse(self,value):
+        """V"""
+        n = value*1000.0
+        nint = int(n/5.0)
+        self._device.setDac(DacRegisterCodes.VTP_coarse,nint & 0xFF) 
 
     def startAcquisition(self):
         self._spidr.datadrivenReadout()
