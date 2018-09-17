@@ -12,7 +12,8 @@ class TimePixAcq(object):
     def updateTimer(self):
 
         while self._run_timer:
-            self._timer = self._device.timer
+            timer = self._device.timer
+            self._timer = (timer[1] << 32)|timer[0]
             time.sleep(1.0)
     
     def dataThread(self):
@@ -33,9 +34,10 @@ class TimePixAcq(object):
         self._device = self._spidr[device_num]
         self._device.reset()
         self._device.reinitDevice()
-
+        self._device.resetPixels()
         self._device.getPixelConfig()
-
+        self._pixelCallback = None
+        self._triggerCallback = None
         UDP_IP = self._device.ipAddrDest
         UDP_PORT = self._device.serverPort
 
@@ -48,10 +50,11 @@ class TimePixAcq(object):
 
         self._timer = 0
         self._timer_thread = threading.Thread(target = self.updateTimer)
-        self._timer_thread.start()
+        #self._timer_thread.start()
 
         self._data_thread = threading.Thread(target=self.dataThread)
         self._data_thread.start()
+
 
 
     @property
@@ -63,7 +66,22 @@ class TimePixAcq(object):
         output_string += "\tPressure: {} mbar\n Temperature {}".format(self._spidr.pressure,self._spidr.localTemperature)
 
         return output_string
+    
+    def attachTriggerCallback(self,callback):
+        self._triggerCallback = callback
 
+    def attachPixelCallback(self,callback):
+        self._pixelCallback = callback
+
+
+    def onTrigger(self,trigger):
+
+        if self._triggerCallback is not None:
+            self._triggerCallback((trigger,self._timer))
+    
+    def onPixel(self,pixel):
+        if self._pixelCallback is not None:
+            self._pixelCallback((pixel,self._timer))
 
 
 
@@ -158,7 +176,7 @@ class TimePixAcq(object):
     
     @thresholdMask.setter
     def thresholdMask(self,threshold):
-        self._device.setPixelThreshold(threshold)
+        self._device.setPixelThreshold(threshold.astype(np.uint8))
     
     @property
     def pixelMask(self):
@@ -168,11 +186,11 @@ class TimePixAcq(object):
 
     @pixelMask.setter
     def pixelMask(self,mask):
-        self._device.setPixelMask(mask)
+        self._device.setPixelMask(mask.astype(np.uint8))
     
 
     def uploadPixels(self):
-        self._device.uploadPixels()
+        self._device.uploadPixelConfig()
     
     def refreshPixels(self):
         self._device.getPixelConfig()
@@ -217,11 +235,162 @@ class TimePixAcq(object):
     def shutterTriggerDelay(self,value):
         self._spidr.ShutterTriggerDelay = int(value)
 
+    @property
+    def triggerPulseCount(self):
+        return self._spidr.TdcTriggerCounter
+
 
     @property
     def shutterCount(self):
         pass
 
+
+    #-----------DAC FUNCTIONS----------------
+    # TODO: Replace them with meaningful names once I figure out what they mean 
+    #       Otherwise just using from Timepix3 Documentation Table 11
+
+    @property
+    def Ibias_Preamp_ON(self):
+        """nanoAmps"""
+        value = self._device.getDac(DacRegisterCodes.Ibias_Preamp_ON)
+        return ((value & 0xFF)*20.0)
+
+    @Ibias_Preamp_ON.setter
+    def Ibias_Preamp_ON(self,value):
+        """nanoAmps"""
+        nA = value
+        nAint = int(nA/20.0)
+        self._device.setDac(DacRegisterCodes.Ibias_Preamp_ON,nAint & 0xFF)
+    
+    @property
+    def Ibias_Preamp_OFF(self):
+        """nanoAmps"""
+        value = self._device.getDac(DacRegisterCodes.Ibias_Preamp_OFF)
+        return ((value & 0xF)*20.0)
+
+    @Ibias_Preamp_OFF.setter
+    def Ibias_Preamp_OFF(self,value):
+        """nanoAmps"""
+        nA = value
+        nAint = int(nA/20.0)
+        self._device.setDac(DacRegisterCodes.Ibias_Preamp_OFF,nAint & 0xF)
+
+    @property
+    def VPreamp_NCAS(self):
+        """Volts"""
+        value = self._device.getDac(DacRegisterCodes.VPreamp_NCAS)
+        return ((value & 0xFF)*5.0)/1000.0
+
+    @VPreamp_NCAS.setter
+    def VPreamp_NCAS(self,value):
+        """Volts"""
+        n = value*1000.0
+        nint = int(n/5.0)
+        self._device.setDac(DacRegisterCodes.VPreamp_NCAS,nint & 0xFF)    
+
+    @property
+    def Ibias_Ikrum(self):
+        """nA"""
+        value = self._device.getDac(DacRegisterCodes.Ibias_Ikrum)
+        return ((value & 0xFF)*240.0)/1000.0
+
+    @Ibias_Ikrum.setter
+    def Ibias_Ikrum(self,value):
+        """nA"""
+        n = value*1000.0
+        nint = int(n/240.0)
+        self._device.setDac(DacRegisterCodes.Ibias_Ikrum,nint & 0xFF)  
+
+    @property
+    def Vfbk(self):
+        """V"""
+        value = self._device.getDac(DacRegisterCodes.Vfbk)
+        return ((value & 0xFF)*5.0)/1000.0
+
+    @Vfbk.setter
+    def Vfbk(self,value):
+        """V"""
+        n = value*1000.0
+        nint = int(n/5.0)
+        self._device.setDac(DacRegisterCodes.Vfbk,nint & 0xFF)  
+
+    @property
+    def Vthreshold_fine(self):
+        """mV"""
+        value = self._device.getDac(DacRegisterCodes.Vthreshold_fine)
+        return ((value & 0x1FF)*500.0)/1000.0
+
+    @Vthreshold_fine.setter
+    def Vthreshold_fine(self,value):
+        """mV"""
+        n = value*1000.0
+        nint = int(n/500.0)
+        self._device.setDac(DacRegisterCodes.Vthreshold_fine,nint & 0x1FF)  
+
+    @property
+    def Vthreshold_coarse(self):
+        """V"""
+        value = self._device.getDac(DacRegisterCodes.Vthreshold_coarse)
+        return ((value & 0xF)*80.0)/1000.0
+
+    @Vthreshold_coarse.setter
+    def Vthreshold_coarse(self,value):
+        """V"""
+        n = value*1000.0
+        nint = int(n/80.0)
+        self._device.setDac(DacRegisterCodes.Vthreshold_coarse,nint & 0xF)  
+
+    @property
+    def Ibias_DiscS1_ON(self):
+        """uA"""
+        value = self._device.getDac(DacRegisterCodes.Ibias_DiscS1_ON)
+        return ((value & 0xFF)*20.0)/1000.0
+
+    @Ibias_DiscS1_ON.setter
+    def Ibias_DiscS1_ON(self,value):
+        """uA"""
+        n = value*1000.0
+        nint = int(n/20.0)
+        self._device.setDac(DacRegisterCodes.Ibias_DiscS1_ON,nint & 0xFF)  
+
+    @property
+    def Ibias_DiscS1_OFF(self):
+        """nA"""
+        value = self._device.getDac(DacRegisterCodes.Ibias_DiscS1_OFF)
+        return ((value & 0xF)*20.0)
+
+    @Ibias_DiscS1_OFF.setter
+    def Ibias_DiscS1_OFF(self,value):
+        """nA"""
+        n = value
+        nint = int(n/20.0)
+        self._device.setDac(DacRegisterCodes.Ibias_DiscS1_OFF,nint & 0xF)  
+
+    @property
+    def Ibias_DiscS2_ON(self):
+        """uA"""
+        value = self._device.getDac(DacRegisterCodes.Ibias_DiscS2_ON)
+        return ((value & 0xFF)*20.0)/1000.0
+
+    @Ibias_DiscS2_ON.setter
+    def Ibias_DiscS2_ON(self,value):
+        """uA"""
+        n = value*1000.0
+        nint = int(n/20.0)
+        self._device.setDac(DacRegisterCodes.Ibias_DiscS2_ON,nint & 0xFF)  
+
+    @property
+    def Ibias_DiscS2_OFF(self):
+        """nA"""
+        value = self._device.getDac(DacRegisterCodes.Ibias_DiscS2_OFF)
+        return ((value & 0xF)*20.0)
+
+    @Ibias_DiscS2_OFF.setter
+    def Ibias_DiscS2_OFF(self,value):
+        """nA"""
+        n = value
+        nint = int(n/20.0)
+        self._device.setDac(DacRegisterCodes.Ibias_DiscS2_OFF,nint & 0xF)  
 
     def startAcquisition(self):
         self._spidr.datadrivenReadout()
@@ -242,38 +411,31 @@ class TimePixAcq(object):
         self._udp_listener.join()
         self._run_timer = False
         self._data_queue.put(None)
-        self._timer_thread.join()
+        #self._timer_thread.join()
         self._data_thread.join()
 
 def main():
 
-    try:
-        tpx = TimePixAcq(('192.168.1.10',50000))
-        print(tpx.deviceInfoString)
-        print(tpx.polarity)
-        print (tpx.operationMode)
-        #tpx.operationMode = OperationMode.ToAandToT
-        print (tpx.operationMode)
-        print (tpx.grayCounter)
-        print (tpx.testPulse)
-        print (tpx.superPixel)
-        tpx.shutterTriggerMode=SpidrShutterMode.Auto
-        tpx.shutterTriggerFreqMilliHz = 10000000
-        print (tpx.shutterTriggerMode)
-        print (tpx.shutterTriggerFreqMilliHz)
-        print (tpx.shutterTriggerExposureTime)
-        print (tpx.shutterNumOfTriggers)
 
-        tpx.startAcquisition()
-        while True:
-            continue
-
-    except Exception as e:
-        print(str(e))
-    finally:
-        tpx.stopAcquisition()
-        tpx.stopThreads()
-
+    tpx = TimePixAcq(('192.168.1.10',50000))
+    print(tpx.deviceInfoString)
+    print(tpx.polarity)
+    print (tpx.operationMode)
+    #tpx.operationMode = OperationMode.ToAandToT
+    print (tpx.operationMode)
+    print (tpx.grayCounter)
+    print (tpx.testPulse)
+    print (tpx.superPixel)
+    tpx.shutterTriggerMode=SpidrShutterMode.Auto
+    tpx.shutterTriggerFreqMilliHz = 10000000
+    print (tpx.shutterTriggerMode)
+    print (tpx.shutterTriggerFreqMilliHz)
+    print (tpx.shutterTriggerExposureTime)
+    print (tpx.shutterNumOfTriggers)
+    print(tpx.Ibias_Preamp_ON)
+    print (tpx.Ibias_Ikrum)
+    print (tpx.Vfbk)
+    tpx.stopThreads()
 
     
 
