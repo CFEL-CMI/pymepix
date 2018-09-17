@@ -28,9 +28,9 @@ class SpidrRegs(object):
 ALL_PIXELS = 256
 
 class SpidrShutterMode(Enum):
-    ExternalRisingFalling       =0
-    ExternalFallingRising       =1
-    ExternalRisingTimer =2
-    ExternalFallingTimer =3
-    Auto          =4
-    PulseCounter = 5
+    ExternalRisingFalling   =0
+    ExternalFallingRising   =1
+    ExternalRisingTimer     =2
+    ExternalFallingTimer    =3
+    Auto                    =4
+    PulseCounter            =5
