@@ -444,6 +444,10 @@ class TimePixAcq(object):
         nint = int(n/5.0)
         self._device.setDac(DacRegisterCodes.VTP_coarse,nint & 0xFF) 
 
+
+    #TODO: VTP_fine,Ibias_CP_PLL, PLL_Vcntrl
+
+
     def startAcquisition(self):
         self._spidr.datadrivenReadout()
         if self.shutterTriggerMode == SpidrShutterMode.Auto:
