@@ -4,12 +4,13 @@ from .error import PymePixException
 from .spidrcmds import SpidrCmds
 from .spidrdevice import SpidrDevice
 from .spidrdefs import SpidrRegs,SpidrShutterMode
+import threading
 class SPIDRController(list):
 
     def __init__(self,ip_port):
 
         self._sock = socket.create_connection(ip_port,source_address=('192.168.1.1',0))
-
+        self._request_lock = threading.Lock()
         self._req_buffer = np.ndarray(shape=(512,),dtype=np.uint32)
         self._reply_buffer = bytearray(4096)
         self._reply_view = memoryview(self._reply_buffer)
@@ -20,7 +21,7 @@ class SPIDRController(list):
         self._pixel_config = np.ndarray(shape=(256,256),dtype=np.uint8)
 
         self._initDevices()
-    
+        
     def _initDevices(self):
         
         count = self.deviceCount
@@ -373,40 +374,40 @@ class SPIDRController(list):
 
 
     def request(self,cmd,dev_nr,message_length,expected_bytes):
+        with self._request_lock:
+            self._req_buffer[0] = socket.htonl(cmd)
+            self._req_buffer[1] = socket.htonl(message_length)
+            self._req_buffer[2] = 0
+            self._req_buffer[3] = socket.htonl(dev_nr)
 
-        self._req_buffer[0] = socket.htonl(cmd)
-        self._req_buffer[1] = socket.htonl(message_length)
-        self._req_buffer[2] = 0
-        self._req_buffer[3] = socket.htonl(dev_nr)
+            self._sock.send(self._req_buffer.tobytes()[0:message_length])
 
-        self._sock.send(self._req_buffer.tobytes()[0:message_length])
+            if cmd & SpidrCmds.CMD_NOREPLY: return
+            
+            bytes_returned = self._sock.recv_into(self._reply_view,4096)
 
-        if cmd & SpidrCmds.CMD_NOREPLY: return
-        
-        bytes_returned = self._sock.recv_into(self._reply_view,4096)
-
-        if bytes_returned < 0:
-            raise Exception('Failed to get reply')
-        
-        if bytes_returned < expected_bytes:
-            raise Exception("Unexpected reply length, got {} expected at least {}".format(bytes_returned,expected_bytes))
-
-
-        _replyMsg = np.frombuffer(self._reply_buffer,dtype=np.uint32)
-        error = socket.ntohl(int(_replyMsg[2]))
-        if error != 0:
-            raise PymePixException(error)
+            if bytes_returned < 0:
+                raise Exception('Failed to get reply')
+            
+            if bytes_returned < expected_bytes:
+                raise Exception("Unexpected reply length, got {} expected at least {}".format(bytes_returned,expected_bytes))
 
 
-        reply = socket.ntohl(int(_replyMsg[0]))
+            _replyMsg = np.frombuffer(self._reply_buffer,dtype=np.uint32)
+            error = socket.ntohl(int(_replyMsg[2]))
+            if error != 0:
+                raise PymePixException(error)
 
-        if reply != cmd | SpidrCmds.CMD_REPLY:
-            raise Exception('Unexpected Reply {}'.format(reply))
 
-        if socket.ntohl(int(_replyMsg[3])) != dev_nr:
-            raise Exception('Unexpected device {}'.format(dev_nr))
-        
-        return _replyMsg
+            reply = socket.ntohl(int(_replyMsg[0]))
+
+            if reply != cmd | SpidrCmds.CMD_REPLY:
+                raise Exception('Unexpected Reply {}'.format(reply))
+
+            if socket.ntohl(int(_replyMsg[3])) != dev_nr:
+                raise Exception('Unexpected device {}'.format(dev_nr))
+            
+            return _replyMsg
 
 
     def customRequest(self,request,total_bytes):
@@ -511,18 +512,19 @@ def main():
     print(spidr[0].serverPort)
     print (spidr[0].headerFilter)
     # print ('Link COunts : ',spidr.linkCounts)
-    # spidr[0].reset()
-    # spidr[0].reinitDevice()
-    # spidr[0].resetPixels()
+    spidr[0].reset()
+    spidr[0].reinitDevice()
+    spidr[0].resetPixels()
 
 
     # image = cv2.imread('images.png', cv2.IMREAD_GRAYSCALE)
     # res_im = cv2.resize(image,(256,256))
     # res_im = res_im/256
     # res_im *= 16
-
-    # spidr[0].setPixelThreshold(res_im.astype(np.uint8))
-    # spidr[0].uploadPixelConfig(True,1)
+    thres = np.zeros(shape=(256,256),dtype=np.uint8)
+    thres[::2,::2]=1
+    spidr[0].setPixelMask(thres)
+    spidr[0].uploadPixelConfig(True,1)
     spidr[0].getPixelConfig()
     # print(spidr.vddNow)
     plt.matshow(spidr[0].currentPixelConfig)
