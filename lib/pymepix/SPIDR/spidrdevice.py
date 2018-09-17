@@ -220,20 +220,20 @@ class SpidrDevice(object):
 
     def setSinglePixelMask(self,x,y,mask):
 
-        self._selected_config[x,y] &= ~1
-        self._selected_config[x,y] += mask & 1
+        self._selected_config[x,y] &= np.uint8(~1)
+        self._selected_config[x,y] += mask & np.uint8(1)
     
     def setPixelMask(self,mask):
-        self._selected_config[...] &= ~1
-        self._selected_config[...] += mask & 1
+        self._selected_config[...] &= np.uint8(~1)
+        self._selected_config[...] += mask & np.uint8(1)
 
     
     def setSinglePixelTestBit(self,x,y,val):
         val &=1
-        self._selected_config[x,y]&= ~(1<<5)
+        self._selected_config[x,y]&= np.uint8(~(1<<5))
         self._selected_config[x,y]|= (val << 5)
     
-    def uploadPixelConfig(self,formatted,columns_per_packet):
+    def uploadPixelConfig(self,formatted=True,columns_per_packet=1):
 
         columns_per_packet = max(1,columns_per_packet)
         columns_per_packet = min(4,columns_per_packet)
