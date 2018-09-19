@@ -15,7 +15,8 @@ class TimePixAcq(object):
             timer = self._device.timer
             self._timer = (timer[1] << 32)|timer[0]
             time.sleep(1.0)
-    
+            while self._pause:
+                continue
     def dataThread(self):
 
         while True:
@@ -42,7 +43,7 @@ class TimePixAcq(object):
         UDP_PORT = self._device.serverPort
 
         self._data_queue = queue.Queue()
-
+        self._pause = False
         self._udp_listener = TimepixUDPListener((UDP_IP,UDP_PORT),self._data_queue)
         self._udp_listener.start()
 
@@ -50,12 +51,17 @@ class TimePixAcq(object):
 
         self._timer = 0
         self._timer_thread = threading.Thread(target = self.updateTimer)
-        #self._timer_thread.start()
+        self._timer_thread.start()
 
         self._data_thread = threading.Thread(target=self.dataThread)
         self._data_thread.start()
 
 
+    def pauseTimer(self):
+        self._pause = True
+
+    def resumeTimer(self):
+        self._pause = False
 
     @property
     def deviceInfoString(self):
@@ -190,11 +196,13 @@ class TimePixAcq(object):
     
 
     def uploadPixels(self):
+        self.pauseTimer()
         self._device.uploadPixelConfig()
-    
+        self.resumeTimer()
     def refreshPixels(self):
+        self.pauseTimer()
         self._device.getPixelConfig()
-
+        self.resumeTimer()
     
     @property
     def shutterTriggerMode(self):
@@ -478,7 +486,7 @@ class TimePixAcq(object):
         self._udp_listener.join()
         self._run_timer = False
         self._data_queue.put(None)
-        #self._timer_thread.join()
+        self._timer_thread.join()
         self._data_thread.join()
 
 def main():
