@@ -11,7 +11,7 @@ class TimepixConfiguration(QtGui.QWidget):
 
     def __init__(self,timepix,parent=None):
         self._ctrl = None
-        #self._ctrl = weakref.proxy(timepix)
+        self._ctrl = weakref.proxy(timepix)
         QtGui.QWidget.__init__(self,parent)
         self.layout = QtGui.QVBoxLayout()
         self.setLayout(self.layout)
@@ -29,10 +29,10 @@ class TimepixConfiguration(QtGui.QWidget):
     def setupParameterTree(self):
         dac_params = self._setupDACParameters()
         acq_params = self._setupAcquisitionParameters()
-
+        shutter_params = self._setupShutterParameters()
         
         
-        self.timepix_config = Parameter.create(name='TimePix',type='group',children=[acq_params,dac_params])
+        self.timepix_config = Parameter.create(name='TimePix',type='group',children=[acq_params,shutter_params,dac_params])
         self.param_tree.setParameters(self.timepix_config)
     def _setupDACParameters(self):
         
@@ -68,6 +68,12 @@ class TimepixConfiguration(QtGui.QWidget):
         children[7].sigValueChanged.connect(self.setVTPFine)
         children[8].sigValueChanged.connect(self.setVTPCoarse)
         return dac
+
+
+ 
+
+
+
 
     def setBiasCurrentPreampON(self,param,value):
         value /= 1e-9
@@ -126,7 +132,7 @@ class TimepixConfiguration(QtGui.QWidget):
         children = acq.children()
         children[0].sigValueChanged.connect(self.setOperationMode)
         children[1].sigValueChanged.connect(self.setPolarity)
-        children[2].sigValueChanged.connect(self.grayCounter)
+        children[2].sigValueChanged.connect(self.setGray)
         children[3].sigValueChanged.connect(self.setFtoa)
         children[4].sigValueChanged.connect(self.setTimerOverflow)
         return acq
@@ -140,33 +146,82 @@ class TimepixConfiguration(QtGui.QWidget):
 
 
     def setPolarity(self,param,value):
-        mapping = {'h+ collection (positive)': Polarity.Positive
+        mapping = {'h+ collection (positive)': Polarity.Positive,
                     'e- collection (negative)': Polarity.Negative,}
 
         if self._ctrl is not None:
             self._ctrl.polarity = mapping[value]
 
     def setGray(self,param,value):
-        mapping = {'Enable': GrayCounter.Enable
+        mapping = {'Enable': GrayCounter.Enable,
                     'Disable': GrayCounter.Disable,}
 
         if self._ctrl is not None:
             self._ctrl.grayCounter = mapping[value]
 
     def setFtoa(self,param,value):
-        mapping = {'Enable': SuperPixel.Enable
+        mapping = {'Enable': SuperPixel.Enable,
                     'Disable': SuperPixel.Disable,}
 
         if self._ctrl is not None:
             self._ctrl.superPixel= mapping[value]
 
     def setTimerOverflow(self,param,value):
-        mapping = {'Cycle': TimerOverflow.CycleOverflow
+        mapping = {'Cycle': TimerOverflow.CycleOverflow,
                     'Stop': TimerOverflow.StopOverflow,}
 
         if self._ctrl is not None:
             self._ctrl.superPixel= mapping[value]        
 
+
+    def _setupShutterParameters(self):
+        shutter_params = [ {'name': 'Shutter Trigger Mode','type' : 'list',
+                    'value' : 'Auto', 'limits': ('External Rising and Falling', 'External Falling Rising','External Rising + Timer','External Falling + Timer','Auto')},
+
+                    {'name': 'Shutter Trigger Exposure time','type' : 'float', 'value': 1e-6, 'step': 1e-3, 'siPrefix': True,'suffix': 's'},
+                    {'name': 'Shutter Auto Trigger Frequency','type' : 'float', 'value': 10, 'step': 1e-3, 'siPrefix': True,'suffix': 'Hz'},
+                    {'name': 'Shutter Auto Trigger Delay','type' : 'float', 'value': 200e-3, 'step': 1e-3, 'siPrefix': True,'suffix': 's'},
+                    {'name': 'Shutter Auto Trigger Count','type' : 'int', 'value': 1,},
+            ]
+        shutter = Parameter.create(name='Shutter Configuration', type='group', children=shutter_params)
+
+        children = shutter.children()
+        children[0].sigValueChanged.connect(self.setShutterTriggerMode)
+        children[1].sigValueChanged.connect(self.setExposureTime)
+        children[2].sigValueChanged.connect(self.setFrequency)
+        children[3].sigValueChanged.connect(self.setDelay)
+        children[4].sigValueChanged.connect(self.setTriggerCount)
+        return shutter
+
+
+    def setShutterTriggerMode(self,param,value):
+        mapping = {'External Rising and Falling': SpidrShutterMode.ExternalRisingFalling, 
+                   'External Falling Rising' : SpidrShutterMode.ExternalFallingRising,
+                   'External Rising + Timer' : SpidrShutterMode.ExternalRisingTimer, 
+                   'External Falling + Timer' : SpidrShutterMode.ExternalFallingTimer,
+                   'Auto' : SpidrShutterMode.Auto}        
+        
+        if self._ctrl is not None:
+            self._ctrl.shutterTriggerMode = mapping[value]
+
+    def setExposureTime(self,param,value):
+        value/=1e-9
+        if self._ctrl is not None:
+            self._ctrl.shutterTriggerExposureTime= value
+
+    def setFrequency(self,param,value):
+        value/=1e-3
+        if self._ctrl is not None:
+            self._ctrl.shutterTriggerFreqMilliHz= value
+
+    def setDelay(self,param,value):
+        value/=1e-9
+        if self._ctrl is not None:
+            self._ctrl.shutterTriggerDelay= value
+    
+    def setTriggerCount(self,param,value):
+        if self._ctrl is not None:
+            self._ctrl.shutterNumOfTriggers= value        
 def main():
     tpx = None#pymepix.TimePixAcq(('192.168.1.10',50000))
     app = QtGui.QApplication([])
