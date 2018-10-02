@@ -10,7 +10,7 @@ from pymepix import *
 class TimepixConfiguration(QtGui.QWidget):
 
     def __init__(self,timepix,parent=None):
-        self._ctrl = None
+        #self._ctrl = None
         self._ctrl = weakref.proxy(timepix)
         QtGui.QWidget.__init__(self,parent)
         self.layout = QtGui.QVBoxLayout()
@@ -38,19 +38,20 @@ class TimepixConfiguration(QtGui.QWidget):
         
 
 
-        dac_params = [ {'name': 'Bias Current Preamp ON','type' : 'float', 'value': 2.5e-6, 'step': 20e-9, 'siPrefix': True,  'limits': (0, 5.1e-6),'suffix': 'A'},
-        {'name': 'Bias Current Preamp OFF','type' : 'float', 'value': 150e-9, 'step': 20e-9, 'siPrefix': True, 'limits': (0, 300e-9),'suffix': 'A'},
+        dac_params = [ 
+        {'name': 'Bias Preamp Current ON','type' : 'float', 'value': 2.5e-6, 'step': 20e-9, 'siPrefix': True,  'limits': (0, 5.1e-6),'suffix': 'A'},
+        {'name': 'Bias Preamp Current OFF','type' : 'float', 'value': 150e-9, 'step': 20e-9, 'siPrefix': True, 'limits': (0, 300e-9),'suffix': 'A'},
 
         {'name': 'VPreamp NCAS','type' : 'float', 'value': 0.634, 'step': 5e-3, 'siPrefix': True, 'limits': (0,1.275),'suffix': 'V'},
 
-        {'name': 'Ibias Ikrum','type' : 'float', 'value': 30e-9, 'step': 240e-12, 'siPrefix': True, 'limits': (0, 60e-9),'suffix': 'A'},
+        {'name': 'Bias Current','type' : 'float', 'value': 30e-9, 'step': 240e-12, 'siPrefix': True, 'limits': (0, 60e-9),'suffix': 'A'},
 
-        {'name': 'Voltage feedback','type' : 'float', 'value': 0.634, 'step': 5e-3, 'siPrefix': True, 'limits': (0, 1.275),'suffix': 'V'},
+        {'name': 'Baseline Gate Voltage','type' : 'float', 'value': 0.634, 'step': 5e-3, 'siPrefix': True, 'limits': (0, 1.275),'suffix': 'V'},
 
-        {'name': 'Voltage Threshold Fine','type' : 'float', 'value': 127e-3, 'step': 0.5e-3, 'siPrefix': True, 'limits': (0, 255e-3),'suffix': 'V'},
-        {'name': 'Voltage Threshold Coarse','type' : 'float', 'value': 0.560, 'step': 80e-3, 'siPrefix': True, 'limits': (0, 1.19),'suffix': 'V'},
-        {'name': 'Voltage Test Pulse Fine','type' : 'float', 'value': 634e-3, 'step': 2.5e-3, 'siPrefix': True, 'limits': (0, 1.275),'suffix': 'V'},
-        {'name': 'Voltage Test Pulse Coarse','type' : 'float', 'value': 634e-3, 'step': 5e-3, 'siPrefix': True, 'limits': (0, 1.275),'suffix': 'V'},
+        {'name': 'Lower Threshold Fine','type' : 'float', 'value': 127e-3, 'step': 0.5e-3, 'siPrefix': True, 'limits': (0, 255e-3),'suffix': 'V'},
+        {'name': 'Lower Threshold Coarse','type' : 'float', 'value': 0.560, 'step': 80e-3, 'siPrefix': True, 'limits': (0, 1.19),'suffix': 'V'},
+        {'name': 'Upper Threshold Fine','type' : 'float', 'value': 634e-3, 'step': 2.5e-3, 'siPrefix': True, 'limits': (0, 1.275),'suffix': 'V'},
+        {'name': 'Upper Threshold Coarse','type' : 'float', 'value': 634e-3, 'step': 5e-3, 'siPrefix': True, 'limits': (0, 1.275),'suffix': 'V'},
         {'name': 'PLL Voltage Control','type' : 'float', 'value': 724e-3, 'step': 5.7e-3, 'siPrefix': True, 'limits': (0, 1.35),'suffix': 'V'},
            
            
@@ -223,7 +224,7 @@ class TimepixConfiguration(QtGui.QWidget):
         if self._ctrl is not None:
             self._ctrl.shutterNumOfTriggers= value        
 def main():
-    tpx = None#pymepix.TimePixAcq(('192.168.1.10',50000))
+    tpx = pymepix.TimePixAcq(('192.168.1.10',50000))
     app = QtGui.QApplication([])
     daq = TimepixConfiguration(tpx)
     daq.show()
