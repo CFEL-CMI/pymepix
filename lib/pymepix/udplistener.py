@@ -44,10 +44,13 @@ class TimepixUDPListener(threading.Thread):
         self._run = False
 
 
+    
+
+
     def processTriggers(self,trigger_data):
         #reserved = trigger_data & 0x1F
         stamp = (trigger_data >> 5) &0xF
-        timestamp = (trigger_data >> 9) & 0x1FFFFFFFFF
+        timestamp = (trigger_data >> 9) & 0x7FFFFFFFF
         trigger_counter = (trigger_data>>44) &0xFFF
         if self._queue is not None:
             self._queue.put((PacketType.Trigger,(trigger_counter,timestamp,stamp)))
@@ -62,6 +65,7 @@ class TimepixUDPListener(threading.Thread):
         ts = (pixdata & 0x000000000000FFFF)
         x = dcol + pix//4
         y = spix + (pix &0x3)
+        print('TOA:',toa,(toa<<4).astype(np.float)*1.5625/1000.0)
         if self._queue is not None:
             self._queue.put((PacketType.Pixel,(x,y,toa,tot,hit,ts)))
 
@@ -137,15 +141,15 @@ if __name__=="__main__":
     calls = 0
 
     udp_thread = TimepixUDPListener((UDP_IP,UDP_PORT))
-
+    udp_thread.startAcquisition()
     try:
         while True:
             udp_thread.run()
     except:
         pass
     finally:
-        udp_thread.stop()
+        udp_thread.stopRunning()
         print('Packets Collected: {}'.format(udp_thread.packetsCollected))
         print('Packet Counters: {} {} {} PIXEL: {} '.format(spidr.UdpPacketCounter,spidr.UdpMonPacketCounter,spidr.UdpPausePacketCounter,spidr[0].pixelPacketCounter))
-        spidr.closeShutter()
+        #spidr.closeShutter()
 

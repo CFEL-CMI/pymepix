@@ -42,10 +42,11 @@ class TimepixDaq(QtGui.QWidget,tempDaq.Ui_Form):
     def updatePlot(self,pixels):
         current_time = time.time()
         pixel = pixels[0]
+        print (pixels)
         self._data[...]=0
         if (current_time - self._start_time) >0.5:
-            self._data[pixel[0],pixel[1]] = pixel[3].astype(np.float)
-
+            self._data[pixel[0],pixel[1]] = pixel[2].astype(np.float)
+            print (pixel[2].astype(np.float))
             self.imageview.setImage(self._data)
             self._start_time = current_time
 

@@ -24,19 +24,19 @@ class TimePixAcq(object):
             if value is None:
                 break
             if value[0]==PacketType.Trigger:
-                self.onTrigger(value[1])
+                self.onTrigger(value[1],self._timer)
             elif value[0]==PacketType.Pixel:
-                self.onPixel(value[1])
+                self.onPixel(value[1],self._timer)
 
 
     def __init__(self,ip_port,device_num=0):
         self._spidr = SPIDRController(ip_port)
 
         self._device = self._spidr[device_num]
-        self._device.reset()
-        self._device.reinitDevice()
-        self._device.resetPixels()
-        self._device.getPixelConfig()
+        #self._device.reset()
+        #self._device.reinitDevice()
+        #self._device.resetPixels()
+        #self._device.getPixelConfig()
         self._pixelCallback = None
         self._triggerCallback = None
         UDP_IP = self._device.ipAddrDest
@@ -80,12 +80,12 @@ class TimePixAcq(object):
         self._pixelCallback = callback
 
 
-    def onTrigger(self,trigger):
+    def onTrigger(self,trigger,timer):
 
         if self._triggerCallback is not None:
             self._triggerCallback((trigger,self._timer))
     
-    def onPixel(self,pixel):
+    def onPixel(self,pixel,timer):
         if self._pixelCallback is not None:
             self._pixelCallback((pixel,self._timer))
 
@@ -469,8 +469,10 @@ class TimePixAcq(object):
 
     def startAcquisition(self):
         self._spidr.datadrivenReadout()
-        if self.shutterTriggerMode == SpidrShutterMode.Auto:
-            self._spidr.startAutoTrigger()
+        self._device.t0Sync()
+        # if self.shutterTriggerMode == SpidrShutterMode.Auto:
+        #     self._spidr.startAutoTrigger()
+        self._spidr.openShutter()
         self._udp_listener.startAcquisition()
     def stopAcquisition(self):
 
