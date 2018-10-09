@@ -490,7 +490,7 @@ class SPIDRController(list):
 
 
 def main():
-    import cv2
+    #import cv2
     import matplotlib.pyplot as plt
     spidr = SPIDRController(('192.168.1.10',50000))
     print('Local temp: {} C'.format(spidr.localTemperature))
@@ -506,15 +506,18 @@ def main():
     print ('Pressure: ',spidr.pressure, 'mbar')
     print ('Humidity: ',spidr.humidity,'%')
     print ('Temperature: ',spidr.localTemperature,' C')
+    spidr.resetDevices()
+    spidr.reinitDevices()
     print (spidr[0].ipAddrSrc)
     print (spidr[0].ipAddrDest)
     print (spidr[0].devicePort)
     print(spidr[0].serverPort)
     print (spidr[0].headerFilter)
+    print(spidr[0].TpPeriodPhase)
+    print(spidr.ShutterTriggerFreq)
+    spidr.ShutterTriggerFreq = 2000000
+    print(spidr.ShutterTriggerFreq)
     # print ('Link COunts : ',spidr.linkCounts)
-    spidr[0].reset()
-    spidr[0].reinitDevice()
-    spidr[0].resetPixels()
 
 
     # image = cv2.imread('images.png', cv2.IMREAD_GRAYSCALE)
