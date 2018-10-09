@@ -32,25 +32,23 @@ class PacketSampler(multiprocessing.Process):
 
     
     def run(self):
-
         while True:
-            if not self._acq_status.value==0:
+            if self._acq_status.value==0:
                 
                 continue
 
 
-            
             size = self._sock.recv_into(self._packet_buffer,16384) # buffer size is 1024 bytes
             packet = self._packet_buffer[0:size//8]
-            self._file_queue.put(('WRITE',packet.tostring()))
+            #self._file_queue.put(('WRITE',packet.tostring()))
             current_time = self._long_time.value
             #Get the header
             header = packet &  0xF000000000000000
-            tpx_packets = np.logical_or.reduce(header == 0xB000000000000000,header == 0xA000000000000000,(packet &0xFF00000000000000)==0x6F00000000000000)
-
+            tpx_packets = np.logical_or.reduce((header == 0xB000000000000000,header == 0xA000000000000000,(packet & 0xFF00000000000000)==0x6F00000000000000))
             self._output_queue.put((tpx_packets,current_time))
 
             self._packets_collected+=1
+
 
 
 
