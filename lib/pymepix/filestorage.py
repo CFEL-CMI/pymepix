@@ -36,4 +36,8 @@ class FileStorage(multiprocessing.Process):
                     if self._file_io is not None:
                         self._file_io.close()
                         self._file_io = None
+            except Exception as e:
+                print(str(e))
+            
+        
 
