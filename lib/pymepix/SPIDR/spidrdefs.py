@@ -34,3 +34,4 @@ class SpidrShutterMode(Enum):
     ExternalFallingTimer    =3
     Auto                    =4
     PulseCounter            =5
+    Open = 6
