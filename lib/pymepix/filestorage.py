@@ -8,7 +8,7 @@ class FileStorage(multiprocessing.Process):
 
     def __init__(self,data_queue):
         multiprocessing.Process.__init__(self)
-
+        self._input_queue = data_queue
         self._file_io = None
     def run(self):
 
