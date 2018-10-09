@@ -6,6 +6,7 @@ from .SPIDR.spidrdefs import SpidrShutterMode
 import time
 import queue
 import threading
+import multiprocessing
 from multiprocessing.sharedctypes import Value
 from .packetsampler import PacketSampler
 from .packetprocessor import PacketProcessor
@@ -19,7 +20,7 @@ class TimePixAcq(object):
             self._timer_lsb,self._timer_msb = self._device.timer
             self._timer = (self._timer_msb << 32)|self._timer_lsb
             self._shared_timer.value = self._timer
-            while self._pause:
+            while self._pause and self._run_timer:
                 continue
     def dataThread(self):
 
@@ -34,18 +35,16 @@ class TimePixAcq(object):
         self._spidr = SPIDRController(ip_port)
 
         self._device = self._spidr[device_num]
-        self._device.reset()
-        self._device.reinitDevice()
-        self._device.resetPixels()
+        #self._device.reinitDevice()
         #self._device.getPixelConfig()
         self._eventCallback = None
         UDP_IP = self._device.ipAddrDest
         UDP_PORT = self._device.serverPort
-
+        self._open_shutter = True
         #self._device.outBlockConfig &= ~(0x1000)
 
-        self._data_queue = queue.Queue()
-        self._file_queue = queue.Queue()
+        self._data_queue = multiprocessing.Queue()
+        self._file_queue =  multiprocessing.Queue()
         self._pause = False
 
 
@@ -60,15 +59,16 @@ class TimePixAcq(object):
         self._timer_thread = threading.Thread(target = self.updateTimer)
         self._timer_thread.start()
 
+        self.pauseTimer()
         self._data_thread = threading.Thread(target=self.dataThread)
         self._data_thread.start()
         self._file_storage = FileStorage(self._file_queue)
-        self._udp_listener = PacketSampler((UDP_IP,UDP_PORT),self._file_queue,self._shared_timer,self._shared_acq)
-        self._packet_processor = PacketProcessor(self._udp_listener.outputQueue,None,self._shared_exp_time)
+        self._packet_sampler = PacketSampler((UDP_IP,UDP_PORT),self._file_queue,self._shared_timer,self._shared_acq)
+        self._packet_processor = PacketProcessor(self._packet_sampler.outputQueue,self._data_queue,self._shared_exp_time)
 
         self._packet_processor.start()
         self._file_storage.start()
-        self._udp_listener.start()
+        self._packet_sampler.start()
 
     def pauseTimer(self):
         self._pause = True
@@ -218,10 +218,17 @@ class TimePixAcq(object):
 
     @property
     def shutterTriggerMode(self):
-        return self._spidr.ShutterTriggerMode
+        if self._open_shutter:
+            return SpidrShutterMode.Open
+        else:
+            return self._spidr.ShutterTriggerMode
     @shutterTriggerMode.setter
     def shutterTriggerMode(self,value):
-        self._spidr.ShutterTriggerMode = value
+        if value is SpidrShutterMode.Open:
+            self._open_shutter = True
+        else:
+            self._spidr.ShutterTriggerMode = value
+            self._open_shutter = False
 
     @property
     def shutterTriggerFreqMilliHz(self):
@@ -480,51 +487,63 @@ class TimePixAcq(object):
 
 
     def startAcquisition(self):
-        self._spidr.datadrivenReadout()
-        self._device.t0Sync()
+
+        # self._spidr.datadrivenReadout()
+        # self._device.t0Sync()
+        # self._spidr.resetTimers()
         # if self.shutterTriggerMode == SpidrShutterMode.Auto:
         #     self._spidr.startAutoTrigger()
+        # elif self._open_shutter:
         self._spidr.openShutter()
+        self.resumeTimer()
         self._shared_acq.value = 1
+        print('Starting acquisition')
     def stopAcquisition(self):
-
-        if self.shutterTriggerMode == SpidrShutterMode.Auto:
-            self._spidr.stopAutoTrigger()
-
+        self.pauseTimer()
+        #self._spidr.closeShutter()
+        print('Stopping acqusition')
         self._shared_acq.value = 0
     def resetPixels(self):
         self._device.resetPixels()
     #
     def stopThreads(self):
         self._file_queue.put(('CLOSE'))
-        self._udp_listener.terminate()
+        self._packet_sampler.terminate()
         self._packet_processor.terminate()
         self._file_storage.terminate()
+        self._data_queue.put(None)
+        self._run_timer = False
+        print('Joing data thread')
+        self._data_thread.join()
+        print('Joining timer thread')
+        self._timer_thread.join()
 def main():
 
 
-    tpx = TimePixAcq(('192.168.1.1',50000))
-    print(tpx.deviceInfoString)
-    print(tpx.polarity)
-    print (tpx.operationMode)
-    tpx.operationMode = OperationMode.ToAandToT
-    print (tpx.operationMode)
-    print (tpx.grayCounter)
-    print (tpx.testPulse)
-    print (tpx.superPixel)
-    tpx.shutterTriggerMode=SpidrShutterMode.Auto
-    tpx.shutterTriggerFreqMilliHz = 10000000
-    print (tpx.shutterTriggerMode)
-    print (tpx.shutterTriggerFreqMilliHz)
-    print (tpx.shutterTriggerExposureTime)
-    print (tpx.shutterNumOfTriggers)
-    print(tpx.Ibias_Preamp_ON)
-    print (tpx.Ibias_Ikrum)
-    print (tpx.Vfbk)
+    tpx = TimePixAcq(('192.168.1.10',50000))
+    # print(tpx.deviceInfoString)
+    # print(tpx.polarity)
+    # print (tpx.operationMode)
+    # tpx.operationMode = OperationMode.ToAandToT
+    # tpx.ShutterTriggerMode = SpidrShutterMode.Open
+
+    # print (tpx.operationMode)
+    # print (tpx.grayCounter)
+    # print (tpx.testPulse)
+    # print (tpx.superPixel)
+    # print (tpx.shutterTriggerMode)
+    # print (tpx.shutterTriggerFreqMilliHz)
+    # print (tpx.shutterTriggerExposureTime)
+
+    # print (tpx.shutterNumOfTriggers)
+    # print(tpx.Ibias_Preamp_ON)
+    # print (tpx.Ibias_Ikrum)
+    # print (tpx.Vfbk)
     tpx.startAcquisition()
-    time.sleep(5)
+    time.sleep(1)
     tpx.stopAcquisition()
     
+    tpx.stopThreads()
 
 if __name__=="__main__":
     main()
