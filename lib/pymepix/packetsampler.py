@@ -45,7 +45,7 @@ class PacketSampler(multiprocessing.Process):
             #Get the header
             header = packet &  0xF000000000000000
             tpx_packets = np.logical_or.reduce((header == 0xB000000000000000,header == 0xA000000000000000,(packet & 0xFF00000000000000)==0x6F00000000000000))
-            self._output_queue.put((tpx_packets,current_time))
+            self._output_queue.put((packet[tpx_packets],current_time))
 
             self._packets_collected+=1
 
