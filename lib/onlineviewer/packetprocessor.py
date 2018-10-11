@@ -9,20 +9,21 @@ import numpy as np
 
 class EventData(object):
 
-    def __init__(self,trigger_num,x,y,toa,tot):
-        self.no = trigger_num
-        self.x = np.array(x)
-        self.y = np.array(y)
-        self.toa = np.array(toa)
-        self.tot = np.array(tot)
+    def __init__(self,trigger_time,x,y,toa,tot,reltoa):
+        self.time = trigger_time
+        self.x = x
+        self.y = y
+        self.toa = toa
+        self.tot = tot
+        self.tof = reltoa-trigger_time
         # self.diff = np.array(diff)
         #Fix timestamping issues
         #self.diff += abs(self.diff.min())
-class PacketProcessor(object):
-    #onNewEvent = QtCore.pyqtSignal(object)
+class PacketProcessor(QtCore.QThread):
+    onNewEvent = QtCore.pyqtSignal(object)
     def __init__(self):
 
-        #QtCore.QThread.__init__(self)
+        QtCore.QThread.__init__(self)
         self._longtime_lsb = 0
         self._longtime_msb = 0
         self._longtime = 0
@@ -94,10 +95,10 @@ class PacketProcessor(object):
         # if( diff == -1 or diff == 3 ):  
         #     globaltime = ( (current_time + 0x10000000) & 0xFFFFC0000000) | (ToA_coarse & 0x3FFFFFFF)
 
-        ToAs = (globaltime << 12) - (FToA<<8)
-        ToAs += ( ( (col//2) %16 ) << 8 )
-        if (((col//2)%16) == 0):
-             ToAs += ( 16 << 8 )
+        ToAs = (globaltime << 4) | (FToA<<8)
+        # ToAs += ( ( (col//2) %16 ) << 8 )
+        # if (((col//2)%16) == 0):
+        #      ToAs += ( 16 << 8 )
 
         return col,row,ToAs,ToT
         
@@ -112,24 +113,88 @@ class PacketProcessor(object):
         
         m_trigTime = ((trigtime_coarse) << 12) | trigtime_fine
 
-        return m_trigCnt,m_trigTime
+        return m_trigCnt,trigtime_coarse<<2
+
+    def addPixel(self,col,row,toa,tot,reltoa):
+
+        if self.col is None:
+            self.col = np.array([col])
+            self.row = np.array([row])
+            self.globaltime = np.array([toa])
+            self.ToT = np.array([tot])        
+            self.rel_global = np.array([reltoa])  
+        else:
+            self.col = np.append(self.col,[col])
+            self.row = np.append(self.row,[row])
+            self.globaltime = np.append(self.globaltime,[toa])
+            self.ToT = np.append(self.ToT,[tot])
+            self.rel_global = np.append(self.rel_global,[reltoa])
+        #print(self.rel_global)
+    def updateBuffers(self,val_filter):
+        self.col = self.col[val_filter]
+        self.row = self.row[val_filter]
+        self.globaltime = self.globaltime[val_filter]
+        self.ToT = self.ToT[val_filter]
+        self.rel_global = self.rel_global[val_filter]
+
+    def getBuffers(self,val_filter):
+        return self.col[val_filter],self.row[val_filter],self.globaltime[val_filter],self.ToT[val_filter],self.rel_global[val_filter]
+    def handleTriggers(self,trigger):
+
+        if self.trigger_buffer is None:
+            #print('EMPTY')
+            self.trigger_buffer = np.array([trigger])
+        elif self.trigger_buffer.size < 3:
+            #print('EXPANDING')
+            self.trigger_buffer = np.append(self.trigger_buffer,[trigger])
+        else:
+            #print('CHECKING')
+            #print(self.trigger_buffer)
+            #Take the first element:
+            to_check = self.trigger_buffer[0]
+            center_point = self.trigger_buffer[1]
+            #Check if we have any negative values from noise
+            if self.rel_global is not None:
+                toa = self.rel_global
+                neg_Tof = (to_check-toa) < 0
+                #Update arrays
+                self.updateBuffers(neg_Tof)
+                toa = self.rel_global
+                #print('Global: ', toa)
+
+                #Now we check for pixels that lie between the first and second
+                trig_filter = np.logical_and(toa >= to_check, toa < center_point)
+                col,row,toa,tot,reltoa = self.getBuffers(trig_filter)
+                new_Tof = np.logical_not(trig_filter)
+                self.updateBuffers(new_Tof)
+                if col.size > 0:
+                    evt = EventData(to_check,col,row,toa,tot,reltoa)
+                    self.onNewEvent.emit(evt)
+                #print('Values: ',toa)
+            self.trigger_buffer = np.roll(self.trigger_buffer,-1)
+            self.trigger_buffer[2] = trigger
+            #Create event here
+
+            
 
     def read_data(self,f):
         self.triggers = None
-        self.col = []
-        self.row = []
-        self.globaltime = []
-        self.rel_global = []
-        self.tof = []
-        self.ToT = []
+        self.col = None
+        self.row = None
+        self.globaltime = None
+        self.rel_global = None
+        self.tof = None
+        self.ToT = None
         self.updateTrigger = False
-        self.triggers = None
+        self.trigger_buffer = None
         self._first_toa = None
         self._first_trigger = None
         self._last_global_time = None
         self._last_trigger = None
+        self._trigger_buffer = None
         self._global_time_ext = 0
         self._trigger_time_ext = 0
+
         #self.skipheader(f)
         bytes_read = f.read(8)
         while bytes_read:
@@ -155,28 +220,25 @@ class PacketProcessor(object):
             #     self.globaltime = []
             #     self.diff = []
             #     self.ToT = []
-            #     self.updateTrigger = False
-
+            #     self.updateTrigger = False               
+            
             if self._first_toa is None:
                 self._first_toa = _globaltime
                 self._last_global_time = _globaltime
 
             tmp_globaltime = _globaltime + self._global_time_ext
-            print('Compare: ',tmp_globaltime,self._last_global_time)
-            if tmp_globaltime < self._last_global_time:
+            #print('Compare: ',tmp_globaltime,self._last_global_time)
+            if abs(tmp_globaltime-self._last_global_time) > (1<<35) :
                 self._global_time_ext += (1<<35)
-                quit()
             tmp_globaltime = _globaltime + self._global_time_ext
-            self.col.append(_col)
-            self.row.append(_row)
-            self.globaltime.append(tmp_globaltime)
-            self.ToT.append(_ToT)
+
+
+            self.addPixel(_col,_row,tmp_globaltime,_ToT,tmp_globaltime-self._first_toa)
+
             self._last_global_time = tmp_globaltime
-            print('Pixeltime: {} {}'.format(tmp_globaltime-self._first_toa,self._global_time_ext))
                 #An overflow occured so lets increase the 
             #self.diff.append(_globaltime-self.triggers)
             #print('Diff ',_globaltime-self.triggers)
-            self.ToT.append(_ToT)
         elif ( header == 0x4  or header == 0x6 ):
             subheader = ((int(packet) & 0x0F00000000000000) >> 56) & 0xF
             if subheader == 0xF:
@@ -191,7 +253,7 @@ class PacketProcessor(object):
                     self._global_time_ext += (1<<35)
                 self._last_trigger = trigger_time
                 #print('Trigger count:{}, Trigger time: {}'.format(trigger_count,trigger_time))
-                print('Trigetime: {} {}'.format(trigger_time-self._first_trigger,self._first_trigger))
+                self.handleTriggers(trigger_time-self._first_trigger)
             elif ( subheader == 0x4 ):
                 self._longtime_lsb = (packet & 0x0000FFFFFFFF0000) >> 16
             elif (subheader == 0x5 ):
