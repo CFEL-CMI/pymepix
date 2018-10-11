@@ -7,15 +7,32 @@ from pyqtgraph.parametertree import Parameter, ParameterTree, ParameterItem, reg
 import weakref
 import numpy as np
 
-class PacketProcessor(object):
+class EventData(object):
 
+    def __init__(self,trigger_num,x,y,toa,tot):
+        self.no = trigger_num
+        self.x = np.array(x)
+        self.y = np.array(y)
+        self.toa = np.array(toa)
+        self.tot = np.array(tot)
+        # self.diff = np.array(diff)
+        #Fix timestamping issues
+        #self.diff += abs(self.diff.min())
+class PacketProcessor(object):
+    #onNewEvent = QtCore.pyqtSignal(object)
     def __init__(self):
-        #QThread.__init__(self)
+
+        #QtCore.QThread.__init__(self)
         self._longtime_lsb = 0
         self._longtime_msb = 0
         self._longtime = 0
         self._global_trig_time = 0
-
+    
+    def run(self):
+        with open('/Users/alrefaie/Documents/repos/libtimepix/lib/onlineviewer/molbeam_000002.tpx3','rb') as f:
+            self.read_data(f)
+        #evt = EventData(0,self.col,self.row,self.globaltime,self.ToT)
+        #self.onNewEvent.emit(evt)
     def processPixelArray(self,pixdata,current_time):
         if pixdata.size==0:
             return None,None,None,None
@@ -64,7 +81,7 @@ class PacketProcessor(object):
         ToA         = ((data & 0x0FFFC000) >> 14 )
         ToA_coarse  = (spidr_time << 14) | ToA
         FToA        = (data & 0xF)
-        globaltime  = (current_time & 0xFFFFC0000000) | (ToA_coarse & 0x3FFFFFFF)
+        globaltime  = ToA_coarse
     
 
         ToT         = (data & 0x00003FF0) >> 4
@@ -77,7 +94,7 @@ class PacketProcessor(object):
         # if( diff == -1 or diff == 3 ):  
         #     globaltime = ( (current_time + 0x10000000) & 0xFFFFC0000000) | (ToA_coarse & 0x3FFFFFFF)
 
-        ToAs = (globaltime << 12) - (FToA << 8)
+        ToAs = (globaltime << 12) - (FToA<<8)
         ToAs += ( ( (col//2) %16 ) << 8 )
         if (((col//2)%16) == 0):
              ToAs += ( 16 << 8 )
@@ -98,62 +115,109 @@ class PacketProcessor(object):
         return m_trigCnt,m_trigTime
 
     def read_data(self,f):
-        # raw = np.fromfile(f,np.uint8)
-        # data =self.skipheader(raw)
-        data = np.fromfile(f,np.uint64)
-        header = ((data & 0xF000000000000000) >> 60) & 0xF
-
-        tpx_filter = np.logical_or.reduce((header == 0xB,header == 0xA,header == 0x4,header == 0x6))
-        tpx_packets = data[tpx_filter]
-        return self.loopPackets(tpx_packets)
-    def loopPackets(self,packets):
+        self.triggers = None
+        self.col = []
+        self.row = []
+        self.globaltime = []
+        self.rel_global = []
+        self.tof = []
+        self.ToT = []
+        self.updateTrigger = False
+        self.triggers = None
+        self._first_toa = None
+        self._first_trigger = None
+        self._last_global_time = None
+        self._last_trigger = None
+        self._global_time_ext = 0
+        self._trigger_time_ext = 0
+        #self.skipheader(f)
+        bytes_read = f.read(8)
+        while bytes_read:
+            self.loopPackets(bytes_read)
+            bytes_read = f.read(8)
+        print('Finished')
+    def loopPackets(self,_packet):
         
-        triggers = None
-        col = []
-        row = []
-        globaltime = []
-        ToT = []
 
-        for packet in np.nditer(packets):
-            header = ((int(packet) & 0xF000000000000000) >> 60) & 0xF
-            if (header == 0xA or header == 0xB):
-                _col,_row,_globaltime,_ToT = self.processPixelSingle(int(packet),self._longtime)
-                col.append(_col)
-                row.append(_row)
-                #print('Pixel: col: {} row : {} globaltime: {} ToT: {}'.format(col,row,globaltime,ToT))
-                #print('Pixeltime: {}'.format(_globaltime))
-            elif ( header == 0x4  or header == 0x6 ):
-                subheader = ((int(packet) & 0x0F00000000000000) >> 56) & 0xF
-                if subheader == 0xF:
-                    trigger_count,trigger_time = self.processTrigger(int(packet),self._longtime)
-                    print('Trigger count:{}, Trigger time: {}'.format(trigger_count,trigger_time))
-                    print('Trigetime: {}'.format(trigger_time))
-                elif ( subheader == 0x4 ):
-                    self._longtime_lsb = (packet & 0x0000FFFFFFFF0000) >> 16
-                elif (subheader == 0x5 ):
-                    self._longtime_msb = (packet & 0x00000000FFFF0000) << 16
-                    tmplongtime = self._longtime_msb | self._longtime_lsb
-                    if ( (tmplongtime > ( self._longtime + 0x10000000)) and (self._longtime > 0) ):
-                    
-                        #print("Large forward time jump")
-                        self._longtime = (self._longtime_msb - 0x10000000) | self._longtime_lsb
-                    
-                    else: 
-                        self._longtime = tmplongtime
-                    #print('Longtime: {}',self._longtime)
-        return col,row
-    def skipheader(self,data):
+        packet = int.from_bytes(_packet,byteorder='little')
+        header = ((int(packet) & 0xF000000000000000) >> 60) & 0xF
+        if (header == 0xA or header == 0xB):
+            _col,_row,_globaltime,_ToT = self.processPixelSingle(int(packet),self._longtime)
+            #print('Pixel: col: {} row : {} globaltime: {} ToT: {}'.format(col,row,globaltime,ToT))
+            #print('Pixeltime: {}'.format(_globaltime))
+            # if self.updateTrigger:
+            #     if len(self.col) > 0:
+            #         evt = EventData(0,self.col,self.row,self.globaltime,self.ToT,self.diff)
+            #         self.onNewEvent.emit(evt)
+            #     self.triggers = _globaltime
+            #     self.col = []
+            #     self.row = []
+            #     self.globaltime = []
+            #     self.diff = []
+            #     self.ToT = []
+            #     self.updateTrigger = False
+
+            if self._first_toa is None:
+                self._first_toa = _globaltime
+                self._last_global_time = _globaltime
+
+            tmp_globaltime = _globaltime + self._global_time_ext
+            print('Compare: ',tmp_globaltime,self._last_global_time)
+            if tmp_globaltime < self._last_global_time:
+                self._global_time_ext += (1<<35)
+                quit()
+            tmp_globaltime = _globaltime + self._global_time_ext
+            self.col.append(_col)
+            self.row.append(_row)
+            self.globaltime.append(tmp_globaltime)
+            self.ToT.append(_ToT)
+            self._last_global_time = tmp_globaltime
+            print('Pixeltime: {} {}'.format(tmp_globaltime-self._first_toa,self._global_time_ext))
+                #An overflow occured so lets increase the 
+            #self.diff.append(_globaltime-self.triggers)
+            #print('Diff ',_globaltime-self.triggers)
+            self.ToT.append(_ToT)
+        elif ( header == 0x4  or header == 0x6 ):
+            subheader = ((int(packet) & 0x0F00000000000000) >> 56) & 0xF
+            if subheader == 0xF:
+                trigger_count,trigger_time = self.processTrigger(int(packet),self._longtime)
+                if self._first_trigger is None:
+                    self._first_trigger = trigger_time
+                    self._last_trigger = trigger_time
+                
+                tmp_trigger_time = trigger_time
+
+                if trigger_time < self._last_trigger:
+                    self._global_time_ext += (1<<35)
+                self._last_trigger = trigger_time
+                #print('Trigger count:{}, Trigger time: {}'.format(trigger_count,trigger_time))
+                print('Trigetime: {} {}'.format(trigger_time-self._first_trigger,self._first_trigger))
+            elif ( subheader == 0x4 ):
+                self._longtime_lsb = (packet & 0x0000FFFFFFFF0000) >> 16
+            elif (subheader == 0x5 ):
+                self._longtime_msb = (packet & 0x00000000FFFF0000) << 16
+                tmplongtime = self._longtime_msb | self._longtime_lsb
+                if ( (tmplongtime > ( self._longtime + 0x10000000)) and (self._longtime > 0) ):
+                
+                    #print("Large forward time jump")
+                    self._longtime = (self._longtime_msb - 0x10000000) | self._longtime_lsb
+                
+                else: 
+                    self._longtime = tmplongtime
+                #print('Longtime: {}',self._longtime)
+        
+    def skipheader(self,f):
         #Create uint32 view
-        header_view = data.view(dtype=np.uint32)
-        print('0x{:12X}'.format(header_view[0]))
-        print('header_size: {}'.format(header_view[1]))
-        sphdr_size = header_view[1]
+        
+        print('{}'.format(f.read(4)))
+        sphdr_size = int.from_bytes(f.read(4),byteorder='little')
+        print('header_size: {}'.format(sphdr_size))
         if (sphdr_size > 66304):
             sphdr_size = 66304
         
-        header_length = 66304//32
+        header_length = sphdr_size
+        f.read(sphdr_size-2)
 
-        return header_view[header_length:].view(dtype=np.uint64)
 
 
 
@@ -162,9 +226,9 @@ def main():
     import matplotlib.pyplot as plt
     analysis = PacketProcessor()
     matrix = np.zeros(shape=(256,256))
-    with open('/Users/alrefaie/Documents/repos/libtimepix/lib/onlineviewer/molbeam_000001.tpx3','rb') as f:
+    with open('/Users/alrefaie/Documents/repos/libtimepix/lib/onlineviewer/molbeam_000000.tpx3','rb') as f:
 
-        x,y=analysis.read_data(f)
+        analysis.read_data(f)
 
 
 if __name__=="__main__":
