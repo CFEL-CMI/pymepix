@@ -18,13 +18,13 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
         self.setupUi(self)
         self._mode  = OperationMode.ToAandToT
 
-        self._toa_roi = pg.LinearRegionItem([0,500e-6])
+        self._toa_roi = pg.LinearRegionItem([0,1])
         self._tot_roi = pg.LinearRegionItem([0,0.001])
         
         self.toa_view.addItem(self._toa_roi)
         self.tot_view.addItem(self._tot_roi)
         toa = self.toa_view.getPlotItem()
-        toa.setXRange(0, 500e-6, padding=0)
+        #toa.setXRange(0, 500e-6, padding=0)
         toa.setLabel('bottom',text='Trigger Offset',units='s')
         toa.setLabel('left',text='Hits')
         self._toa_data = pg.PlotDataItem()
@@ -47,12 +47,17 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
         self._mode = new_mode
 
     def updateToA(self,toa_diff):
-        cov_diff = toa_diff.astype(float)
+        cov_diff = toa_diff
         
         #print('TOA DIFF:', cov_diff)
         #print('Bins', np.linspace(0.0,cov_diff.max(),100,dtype=np.float))
-        y,x = np.histogram(cov_diff,np.linspace(0.0,cov_diff.max(),100,dtype=np.float))
-        self._toa_data.setData(x=x,y=y, stepMode=True, fillLevel=0, brush=(0,0,255,150))
+        y,x = np.histogram(cov_diff,np.linspace(1.83e-3,1.836e-3,1000,dtype=np.float))
+        if y.max() <= 1:
+            return False
+        else:
+            self._toa_data.setData(x=x,y=y, stepMode=True, fillLevel=0, brush=(0,0,255,150))
+        
+        return True
 
     def updateToT(self,trigger,tot_diff):
         #print('TOT DIFF:', tot_diff)
@@ -69,14 +74,14 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
         #Unpack
         self._num +=1
         if self._num %10 != 0:
-            return
+             return
         self.x = data.x
         self.y = data.y
         self.toa = data.toa
         self.tot = data.tot
-        self.diff = data.tof.astype(float)*1.5e-9  
-        self.updateToA(self.diff)
-        self.updateMainPlot()
+        self.diff = data.tof.astype(float) 
+        if self.updateToA(self.diff):
+            self.updateMainPlot()
     def updateMainPlot(self):
         self._viewer_data[...] = 0.0
         min_t,max_t = self._toa_roi.getRegion()
