@@ -15,7 +15,9 @@ class EventData(object):
         self.y = y
         self.toa = toa
         self.tot = tot
-        self.tof = reltoa-trigger_time
+        self.tof = toa-trigger_time
+        print('Event', trigger_time,self.toa)
+        print('TOF',trigger_time, self.tof*1E6)
         # self.diff = np.array(diff)
         #Fix timestamping issues
         #self.diff += abs(self.diff.min())
@@ -30,8 +32,8 @@ class PacketProcessor(QtCore.QThread):
         self._global_trig_time = 0
      
     def run(self):
-        with open("molbeam_000002.tpx3",'rb') as f:
-        #with open("test_tof_000005.tpx3",'rb') as f:
+        #with open("molbeam_000002.tpx3",'rb') as f:
+        with open("test_tof_000000.tpx3",'rb') as f:
             self.read_data(f)
         #evt = EventData(0,self.col,self.row,self.globaltime,self.ToT)
         #self.onNewEvent.emit(evt)
@@ -53,7 +55,7 @@ class PacketProcessor(QtCore.QThread):
         globaltime  = (current_time & 0xFFFFC0000000) | (ToA_coarse & 0x3FFFFFFF)
     
 
-        ToT         = ((data & 0x00003FF0) >> 4)*25 # ns
+        ToT         = ((data & 0x00003FF0) >> 4)*25E-9 # ns
         pixelbits = ( ToA_coarse >> 28 ) & 0x3
         longtimebits = ( current_time >> 28 ) & 0x3
         diff = longtimebits - pixelbits     
@@ -94,7 +96,8 @@ class PacketProcessor(QtCore.QThread):
             current_timebits = ( current_time >> 28 ) & 0x3
             diff = current_timebits - pixelbits
 
-        globaltime  = (current_time & 0xFFFFC0000000) | (globaltime) 
+        #globaltime  = (globaltime) & (0x0FFFFFFFF)
+        #print('Pixel spidr time', (spidr_time*(2**14)*25E-9))
             #print('Diff',diff)
         #global_clock = (current_time & 0xFFFFC0000000)*1.5925E-9
         # ToAs += ( ( (col//2) %16 ) << 8 )
@@ -103,17 +106,18 @@ class PacketProcessor(QtCore.QThread):
         return col,row,(globaltime*1.5625E-9),ToT
         
     def processTrigger(self,pixdata,current_time):
-        coarsetime = ((pixdata & 0x00000FFFFFFFF000) >> 9) & 0xFFFFFFFF
-        tmpfine = (pixdata >> 5 ) & 0xF
-        tmpfine = ((tmpfine-1) << 9) // 12
-        trigtime_fine = (pixdata & 0x0000000000000E00) | (tmpfine & 0x00000000000001FF);
-        time_unit=25./4096.0
+        coarsetime = (pixdata >> 9) & 0x7FFFFFFFF
+        # tmpfine = (pixdata >> 5 ) & 0xF
+        # tmpfine = ((tmpfine-1) << 9) // 12
+        # trigtime_fine = (pixdata & 0x0000000000000E00) | (tmpfine & 0x00000000000001FF);
+        #time_unit=25./4096.0
         global_clock = (current_time & 0xFFFFC0000000)*1.5925E-9
         time_unit=25./4096
-        globaltime  = (current_time & 0xFFFFC0000000) | (coarsetime<<1)
-        m_trigTime = (globaltime)*1.5625E-9 + trigtime_fine*time_unit*1E-9
+        #print('RawTrigger TS: ',coarsetime*3.125E-9 )
+        globaltime  = (coarsetime<<1) &(~0xC00000000)
+        m_trigTime = (globaltime)*1.5625E-9 #+ trigtime_fine*time_unit*1E-9
         print('Trigger ',m_trigTime)
-        return 0,m_trigTime+global_clock
+        return 0,m_trigTime
 
     def addPixel(self,col,row,toa,tot,reltoa):
 
@@ -156,9 +160,9 @@ class PacketProcessor(QtCore.QThread):
             #Check if we have any negative values from noise
             if self.rel_global is not None:
                 toa = self.rel_global
-                #neg_Tof = (to_check-toa) < 0
-                #Update arrays
-                #self.updateBuffers(neg_Tof)
+                # neg_Tof = (to_check-toa) < 0
+                # #Update arrays
+                # self.updateBuffers(neg_Tof)
                 print(self.trigger_buffer)
                 #toa = self.rel_global
                 #print('Global: ', toa)
@@ -229,7 +233,7 @@ class PacketProcessor(QtCore.QThread):
                 self._last_global_time = _globaltime
 
             tmp_globaltime = _globaltime
-            print('Pixel ',_globaltime )
+            #print('Pixel ',_globaltime )
             #print('PixelDiff:',tmp_globaltime-self._first_toa)
             self.addPixel(_col,_row,tmp_globaltime,_ToT,tmp_globaltime)
 
@@ -247,7 +251,7 @@ class PacketProcessor(QtCore.QThread):
                 
                 tmp_trigger_time = trigger_time
                 self._last_trigger = trigger_time
-                print('Trigg ',trigger_time )
+                #print('Trigg ',trigger_time )
                 #print('Trigger count:{}, Trigger time: {}'.format(trigger_count,trigger_time))
                 self.handleTriggers(trigger_time)
                 #print('TriggDiff:',trigger_time-self._first_trigger,trigger_time,self._first_trigger)
