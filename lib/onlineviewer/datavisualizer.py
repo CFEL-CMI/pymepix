@@ -18,7 +18,8 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
         self.setupUi(self)
         self._mode  = OperationMode.ToAandToT
 
-        self._toa_roi = pg.LinearRegionItem([0,1])
+        self._toa_roi = pg.LinearRegionItem([0,2e-3])
+        #self._toa_roi = pg.LinearRegionItem([1.688e-3,1.698e-3])
         self._tot_roi = pg.LinearRegionItem([0,0.001])
         
         self.toa_view.addItem(self._toa_roi)
@@ -38,9 +39,12 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
         self._viewer_data = np.ndarray(shape=(256,256))
         self.x = None
         self.y = None
+        self._hist_x = None
+        self._hist_y = None
         self.hit = None
         self.tot_diff = None
         self._num = 0
+        self._viewer_data[...] = 0.0
         self._toa_roi.sigRegionChangeFinished.connect(self.updateMainPlot)
         self._tot_roi.sigRegionChangeFinished.connect(self.updateMainPlot)
     def onModeChange(self,new_mode):
@@ -51,15 +55,19 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
         
         #print('TOA DIFF:', cov_diff)
         #print('Bins', np.linspace(0.0,cov_diff.max(),100,dtype=np.float))
-        y,x = np.histogram(cov_diff,np.linspace(1.83e-3,1.836e-3,1000,dtype=np.float))
-        if y.max() <= 1:
-            return False
+        #y,x = np.histogram(cov_diff,np.linspace(0.0,cov_diff.max(),10000,dtype=np.float))
+        #y,x = np.histogram(cov_diff,np.linspace(1.688e-3,1.698e-3,1000,dtype=np.float))
+        y,x = np.histogram(cov_diff,np.linspace(0,2e-3,100,dtype=np.float))
+        if self._hist_y is None:
+            self._hist_y = y
         else:
-            self._toa_data.setData(x=x,y=y, stepMode=True, fillLevel=0, brush=(0,0,255,150))
+            self._hist_y+= y
+        
+        self._toa_data.setData(x=x,y=self._hist_y, stepMode=True, fillLevel=0, brush=(0,0,255,150))
         
         return True
 
-    def updateToT(self,trigger,tot_diff):
+    def updateToT(self,tot_diff):
         #print('TOT DIFF:', tot_diff)
         if tot_diff.size == 0:
             return
@@ -81,9 +89,10 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
         self.tot = data.tot
         self.diff = data.tof.astype(float) 
         if self.updateToA(self.diff):
+            self.updateToT(self.tot)
             self.updateMainPlot()
     def updateMainPlot(self):
-        self._viewer_data[...] = 0.0
+        
         min_t,max_t = self._toa_roi.getRegion()
         view_filter = np.logical_and(self.diff >= min_t,self.diff <= max_t)
         
@@ -91,7 +100,10 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
         x = self.x[view_filter]
         y=self.y[view_filter]
         diff=self.diff[view_filter]
-        self._viewer_data[x,y] = diff
+        # x = self.x
+        # y = self.y
+        # diff  = self.diff
+        self._viewer_data[x,y] += diff
         #print(np.where(self._viewer_data != 0))
         self.viewer.setImage(self._viewer_data)
 def main():

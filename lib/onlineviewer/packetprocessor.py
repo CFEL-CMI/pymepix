@@ -16,8 +16,7 @@ class EventData(object):
         self.toa = toa
         self.tot = tot
         self.tof = toa-trigger_time
-        print('Event', trigger_time,self.toa)
-        print('TOF',trigger_time, self.tof*1E6)
+
         # self.diff = np.array(diff)
         #Fix timestamping issues
         #self.diff += abs(self.diff.min())
@@ -32,45 +31,11 @@ class PacketProcessor(QtCore.QThread):
         self._global_trig_time = 0
      
     def run(self):
-        #with open("molbeam_000002.tpx3",'rb') as f:
-        with open("test_tof_000000.tpx3",'rb') as f:
+        with open("test_tof_500Hz_1ms000001.tpx3",'rb') as f:
+        #with open("test_tof_000000.tpx3",'rb') as f:
             self.read_data(f)
         #evt = EventData(0,self.col,self.row,self.globaltime,self.ToT)
         #self.onNewEvent.emit(evt)
-    def processPixelArray(self,pixdata,current_time):
-        if pixdata.size==0:
-            return None,None,None,None
-        dcol        = ((pixdata & 0x0FE0000000000000) >> 52)
-        spix        = ((pixdata & 0x001F800000000000) >> 45)
-        pix         = ((pixdata & 0x0000700000000000) >> 44)
-        col         = (dcol + pix//4)
-        row         = (spix + (pix & 0x3))
-
-
-        data        = ((pixdata & 0x00000FFFFFFF0000) >> 16)
-        spidr_time  = (pixdata & 0x000000000000FFFF)
-        ToA         = ((data & 0x0FFFC000) >> 14 )
-        ToA_coarse  = (spidr_time << 14) | ToA
-        FToA        = (data & 0xF)
-        globaltime  = (current_time & 0xFFFFC0000000) | (ToA_coarse & 0x3FFFFFFF)
-    
-
-        ToT         = ((data & 0x00003FF0) >> 4)*25E-9 # ns
-        pixelbits = ( ToA_coarse >> 28 ) & 0x3
-        longtimebits = ( current_time >> 28 ) & 0x3
-        diff = longtimebits - pixelbits     
-
-        neg = np.logical_or(diff==1,diff==-3)
-        pos = np.logical_or( diff == -1,diff == 3 )
-        if neg.size > 0:
-            globaltime[neg] = ( (current_time - 0x10000000) & 0xFFFFC0000000) | (ToA_coarse[neg] & 0x3FFFFFFF)
-        if pos.size > 0:
-            globaltime[pos] = ( (current_time + 0x10000000) & 0xFFFFC0000000) | (ToA_coarse[neg] & 0x3FFFFFFF)
-
-        globaltime <<=12
-        globaltime -= FToA<<8
-
-        return col,row,globaltime,ToT
 
     
     def processPixelSingle(self,pixdata,current_time):
@@ -91,10 +56,10 @@ class PacketProcessor(QtCore.QThread):
 
         ToT         = (data & 0x00003FF0) >> 4
         globaltime = (globaltime << 4) | FToA
-        if current_time != 0:
-            pixelbits = ( ToA_coarse >> 28 ) & 0x3
-            current_timebits = ( current_time >> 28 ) & 0x3
-            diff = current_timebits - pixelbits
+        # if current_time != 0:
+        #     pixelbits = ( ToA_coarse >> 28 ) & 0x3
+        #     current_timebits = ( current_time >> 28 ) & 0x3
+        #     diff = current_timebits - pixelbits
 
         #globaltime  = (globaltime) & (0x0FFFFFFFF)
         #print('Pixel spidr time', (spidr_time*(2**14)*25E-9))
@@ -103,7 +68,7 @@ class PacketProcessor(QtCore.QThread):
         # ToAs += ( ( (col//2) %16 ) << 8 )
         # if (((col//2)%16) == 0):
         #      ToAs += ( 16 << 8 )
-        return col,row,(globaltime*1.5625E-9),ToT
+        return col,row,(globaltime*1.5625E-9),ToT*25E-9
         
     def processTrigger(self,pixdata,current_time):
         coarsetime = (pixdata >> 9) & 0x7FFFFFFFF
@@ -111,12 +76,12 @@ class PacketProcessor(QtCore.QThread):
         # tmpfine = ((tmpfine-1) << 9) // 12
         # trigtime_fine = (pixdata & 0x0000000000000E00) | (tmpfine & 0x00000000000001FF);
         #time_unit=25./4096.0
-        global_clock = (current_time & 0xFFFFC0000000)*1.5925E-9
+        # global_clock = (current_time & 0xFFFFC0000000)*1.5925E-9
         time_unit=25./4096
         #print('RawTrigger TS: ',coarsetime*3.125E-9 )
         globaltime  = (coarsetime<<1) &(~0xC00000000)
         m_trigTime = (globaltime)*1.5625E-9 #+ trigtime_fine*time_unit*1E-9
-        print('Trigger ',m_trigTime)
+        #print('Trigger ',m_trigTime)
         return 0,m_trigTime
 
     def addPixel(self,col,row,toa,tot,reltoa):
@@ -163,7 +128,7 @@ class PacketProcessor(QtCore.QThread):
                 # neg_Tof = (to_check-toa) < 0
                 # #Update arrays
                 # self.updateBuffers(neg_Tof)
-                print(self.trigger_buffer)
+                #print(self.trigger_buffer)
                 #toa = self.rel_global
                 #print('Global: ', toa)
                 #Now we check for pixels that lie between the first and second
@@ -204,7 +169,6 @@ class PacketProcessor(QtCore.QThread):
         while bytes_read:
             self.loopPackets(bytes_read)
             bytes_read = f.read(8)
-        print('Finished')
     def loopPackets(self,_packet):
         
 
