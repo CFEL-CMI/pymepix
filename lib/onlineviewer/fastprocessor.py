@@ -3,7 +3,16 @@
 from pyqtgraph.Qt import QtCore, QtGui
 import numpy as np
 
+class EventData(object):
 
+    def __init__(self,trigger_counter,trigger_time,x,y,toa,tot):
+        self._number = trigger_counter
+        self.time = trigger_time
+        self.x = x
+        self.y = y
+        self.toa = toa
+        self.tot = tot
+        self.tof = toa-trigger_time
 
 class FastPacketProcessor(object):
 
@@ -21,18 +30,33 @@ class FastPacketProcessor(object):
         self._toa = None
 
         self._triggers = None
+        self._trigger_counter = 0
+
     
-    def run(self):
-        #with open("molbeam_000002.tpx3",'rb') as f:
-        with open("test_tof_000001.tpx3",'rb') as f:
-            self.read_data(f)
+    def reset(self):
+        self._longtime_lsb = 0
+        self._longtime_msb = 0
+        self._longtime = 0
+        self._pixel_time = 0
+        self._trigger_time = 0    
+
+        self._col = None
+        self._row = None
+        self._tot = None
+        self._toa = None
+
+        self._triggers = None
+        self._trigger_counter = 0      
         
     
-    def read_data(self,f,chunk_size=819200):
+    def read_data(self,f,chunk_size=8192000):
 
         #self.skipheader(f)
         bytes_read = f.read(chunk_size)
-        self.process_packets(bytes_read)
+        if bytes_read:
+            return self.process_packets(bytes_read)
+        else:
+            return None
 
 
 
@@ -47,6 +71,8 @@ class FastPacketProcessor(object):
         
         self.process_pixels(pixels)
         self.process_triggers(triggers)
+        return self.find_events()
+
     def process_pixels(self,pixdata):
         dcol        = ((pixdata & 0x0FE0000000000000) >> 52)
         spix        = ((pixdata & 0x001F800000000000) >> 45)
@@ -59,12 +85,11 @@ class FastPacketProcessor(object):
         spidr_time  = (pixdata & 0x000000000000FFFF)
         ToA         = ((data & 0x0FFFC000) >> 14 )
         ToA_coarse  = (spidr_time << 14) | ToA
-        FToA        = (data & 0xF)*1.5625
-        globalToA  =(ToA_coarse)*25.0
+        FToA        = (data & 0xF)*1.5625E-9
+        globalToA  =(ToA_coarse)*25.0E-9 - FToA + self._pixel_time
 
 
-        ToT         = (data & 0x00003FF0) >> 4
-        globalToA -=FToA
+        ToT         = ((data & 0x00003FF0) >> 4)*25.0E-9
         
 
         if self._col is None:
@@ -79,58 +104,92 @@ class FastPacketProcessor(object):
             self._tot = np.append(self._tot,ToT)
         
         #Correct the pixels global time
-        while self.correct_pixel_time():
-            continue
+        self.correct_pixel_time()
+
+
+    def find_events(self):
+        events_found = []
+        while self._triggers.size > 2:
+            start = self._triggers[0]
+            end = self._triggers[1]
+            self._trigger_counter += 1
+
+            evt_filter = (self._toa >= start) & (self._toa < end)
+            x,y,toa,tot = self.getBuffers(evt_filter)
+            if x.size > 0:
+                
+                event = EventData(self._trigger_counter,start,x,y,toa,tot)
+                events_found.append(event)
+
+
+                self.updateBuffers(~evt_filter)
+            self._triggers = self._triggers[1:]
+        
+        return events_found
+
+    
+
+
+            
+
 
     def correct_pixel_time(self):
         
         #Take the current globalToA and roll it then compute the differenct
 
+
+
         OToA = np.roll(self._toa,1)
         #Make sure the first is the same
         OToA[0] = self._toa[0]
+        diff = np.abs(self._toa - OToA)
+        #print(diff.max())
+        #print('MAX',diff.max())
+        #Find where the difference is larger than 20 seconds
+        diff = np.where(diff > 20.0)[0]
+        #print(diff)
+        while diff.size > 0:
+            
+            self._pixel_time += 1.5625E-9*(1<<34)
+            #print(self._pixel_time)
+            self._toa[diff[0]:] += 1.5625E-9*(1<<34)
 
-        OToA -= 1e9
-        OToA[0] = self._toa[0]
-        diff = np.where((self._toa - OToA) < 0)[0]
-        if diff.size > 0:
-            self._pixel_time += 1.5625*(1<<35)
-            self._toa[diff] += 1.5625*(1<<35)
             OToA = np.roll(self._toa,1)
             #Make sure the first is the same
             OToA[0] = self._toa[0]
+            diff = np.abs(self._toa - OToA)
+            #print('MAX',diff.max())
+            #Find where the difference is larger than 20 seconds
+            diff = np.where(diff > 20.0)[0]
+            #print('INDEX',diff)
 
-            OToA -= 1e9
-            OToA[0] = self._toa[0]
-            diff = np.where((self._toa - OToA) < 0)
-
-
-        return diff.size != 0
 
     def correct_trigger_time(self):
         
         #Take the current globalToA and roll it then compute the differenct
 
-        oldTriggers = np.roll(self._triggers,1)
+        OToA = np.roll(self._triggers,1)
         #Make sure the first is the same
-        oldTriggers[0] = self._triggers[0]
+        OToA[0] = self._triggers[0]
+        diff = np.abs(self._triggers - OToA)
+        #print(diff.max())
+        #print('MAX',diff.max())
+        #Find where the difference is larger than 20 seconds
+        diff = np.where(diff > 20.0)[0]
+        while diff.size > 0:
+            
+            self._trigger_time += 1.5625E-9*(1<<34)
+            #print(self._pixel_time)
+            self._triggers[diff[0]:] += 1.5625E-9*(1<<34)
 
-        oldTriggers -= 1e9
-        oldTriggers[0] = self._triggers[0]
-        diff = np.where((self._triggers - oldTriggers) < 0)[0]
-        if diff.size > 0:
-            self._pixel_time += 1.5625*(1<<35)
-            self._triggers[diff] += 1.5625*(1<<35)
-            oldTriggers = np.roll(self._triggers,1)
+            OToA = np.roll(self._triggers,1)
             #Make sure the first is the same
-            oldTriggers[0] = self._triggers[0]
+            OToA[0] = self._triggers[0]
+            diff = np.abs(self._triggers - OToA)
+            #Find where the difference is larger than 20 seconds
+            diff = np.where(diff > 20.0)[0]
 
-            oldTriggers -= 1e9
-            oldTriggers[0] = self._triggers[0]
-            diff = np.where((self._triggers - oldTriggers) < 0)
-
-
-        return diff.size != 0
+        
         #phase  = (col >> 1) & 15
 
     def updateBuffers(self,val_filter):
@@ -140,7 +199,7 @@ class FastPacketProcessor(object):
         self._tot = self._tot[val_filter]
 
     def getBuffers(self,val_filter):
-        return self._col[val_filter],self._row[val_filter],self._globaltime[val_filter],self._ToT[val_filter]
+        return self._col[val_filter],self._row[val_filter],self._toa[val_filter],self._tot[val_filter]
 
 
     def process_triggers(self,pixdata):
@@ -154,7 +213,7 @@ class FastPacketProcessor(object):
         #print('RawTrigger TS: ',coarsetime*3.125E-9 )
         globaltime  = (coarsetime<<1) & np.uint64(~0xC00000000)
         time_unit=25./4096
-        m_trigTime = (globaltime)*1.5625 + trigtime_fine*time_unit     
+        m_trigTime = (globaltime)*1.5625E-9 + trigtime_fine*time_unit*1E-9 +self._trigger_time
 
         if self._triggers is None:
             self._triggers = m_trigTime
@@ -164,8 +223,13 @@ class FastPacketProcessor(object):
         while self.correct_trigger_time():
             continue
 def main():
+    import matplotlib.pyplot as plt
     pp = FastPacketProcessor()
-    pp.run()
+    events = None
+    with open('molbeam_000000.tpx3','rb') as f:
+        #Gives a list of events or None if reached end of file
+        events = pp.read_data(f,chunk_size=81920000)
+
 
 if __name__=="__main__":
     main()
