@@ -75,16 +75,15 @@ class PacketProcessor(multiprocessing.Process):
         neg = diff == 1 | diff == -3
         pos = diff == -1 | diff == 3
         zero = diff == 0
-        arr[neg] =  globaltime = ( (ltime - 0x10000000) & 0xFFFFC0000000) | (arr[neg] & 0x3FFFFFFF)
-        arr[pos] =  globaltime = ( (ltime + 0x10000000) & 0xFFFFC0000000) | (arr[pos] & 0x3FFFFFFF)
-        arr[zero] =  globaltime = ( (ltime) & 0xFFFFC0000000) | (arr[zero] & 0x3FFFFFFF)
+        arr[neg] =   ( (ltime - 0x10000000) & 0xFFFFC0000000) | (arr[neg] & 0x3FFFFFFF)
+        arr[pos] =   ( (ltime + 0x10000000) & 0xFFFFC0000000) | (arr[pos] & 0x3FFFFFFF)
+        arr[zero] =   ( (ltime) & 0xFFFFC0000000) | (arr[zero] & 0x3FFFFFFF)
         
         return arr
 
     def process_triggers(self,pixdata,longtime):
         coarsetime = (pixdata >> 9) & 0x7FFFFFFFF
 
-        last_bits = coarsetime & 0xF
         coarsetime >>=3
 
 
@@ -92,8 +91,7 @@ class PacketProcessor(multiprocessing.Process):
         tmpfine = ((tmpfine-1) << 9) // 12
         trigtime_fine = (pixdata & 0x0000000000000E00) | (tmpfine & 0x00000000000001FF)
 
-        g_coarsetime = self.correct_global_time(coarsetime,longtime)
-        globaltime = g_coarsetime << 3 | last_bits
+        globaltime = self.correct_global_time(coarsetime,longtime)
         time_unit=25./4096.0
         # global_clock = (current_time & 0xFFFFC0000000)*1.5925E-9
         
@@ -102,7 +100,7 @@ class PacketProcessor(multiprocessing.Process):
 
 
         time_unit=25./4096
-        m_trigTime = (globaltime)*1.5625E-9 + trigtime_fine*time_unit*1E-9
+        m_trigTime = (globaltime)*25E-9 + trigtime_fine*time_unit*1E-9
 
         if self._triggers is None:
             self._triggers = m_trigTime
