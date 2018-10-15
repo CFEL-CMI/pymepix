@@ -488,8 +488,8 @@ class TimePixAcq(object):
 
     def startAcquisition(self):
 
-        # self._spidr.datadrivenReadout()
-        # self._device.t0Sync()
+        self._spidr.datadrivenReadout()
+        self._device.t0Sync()
         # self._spidr.resetTimers()
         # if self.shutterTriggerMode == SpidrShutterMode.Auto:
         #     self._spidr.startAutoTrigger()
@@ -500,7 +500,7 @@ class TimePixAcq(object):
         print('Starting acquisition')
     def stopAcquisition(self):
         self.pauseTimer()
-        #self._spidr.closeShutter()
+        self._spidr.closeShutter()
         print('Stopping acqusition')
         self._shared_acq.value = 0
     def resetPixels(self):
