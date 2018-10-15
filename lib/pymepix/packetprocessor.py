@@ -47,14 +47,18 @@ class PacketProcessor(multiprocessing.Process):
         ToA         = ((data & 0x0FFFC000) >> 14 )
         ToA_coarse  = self.correct_global_time((spidr_time << 14) | ToA,longtime)
         FToA        = (data & 0xF)
-   
+
 
 
         ToT         = ((data & 0x00003FF0) >> 4)*25.0E-9 #Convert to ns
 
 
 
-        globalToA  =((ToA_coarse<<4) | ~FToA)*1.5625E-9
+        globalToA  =((ToA_coarse<<4) | ~FToA) + ((col//2) %16)
+        check = ((col//2) %16 ) == 0)
+        globalToA[check] += 16
+        
+        finalToA = globalToA*1.5625E-9
 
         if self._col is None:
             self._col = col
@@ -64,7 +68,7 @@ class PacketProcessor(multiprocessing.Process):
         else:
             self._col = np.append(self._col,col)
             self._row = np.append(self._row,row)
-            self._toa = np.append(self._toa,globalToA)
+            self._toa = np.append(self._toa,finalToA)
             self._tot = np.append(self._tot,ToT)
 
 
