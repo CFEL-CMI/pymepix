@@ -10,7 +10,6 @@ class PacketSampler(multiprocessing.Process):
         multiprocessing.Process.__init__(self)
         self._acq_status = acq_status
         self._long_time = shared_long_time
-        self.createSampleBuffer(sample_buffer_size)
         self.createConnection(address)
         self._packets_collected = 0
         self._output_queue = Queue()
@@ -19,12 +18,6 @@ class PacketSampler(multiprocessing.Process):
     def outputQueue(self):
         return self._output_queue
 
-    def createSampleBuffer(self,sample_buffer_size):
-        # shape = (sample_buffer_size,2)
-        # self._sample_buffer_size = sample_buffer_size
-        # self._sample_buffer =RawArray(np.int64, int(np.prod(shape)))
-        # self._numpy_buffer = np.frombuffer(self._sample_buffer,dtype=np.int64).reshape(shape)
-        self._packet_buffer= np.ndarray(shape=(2048,),dtype='<u8')
     def createConnection(self,address):
         self._sock = socket.socket(socket.AF_INET, # Internet
                             socket.SOCK_DGRAM) # UDP
@@ -38,17 +31,19 @@ class PacketSampler(multiprocessing.Process):
                 continue
 
 
-            size = self._sock.recv_into(self._packet_buffer,16384) # buffer size is 1024 bytes
-            packet = self._packet_buffer[0:size//8]
+            raw_packet = self._sock.recv(16384) # buffer size is 1024 bytes
+            packet = np.frombuffer(raw_packet,dtype=np.uint64)
             #self._file_queue.put(('WRITE',packet.tostring()))
             current_time = self._long_time.value
             #Get the header
             header = ((packet & 0xF000000000000000) >> 60) & 0xF
-            tpx_packets = np.logical_or.reduce((header == 0xB,header == 0xA,header ==0x6,header==0x4))
-            self._output_queue.put((packet[tpx_packets],current_time))
+            subheader = ((packet & 0x0F00000000000000) >> 56) & 0xF
+            tpx_filter = header ==0xA |header==0xB | ((header==0x4|header==0x6) & subheader == 0xF)
+            tpx_packets = packet[tpx_filter]
+            if tpx_packets.size > 0:
+                self._output_queue.put((packet[tpx_packets],current_time))
 
             self._packets_collected+=1
-            self._packet_buffer[...]=0
 
 
 
