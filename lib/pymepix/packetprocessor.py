@@ -104,7 +104,7 @@ class PacketProcessor(multiprocessing.Process):
 
 
         time_unit=25./4096
-        m_trigTime = (globaltime)*25E-9+ trigtime_fine*1E-9
+        m_trigTime = (globaltime)*25E-9+ trigtime_fine*time_unit*1E-9
         #print('TRIGGERS',m_trigTime)
         if self._triggers is None:
             self._triggers = m_trigTime
@@ -160,10 +160,10 @@ class PacketProcessor(multiprocessing.Process):
                 packet = self._input_queue.get()
                 # this is the 'TERM' signal
                 if packet is None:
+
+                    if self._output_queue is not None:
+                        self._output_queue.put(None)
                     break
-                elif packet[0] == 'RESET':
-                    self.reset()
-                    continue
                 data = packet[0]
                 longtime = packet[1]
                 #print('GOT DATA')
