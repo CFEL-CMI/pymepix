@@ -53,17 +53,16 @@ class PacketProcessor(multiprocessing.Process):
         ToT         = ((data & 0x00003FF0) >> 4)*25.0E-9 #Convert to ns
 
 
-
-        globalToA  =((ToA_coarse<<4) | ~FToA) + ((col//2) %16)
-        check = ((col//2) %16 ) == 0)
-        globalToA[check] += 16
+        globalToA = (ToA_coarse << 12) - (FToA << 8)
+        globalToA += ((col//2) %16 ) << 8
+        globalToA[((col//2) %16)==0] += (16<<8)
+        finalToA = globalToA*(25/4096)*1E-9
         
-        finalToA = globalToA*1.5625E-9
 
         if self._col is None:
             self._col = col
             self._row = row
-            self._toa = globalToA
+            self._toa = finalToA
             self._tot = ToT
         else:
             self._col = np.append(self._col,col)
