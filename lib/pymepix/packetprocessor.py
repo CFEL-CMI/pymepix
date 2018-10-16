@@ -7,7 +7,7 @@ from multiprocessing import Queue
 from .timepixdef import PacketType
 class PacketProcessor(multiprocessing.Process):
 
-    def __init__(self,input_queue,output_queue,exposure_length):
+    def __init__(self,input_queue,output_queue):
         multiprocessing.Process.__init__(self)
         self._input_queue = input_queue
         self._output_queue = output_queue
@@ -50,15 +50,16 @@ class PacketProcessor(multiprocessing.Process):
 
 
 
-        ToT         = ((data & 0x00003FF0) >> 4)*25.0E-9 #Convert to ns
+        ToT         = ((data & 0x00003FF0) >> 4)*25 #Convert to ns
 
 
         globalToA = (ToA_coarse << 12) - (FToA << 8)
         globalToA += ((col//2) %16 ) << 8
         globalToA[((col//2) %16)==0] += (16<<8)
-        finalToA = globalToA*(25/4096)*1E-9
+        time_unit=25./4096
+        finalToA = globalToA*time_unit*1E-9
         
-
+        #print('PIXEL',finalToA)
         if self._col is None:
             self._col = col
             self._row = row
@@ -75,9 +76,9 @@ class PacketProcessor(multiprocessing.Process):
         pixelbits = ( arr >> 28 ) & 0x3
         ltimebits = ( ltime >> 28 ) & 0x3
         diff = ltimebits - pixelbits
-        neg = diff == 1 | diff == -3
-        pos = diff == -1 | diff == 3
-        zero = diff == 0
+        neg = (diff == 1) | (diff == -3)
+        pos = (diff == -1) | (diff == 3)
+        zero = (diff == 0)
         arr[neg] =   ( (ltime - 0x10000000) & 0xFFFFC0000000) | (arr[neg] & 0x3FFFFFFF)
         arr[pos] =   ( (ltime + 0x10000000) & 0xFFFFC0000000) | (arr[pos] & 0x3FFFFFFF)
         arr[zero] =   ( (ltime) & 0xFFFFC0000000) | (arr[zero] & 0x3FFFFFFF)
@@ -95,7 +96,7 @@ class PacketProcessor(multiprocessing.Process):
         trigtime_fine = (pixdata & 0x0000000000000E00) | (tmpfine & 0x00000000000001FF)
 
         globaltime = self.correct_global_time(coarsetime,longtime)
-        time_unit=25./4096.0
+        #time_unit=25./4096.0
         # global_clock = (current_time & 0xFFFFC0000000)*1.5925E-9
         
         #print('RawTrigger TS: ',coarsetime*3.125E-9 )
@@ -103,8 +104,8 @@ class PacketProcessor(multiprocessing.Process):
 
 
         time_unit=25./4096
-        m_trigTime = (globaltime)*25E-9 + trigtime_fine*time_unit*1E-9
-
+        m_trigTime = (globaltime)*25E-9+ trigtime_fine*1E-9
+        #print('TRIGGERS',m_trigTime)
         if self._triggers is None:
             self._triggers = m_trigTime
         else:
@@ -131,7 +132,7 @@ class PacketProcessor(multiprocessing.Process):
         
         self.process_pixels(pixels,longtime)
         self.process_triggers(triggers,longtime)
-
+        return self.find_events()
     def find_events(self):
         events_found = []
         while self._triggers.size > 2:
@@ -165,11 +166,11 @@ class PacketProcessor(multiprocessing.Process):
                     continue
                 data = packet[0]
                 longtime = packet[1]
-                
+                #print('GOT DATA')
                 events = self.process_packets(data,longtime)
 
-                if len(events)> 0:
-                    self.output_queue.put(events)
+                if len(events)> 0 and self._output_queue is not None:
+                    self._output_queue.put(events)
 
         
             except Exception as e:

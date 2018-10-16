@@ -18,7 +18,7 @@ class TimePixAcq(object):
 
         while self._run_timer:
             self._timer_lsb,self._timer_msb = self._device.timer
-            self._timer = (self._timer_msb << 32)|self._timer_lsb
+            self._timer = (self._timer_msb & 0xFFFF)<<16 |(self._timer_lsb & 0xFFFF)
             self._shared_timer.value = self._timer
             while self._pause and self._run_timer:
                 continue
