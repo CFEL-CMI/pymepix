@@ -23,6 +23,18 @@ class PacketSampler(multiprocessing.Process):
                             socket.SOCK_DGRAM) # UDP
         self._sock.bind(address)
 
+    def upload_packet(self,packet,longtime):
+        #Get the header
+        header = ((packet & 0xF000000000000000) >> 60) & 0xF
+        subheader = ((packet & 0x0F00000000000000) >> 56) & 0xF
+        pix_filter = (header ==0xA) |(header==0xB) 
+        trig_filter =  ((header==0x4)|(header==0x6) & (subheader == 0xF))
+        tpx_filter = pix_filter | trig_filter
+        tpx_packets = packet[tpx_filter]
+        #print(tpx_packets)
+        if tpx_packets.size > 0 and self._output_queue is not None:
+            #print('UPLOADING')
+            self._output_queue.put((tpx_packets,longtime))
     
     def run(self):
         while True:
@@ -35,13 +47,7 @@ class PacketSampler(multiprocessing.Process):
             packet = np.frombuffer(raw_packet,dtype=np.uint64)
             #self._file_queue.put(('WRITE',packet.tostring()))
             current_time = self._long_time.value
-            #Get the header
-            header = ((packet & 0xF000000000000000) >> 60) & 0xF
-            subheader = ((packet & 0x0F00000000000000) >> 56) & 0xF
-            tpx_filter = header ==0xA |header==0xB | ((header==0x4|header==0x6) & subheader == 0xF)
-            tpx_packets = packet[tpx_filter]
-            if tpx_packets.size > 0:
-                self._output_queue.put((packet[tpx_packets],current_time))
+            self.upload_packet(packet,current_time)
 
             self._packets_collected+=1
 
