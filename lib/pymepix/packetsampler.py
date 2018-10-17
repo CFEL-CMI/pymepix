@@ -44,7 +44,7 @@ class PacketSampler(multiprocessing.Process):
 
 
             raw_packet = self._sock.recv(16384) # buffer size is 1024 bytes
-            packet = np.frombuffer(raw_packet,dtype=np.uint64)
+            packet = np.frombuffer(raw_packet,dtype='>u8')
             #self._file_queue.put(('WRITE',packet.tostring()))
             current_time = self._long_time.value
             self.upload_packet(packet,current_time)
