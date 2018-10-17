@@ -1,5 +1,5 @@
 import multiprocessing
-
+import traceback
 from multiprocessing.sharedctypes import RawArray 
 import numpy as np
 import socket
@@ -175,3 +175,4 @@ class PacketProcessor(multiprocessing.Process):
         
             except Exception as e:
                 print (str(e))
+                traceback.print_exc()
