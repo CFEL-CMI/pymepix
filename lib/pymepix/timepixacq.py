@@ -18,13 +18,14 @@ class TimePixAcq(object):
 
         while self._run_timer:
             self._timer_lsb,self._timer_msb = self._device.timer
-            self._timer = (self._timer_msb & 0xFFFF)<<16 |(self._timer_lsb & 0xFFFF)
+            self._timer = (self._timer_msb & 0xFFFFFFFF)<<32 |(self._timer_lsb & 0xFFFFFFFF)
             self._shared_timer.value = self._timer
             while self._pause and self._run_timer:
                 continue
     def dataThread(self):
 
         while True:
+
             value = self._data_queue.get()
             if value is None:
                 break
@@ -46,7 +47,7 @@ class TimePixAcq(object):
         self._data_queue = multiprocessing.Queue()
         self._file_queue =  multiprocessing.Queue()
         self._pause = False
-
+        self._spidr.datadrivenReadout()
 
         self._run_timer = True
 
@@ -64,7 +65,7 @@ class TimePixAcq(object):
         self._data_thread.start()
         self._file_storage = FileStorage(self._file_queue)
         self._packet_sampler = PacketSampler((UDP_IP,UDP_PORT),self._file_queue,self._shared_timer,self._shared_acq)
-        self._packet_processor = PacketProcessor(self._packet_sampler.outputQueue,self._data_queue,self._shared_exp_time)
+        self._packet_processor = PacketProcessor(self._packet_sampler.outputQueue,self._data_queue)
 
         self._packet_processor.start()
         self._file_storage.start()
@@ -488,7 +489,7 @@ class TimePixAcq(object):
 
     def startAcquisition(self):
 
-        self._spidr.datadrivenReadout()
+        
         self._device.t0Sync()
         # self._spidr.resetTimers()
         # if self.shutterTriggerMode == SpidrShutterMode.Auto:
@@ -540,7 +541,7 @@ def main():
     # print (tpx.Ibias_Ikrum)
     # print (tpx.Vfbk)
     tpx.startAcquisition()
-    time.sleep(1)
+    time.sleep(2)
     tpx.stopAcquisition()
     
     tpx.stopThreads()
