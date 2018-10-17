@@ -129,7 +129,6 @@ class PacketProcessor(multiprocessing.Process):
 
         pixels = packet[np.logical_or(header ==0xA,header==0xB)]
         triggers = packet[np.logical_and(np.logical_or(header==0x4,header==0x6),subheader == 0xF)]
-        
         self.process_pixels(pixels,longtime)
         self.process_triggers(triggers,longtime)
         return self.find_events()
@@ -163,7 +162,7 @@ class PacketProcessor(multiprocessing.Process):
 
                     if self._output_queue is not None:
                         self._output_queue.put(None)
-                    break
+                        break
                 data = packet[0]
                 longtime = packet[1]
                 #print('GOT DATA')
@@ -176,3 +175,4 @@ class PacketProcessor(multiprocessing.Process):
             except Exception as e:
                 print (str(e))
                 traceback.print_exc()
+
