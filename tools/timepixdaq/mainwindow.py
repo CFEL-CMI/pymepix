@@ -27,21 +27,17 @@ class MainWindow(QtGui.QMainWindow,Ui_MainWindow):
         
 
         self._dock_tab_widget = QtGui.QDockWidget(parent=self)
-        self._config_widget = TimepixConfiguration(self._timepix)
-        tabwidget.addTab(self._config_widget,'Configuration')
         self._dock_tab_widget.setWidget(tabwidget)
         self.addDockWidget(QtCore.Qt.RightDockWidgetArea,self._dock_tab_widget)
 
-        self._data_processor = DataProcessor()
-        self._timepix.attachPixelCallback(self.onNewPixel)
-        self._timepix.attachTriggerCallback(self.onNewTrigger)
+        self._timepix.attachEventCallback(self.onNewTrigger)
         self.connectSignals()
 
-        self._data_processor.start()
-        self.startAcquisiton()
+        self._timepix.startAcquisition()
     
     def onNewTrigger(self,trigger):
 
+        print('new Trigger')
         self.newTriggerData.emit(trigger)
 
     def onNewPixel(self,pixel):
@@ -49,14 +45,8 @@ class MainWindow(QtGui.QMainWindow,Ui_MainWindow):
         self.newPixelData.emit(pixel)
 
     def connectSignals(self):
-        self.newPixelData.connect(self._data_processor.onNewPixelData)
-        self.newTriggerData.connect(self._data_processor.onNewTrigger)
 
-        self._data_processor.triggerRegionData.connect(self._viewer_widget.onNewTriggerData)
-        self.acquisitionStart.connect(self._data_processor.acquisitionStart)
-        self.acquisitionStart.connect(self._timepix.startAcquisition)
-    def startAcquisiton(self):
-        self.acquisitionStart.emit()
+        self.newTriggerData.connect(self._viewer_widget.onNewTriggerData)
 
 def main():
     import sys
