@@ -32,7 +32,7 @@ class PacketSampler(multiprocessing.Process):
         trig_filter =  ((header==0x4)|(header==0x6) & (subheader == 0xF))
         tpx_filter = pix_filter | trig_filter
         tpx_packets = packet[tpx_filter]
-        #print(tpx_packets)
+        
         if tpx_packets.size > 0 and self._output_queue is not None:
             #print('UPLOADING')
             self._output_queue.put((tpx_packets,longtime))
@@ -53,8 +53,7 @@ class PacketSampler(multiprocessing.Process):
 
             raw_packet = self._sock.recv(16384) # buffer size is 1024 bytes
 
-            packet = np.array(self.convert_data_to_ints(raw_packet,big_endian=True),dtype=np.uint64)
-
+            packet = np.frombuffer(raw_packet,dtype='<u8')
             #self._file_queue.put(('WRITE',packet.tostring()))
             current_time = self._long_time.value
             self.upload_packet(packet,current_time)
