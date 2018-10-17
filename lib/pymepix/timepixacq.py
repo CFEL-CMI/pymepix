@@ -47,7 +47,7 @@ class TimePixAcq(object):
         self._data_queue = multiprocessing.Queue()
         self._file_queue =  multiprocessing.Queue()
         self._pause = False
-        self._spidr.datadrivenReadout()
+        #self._spidr.datadrivenReadout()
 
         self._run_timer = True
 
@@ -489,7 +489,7 @@ class TimePixAcq(object):
 
     def startAcquisition(self):
 
-        
+        self._spidr.resetTimers()
         self._device.t0Sync()
         # self._spidr.resetTimers()
         # if self.shutterTriggerMode == SpidrShutterMode.Auto:
@@ -541,7 +541,7 @@ def main():
     # print (tpx.Ibias_Ikrum)
     # print (tpx.Vfbk)
     tpx.startAcquisition()
-    time.sleep(2)
+    time.sleep(40)
     tpx.stopAcquisition()
     
     tpx.stopThreads()
