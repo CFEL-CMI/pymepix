@@ -15,6 +15,10 @@ class PacketSampler(multiprocessing.Process):
         self._packets_collected = 0
         self._output_queue = Queue()
         self._file_queue = Queue()
+
+
+        
+
     @property
     def outputQueue(self):
         return self._output_queue
@@ -26,16 +30,16 @@ class PacketSampler(multiprocessing.Process):
 
     def upload_packet(self,packet,longtime):
         #Get the header
-        header = ((packet & 0xF000000000000000) >> 60) & 0xF
-        subheader = ((packet & 0x0F00000000000000) >> 56) & 0xF
-        pix_filter = (header ==0xA) |(header==0xB) 
-        trig_filter =  ((header==0x4)|(header==0x6) & (subheader == 0xF))
-        tpx_filter = pix_filter | trig_filter
-        tpx_packets = packet[tpx_filter]
+        # header = ((packet & 0xF000000000000000) >> 60) & 0xF
+        # subheader = ((packet & 0x0F00000000000000) >> 56) & 0xF
+        # pix_filter = (header ==0xA) |(header==0xB) 
+        # trig_filter =  ((header==0x4)|(header==0x6) & (subheader == 0xF))
+        # tpx_filter = pix_filter | trig_filter
+        # tpx_packets = packet[tpx_filter]
         
-        if tpx_packets.size > 0 and self._output_queue is not None:
+        if packet.size > 0 and self._output_queue is not None:
             #print('UPLOADING')
-            self._output_queue.put((tpx_packets,longtime))
+            self._output_queue.put((packet,longtime))
 
     def convert_data_to_ints(self,data, big_endian=True):
         #print(len(data))
@@ -52,6 +56,15 @@ class PacketSampler(multiprocessing.Process):
 
 
             raw_packet = self._sock.recv(16384) # buffer size is 1024 bytes
+
+            
+
+            assert (len(raw_packet) % 8 == 0)
+
+            little = int.from_bytes(raw_packet, byteorder='little')
+            big = int.from_bytes(raw_packet, byteorder='big')
+                    
+            # print('Little: {:16X} Big: {:16X} '.format(little,big))
 
             packet = np.frombuffer(raw_packet,dtype='<u8')
             #self._file_queue.put(('WRITE',packet.tostring()))

@@ -53,5 +53,6 @@ def main():
     daq = MainWindow()
     daq.show()
     app.exec_()
+    daq._timepix.stopThreads()
 if __name__=="__main__":
     main()

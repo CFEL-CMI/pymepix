@@ -36,6 +36,8 @@ class TimePixAcq(object):
         self._spidr = SPIDRController(ip_port)
 
         self._device = self._spidr[device_num]
+
+        #self._spidr.enableDecoders(False)
         #self._device.reinitDevice()
         #self._device.getPixelConfig()
         self._eventCallback = None
@@ -488,20 +490,20 @@ class TimePixAcq(object):
 
 
     def startAcquisition(self):
-
-        self._spidr.resetTimers()
-        self._device.t0Sync()
+        #self._spidr.closeShutter()
+        #self._spidr.resetTimers()
+        #self._device.t0Sync()
         # self._spidr.resetTimers()
         # if self.shutterTriggerMode == SpidrShutterMode.Auto:
         #     self._spidr.startAutoTrigger()
         # elif self._open_shutter:
-        self._spidr.openShutter()
+        #self._spidr.openShutter()
         self.resumeTimer()
         self._shared_acq.value = 1
         print('Starting acquisition')
     def stopAcquisition(self):
         self.pauseTimer()
-        self._spidr.closeShutter()
+        # self._spidr.closeShutter()
         print('Stopping acqusition')
         self._shared_acq.value = 0
     def resetPixels(self):
@@ -541,7 +543,7 @@ def main():
     # print (tpx.Ibias_Ikrum)
     # print (tpx.Vfbk)
     tpx.startAcquisition()
-    time.sleep(40)
+    time.sleep(5)
     tpx.stopAcquisition()
     
     tpx.stopThreads()
