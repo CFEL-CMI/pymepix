@@ -4,6 +4,7 @@ from multiprocessing.sharedctypes import RawArray
 import numpy as np
 import socket
 from multiprocessing import Queue
+import struct
 class PacketSampler(multiprocessing.Process):
 
     def __init__(self,address,file_queue,shared_long_time,acq_status,sample_buffer_size=100000):
@@ -35,7 +36,14 @@ class PacketSampler(multiprocessing.Process):
         if tpx_packets.size > 0 and self._output_queue is not None:
             #print('UPLOADING')
             self._output_queue.put((tpx_packets,longtime))
-    
+
+    def convert_data_to_ints(self,data, big_endian=True):
+        #print(len(data))
+        int_count = len(data) // 8  # Assuming uint is 4 bytes long !!!
+        fmt = ">" if big_endian else "<"
+        fmt += "q" * int_count
+        return struct.unpack(fmt, data[:int_count * 8])
+
     def run(self):
         while True:
             if self._acq_status.value==0:
@@ -44,12 +52,19 @@ class PacketSampler(multiprocessing.Process):
 
 
             raw_packet = self._sock.recv(16384) # buffer size is 1024 bytes
-            packet = np.frombuffer(raw_packet,dtype='>u8')
+
+            packet = np.array(self.convert_data_to_ints(raw_packet,big_endian=True),dtype=np.uint64)
+
             #self._file_queue.put(('WRITE',packet.tostring()))
             current_time = self._long_time.value
             self.upload_packet(packet,current_time)
 
             self._packets_collected+=1
+
+
+
+
+
 
 
 
