@@ -9,7 +9,6 @@ from pymepix import *
 from ui.mainwindow_designer import Ui_MainWindow
 from timepixconfig import TimepixConfiguration
 from datavisualizer import DataVisualizer
-from dataprocessor import DataProcessor
 class MainWindow(QtGui.QMainWindow,Ui_MainWindow):
 
 
