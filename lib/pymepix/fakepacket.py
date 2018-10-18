@@ -20,7 +20,7 @@ class FakePacket(object):
         self._file = open(self._filename,'rb')
         #Find longtime
         #Read about 8 mb
-        buffer = self._file.read(8192*1000)
+        buffer = self._file.read(8192*100)
         packet = np.frombuffer(buffer,dtype=np.uint64)
         header = ((packet & 0xF000000000000000) >> 60) & 0xF
         subheader = ((packet & 0x0F00000000000000) >> 56) & 0xF
@@ -45,9 +45,9 @@ class FakePacket(object):
     def run(self):
 
 
-        buffer = self._file.read(8192*1000) # buffer size is 1024 bytes
+        buffer = self._file.read(8192*10000) # buffer size is 1024 bytes
         
-        if buffer:
+        while buffer:
             packet = np.frombuffer(buffer,dtype=np.uint64)
             #self._file_queue.put(('WRITE',raw_packet))
             header = ((packet & 0xF000000000000000) >> 60) & 0xF
@@ -76,7 +76,8 @@ class FakePacket(object):
 
             else:
                 self.upload_packet(packet)               
-
+            buffer = self._file.read(8192*10000)
+        # self._output_queue.put(None)
     
     def upload_packet(self,packet):
         #Get the header
@@ -106,22 +107,25 @@ def goodPart(queue,plt2):
 
     start = time.time()
     print('HISTO')
-    for item in iter(queue.get, None):
-        for trigger_counter,start,x,y,toa,tot in item:
-            tof = toa-start
-            _y,_x = np.histogram(tof,np.linspace(52E-6,58E-6,1000))
-            if hy is None:
-                hy = _y
-                hx = _x
-            else:
-                hy+=_y
-            
+    for event in iter(queue.get, None):
+        #print('Found event')
+        triggers,x,y,toa,tot,mapping = event
+        trg_idx,toa_idx = mapping
+
+        tof = toa[toa_idx]-triggers[trg_idx]
+        _y,_x = np.histogram(tof.flatten(),np.linspace(52E-6,58E-6,1000))
+        if hy is None:
+            hy = _y
+            hx = _x
+        else:
+            hy+=_y
+        
         end = time.time()
         if (end-start) > 2:
             print('Event ')
             plt2.setData(x=hx, y=hy, stepMode=True, fillLevel=0, brush=(0,0,255,150))
             start = end
-
+    plt2.setData(x=hx, y=hy, stepMode=True, fillLevel=0, brush=(0,0,255,150))
     print('DONE')
 
 def main():
@@ -129,29 +133,31 @@ def main():
     import pyqtgraph as pg
     from pyqtgraph.Qt import QtCore, QtGui
     import threading
-    win = pg.GraphicsWindow()
-    win.resize(800,350)
-    win.setWindowTitle('pyqtgraph example: Histogram')
-    plt1 = win.addPlot()    
-    plt1.setLabel('bottom',text='Time of Flight',units='s')
-    plt1.setLabel('left',text='Hits')
-    tof_data = pg.PlotDataItem()
-    plt1.addItem(tof_data)
+    # win = pg.GraphicsWindow()
+    # win.resize(800,350)
+    # win.setWindowTitle('pyqtgraph example: Histogram')
+    # plt1 = win.addPlot()    
+    # plt1.setLabel('bottom',text='Time of Flight',units='s')
+    # plt1.setLabel('left',text='Hits')
+    # tof_data = pg.PlotDataItem()
+    # plt1.addItem(tof_data)
     pixq = Queue()
-    evnt = Queue()
+    evnt = None
     pp=PacketProcessor(pixq,evnt)
     pp.start()
     fp = FakePacket('/Users/alrefaie/Documents/repos/libtimepix/lib/onlineviewer/coin4-1.dat',pixq)
     fp.run()
     pixq.put(None)
-    t = threading.Thread(target=goodPart,args=(evnt,tof_data,))
-    t.start()
+    # t = threading.Thread(target=goodPart,args=(evnt,tof_data,))
+    # t.start()
 
     
     
-    QtGui.QApplication.instance().exec_()
-
+    # QtGui.QApplication.instance().exec_()
+    # t.join()
     pp.join()
+
+    # 
 
 if __name__=='__main__':
     main()
