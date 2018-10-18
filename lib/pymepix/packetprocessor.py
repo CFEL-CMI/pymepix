@@ -64,8 +64,6 @@ class PacketProcessor(multiprocessing.Process):
     #         self._tot = np.append(self._tot,ToT)
 
     def process_pixels(self,pixdata,longtime):
-        if pixdata.size == 0:
-            return
         dcol        = ((pixdata & 0x0FE0000000000000) >> 52)
         spix        = ((pixdata & 0x001F800000000000) >> 45)
         pix         = ((pixdata & 0x0000700000000000) >> 44)
@@ -88,8 +86,9 @@ class PacketProcessor(multiprocessing.Process):
         globalToA += ((col//2) %16 ) << 8
         globalToA[((col//2) %16)==0] += (16<<8)
         time_unit=25./4096
-        finalToA = globalToA*np.float64(time_unit*1E-9)
-
+        finalToA = globalToA*time_unit*1E-9
+        
+        #print('PIXEL',finalToA,longtime)
         if self._col is None:
             self._col = col
             self._row = row
@@ -103,54 +102,46 @@ class PacketProcessor(multiprocessing.Process):
 
 
     def correct_global_time(self,arr,ltime):
-
-        pixelbits = (( arr >> 28 ) & 0x3).astype(np.int8)
-        ltimebits = int(( ltime >> 28 ) & 0x3)
-        
-        diff = ltimebits - pixelbits.astype(np.int64)
+        pixelbits = ( arr >> 28 ) & 0x3
+        ltimebits = ( ltime >> 28 ) & 0x3
+        diff = ltimebits - pixelbits
         neg = (diff == 1) | (diff == -3)
         pos = (diff == -1) | (diff == 3)
-        arr=   ( (ltime) & 0xFFFFC0000000) | (arr & 0x3FFFFFFF)
+        zero = (diff == 0)
         arr[neg] =   ( (ltime - 0x10000000) & 0xFFFFC0000000) | (arr[neg] & 0x3FFFFFFF)
         arr[pos] =   ( (ltime + 0x10000000) & 0xFFFFC0000000) | (arr[pos] & 0x3FFFFFFF)
-        #print(( (ltime - 0x10000000) & 0xFFFFC0000000))
+        arr[zero] =   ( (ltime) & 0xFFFFC0000000) | (arr[zero] & 0x3FFFFFFF)
+        
         return arr
 
-    # def process_triggers(self,pixdata,longtime):
-    #     coarsetime = (pixdata >> 9) & 0x7FFFFFFFF
-    #     tmpfine = (pixdata >> 5 ) & 0xF
-    #     tmpfine = ((tmpfine-1) << 9) // 12
-    #     trigtime_fine = (pixdata & 0x0000000000000E00) | (tmpfine & 0x00000000000001FF);
-    #     #time_unit=25./4096.0
-    #     # global_clock = (current_time & 0xFFFFC0000000)*1.5925E-9
-        
-    #     #print('RawTrigger TS: ',coarsetime*3.125E-9 )
-    #     globaltime  = (coarsetime<<1) & np.uint64(~0xC00000000)
-    #     time_unit=25./4096
-    #     m_trigTime = (globaltime)*1.5625E-9 + trigtime_fine*time_unit*1E-9 +self._trigger_time
-
-    #     if self._triggers is None:
-    #         self._triggers = m_trigTime
-    #     else:
-    #         self._triggers = np.append(self._triggers,m_trigTime)
-
-
     def process_triggers(self,pixdata,longtime):
-        trigtime_coarse = ((pixdata & 0x00000FFFFFFFF000) >> 12) & 0xFFFFFFFF
-        tmpfine = (pixdata >> 5 ) & 0xF
+        coarsetime = pixdata >>12 & 0xFFFFFFFF
+        coarsetime = self.correct_global_time(coarsetime,longtime)
+        tmpfine = (pixdata  >> 5 ) & 0xF
         tmpfine = ((tmpfine-1) << 9) // 12
-        trigtime_fine = (pixdata & 0x0000000000000E00) | (tmpfine & 0x00000000000001FF)
-
-        globaltime = self.correct_global_time(trigtime_coarse,longtime)
-        #time_unit=25./4096.0
-        # global_clock = (current_time & 0xFFFFC0000000)*1.5925E-9
-        
-        #print('RawTrigger TS: ',coarsetime*3.125E-9 )
-        #Now shift the time to the proper position
-
-
+        trigtime_fine = (pixdata  & 0x0000000000000E00) | (tmpfine & 0x00000000000001FF)
         time_unit=25./4096
-        m_trigTime = (globaltime)*np.float64(25E-9) 
+        tdc_time = (coarsetime*25E-9 + trigtime_fine*time_unit*1E-9)
+        # coarsetime = (pixdata >> 9) & 0x7FFFFFFFF
+
+        # coarsetime >>=3
+
+
+        # tmpfine = (pixdata >> 5 ) & 0xF
+        # tmpfine = ((tmpfine-1) << 9) // 12
+        # trigtime_fine = (pixdata & 0x0000000000000E00) | (tmpfine & 0x00000000000001FF)
+
+        # globaltime = self.correct_global_time(coarsetime,longtime)
+        # #time_unit=25./4096.0
+        # # global_clock = (current_time & 0xFFFFC0000000)*1.5925E-9
+        
+        # #print('RawTrigger TS: ',coarsetime*3.125E-9 )
+        # #Now shift the time to the proper position
+
+
+        # time_unit=25./4096
+        m_trigTime = tdc_time
+        #print('TRIGGERS',m_trigTime,longtime*25E-9)
         if self._triggers is None:
             self._triggers = m_trigTime
         else:
@@ -163,7 +154,7 @@ class PacketProcessor(multiprocessing.Process):
         self._tot = self._tot[val_filter]
 
     def getBuffers(self,val_filter):
-        return self._col[val_filter],self._row[val_filter],self._toa[val_filter],self._tot[val_filter]
+        return np.copy(self._col[val_filter]),np.copy(self._row[val_filter]),np.copy(self._toa[val_filter]),np.copy(self._tot[val_filter])
 
 
     def process_packets(self,packets,longtime):
@@ -179,10 +170,61 @@ class PacketProcessor(multiprocessing.Process):
             self.process_pixels(pixels,longtime)
         if triggers.size > 0:
             self.process_triggers(triggers,longtime)
-        if self._triggers is not None:
-            return self.find_events()
-        else:
-            return []
+        return self.find_events_fast()
+
+    def filterBadTriggers(self):
+        OToA = np.roll(self._triggers,1)
+        #Make sure the first is the same
+        OToA[0] = self._triggers[0]
+        diff = np.abs(self._triggers - OToA)
+        #print(diff.max())
+        #print('MAX',diff.max())
+        #Find where the difference is larger than 20 seconds
+        diff = np.where(diff > 20.0)[0]
+        if diff.size > 0:
+            self._triggers = self._triggers[diff[0]:]
+
+
+    def find_events_fast(self):
+        if self._triggers is None:
+            return None
+        self.filterBadTriggers()
+        if self._triggers.size < 3:
+            return None
+
+        if self._toa is None:
+            return None
+        if self._toa.size == 0:
+            #Clear out the triggers since they have nothing
+            self._triggers = self._triggers[-1:]
+            return None
+        
+
+        #Get our start/end triggers to get events
+        start = self._triggers[0:-2:]
+        end = self._triggers[1:-1:]
+        #Get the first and last triggers in pile
+        first_trigger = start.min()
+        last_trigger = end.max()
+        #Delete useless pixels beyond the trigger
+        self.updateBuffers(self._toa  >= first_trigger)
+        #grab only pixels we care about
+        x,y,toa,tot = self.getBuffers(self._toa < last_trigger)
+        self.updateBuffers(self._toa  < last_trigger)
+
+        #print('toa min/max',toa.min(),toa.max())
+        #Delete them from the rest of the array
+        #self.updateBuffers(self._toa >= last_trigger)
+        #Our event filters
+        evt_filter = (toa[None,:] >= start[:,None]) & (toa[None,:] < end[:,None])
+
+        #Get the mapping
+        event_mapping = np.where(evt_filter)
+        event_triggers = self._triggers[:-2:]
+        self._triggers = self._triggers[-2:]
+        return event_triggers,x,y,toa,tot,event_mapping
+
+
     def find_events(self):
         events_found = []
         while self._triggers.size > 2:
@@ -219,7 +261,7 @@ class PacketProcessor(multiprocessing.Process):
                 #print('GOT DATA')
                 events = self.process_packets(data,longtime)
 
-                if len(events)> 0 and self._output_queue is not None:
+                if events is not None and self._output_queue is not None:
                     #print('EVENT FOUND')
                     self._output_queue.put(events)
 
@@ -227,4 +269,5 @@ class PacketProcessor(multiprocessing.Process):
             except Exception as e:
                 print (str(e))
                 traceback.print_exc()
+                break
 
