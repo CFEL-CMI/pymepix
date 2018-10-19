@@ -262,7 +262,7 @@ class SPIDRController(list):
 
 
     def enableDecoders(self,enable):
-        self.requestSetInt(SpidrCmds.CMD_DECODERS_ENA,0,enable)
+        self.requestSetInt(SpidrCmds.CMD_DECODERS_ENA,0,int(enable))
 
     def enablePeriphClk80Mhz(self):
         self.CpuToTpx |= ( 1<<24)
@@ -298,7 +298,7 @@ class SPIDRController(list):
 
 
 
-    def setShutterTriggerConfig(self,mode,length_us,freq_hz,count,delay_ns):
+    def setShutterTriggerConfig(self,mode,length_us,freq_hz,count,delay_ns=0):
 
         data =  [mode,length_us,freq_hz,count,delay_ns]
 
@@ -321,10 +321,7 @@ class SPIDRController(list):
 
 
     def openShutter(self):
-        self.ShutterTriggerMode = SpidrShutterMode.Auto
-        self.ShutterTriggerCount = 0
-        self.ShutterTriggerLength = 10000
-        self.ShutterTriggerDelay = 1
+        self.setShutterTriggerConfig( SpidrShutterMode.Auto.value, 0, 10, 1,0)
         self.startAutoTrigger()
     
     def closeShutter(self):
