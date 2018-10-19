@@ -95,7 +95,7 @@ class TimePixAcq(object):
 
         #Enable FPGA decoding of counters
         self._spidr.enableDecoders(True)
-
+        self._device.t0Sync()
         self._spidr.resetTimers()
 
 
@@ -525,7 +525,7 @@ class TimePixAcq(object):
     def startAcquisition(self):
         #self._spidr.closeShutter()
         self._spidr.resetTimers()
-        #self._device.t0Sync()
+
         # self._spidr.resetTimers()
         # if self.shutterTriggerMode == SpidrShutterMode.Auto:
         #     self._spidr.startAutoTrigger()
