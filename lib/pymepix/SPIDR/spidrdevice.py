@@ -8,8 +8,8 @@ class SpidrDevice(object):
         self._ctrl = weakref.proxy(spidr_ctrl)
         self._dev_num = device_num
         self._pixel_config = [np.ndarray(shape=(256,256),dtype=np.uint8)]*4
-        self._cptr = self.columnTestPulseRegister
-        self.resetPixelConfig()
+        #self._cptr = self.columnTestPulseRegister
+        self.resetPixelConfig(all_pixels=True)
 
 
 
