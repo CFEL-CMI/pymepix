@@ -3,6 +3,7 @@ import traceback
 from multiprocessing.sharedctypes import RawArray 
 import numpy as np
 import socket
+import time
 from multiprocessing import Queue
 from .timepixdef import PacketType
 class PacketProcessor(multiprocessing.Process):
@@ -18,12 +19,27 @@ class PacketProcessor(multiprocessing.Process):
 
         self._triggers = None
         self._trigger_counter = 0
+
+        self._find_time = 0
+        self._process_trig_time = 0
+        self._process_pix_time = 0
+        self._find_event_time = 0
+
+        self._append_time = 0
+
+        self._put_time = 0
+        self._put_count = 0
+
+        self._find_count= 0
+        self._process_trig_count= 0
+        self._process_pix_count= 0
+        self._find_event_count= 0
+        self._append_count = 0
+
     def reset(self):
         self._longtime_lsb = 0
         self._longtime_msb = 0
         self._longtime = 0
-        self._pixel_time = 0
-        self._trigger_time = 0    
 
         self._col = None
         self._row = None
@@ -64,6 +80,8 @@ class PacketProcessor(multiprocessing.Process):
     #         self._tot = np.append(self._tot,ToT)
 
     def process_pixels(self,pixdata,longtime):
+        start = time.time()
+
         dcol        = ((pixdata & 0x0FE0000000000000) >> 52)
         spix        = ((pixdata & 0x001F800000000000) >> 45)
         pix         = ((pixdata & 0x0000700000000000) >> 44)
@@ -88,6 +106,9 @@ class PacketProcessor(multiprocessing.Process):
         time_unit=25./4096
         finalToA = globalToA*time_unit*1E-9
         
+        self._process_pix_time+= time.time() - start
+        self._process_pix_count+=1
+        start = time.time()
         #print('PIXEL',finalToA,longtime)
         if self._col is None:
             self._col = col
@@ -99,7 +120,8 @@ class PacketProcessor(multiprocessing.Process):
             self._row = np.append(self._row,row)
             self._toa = np.append(self._toa,finalToA)
             self._tot = np.append(self._tot,ToT)
-
+        self._append_time+= time.time()-start
+        self._append_count += 1
 
     def correct_global_time(self,arr,ltime):
         pixelbits = ( arr >> 28 ) & 0x3
@@ -115,6 +137,7 @@ class PacketProcessor(multiprocessing.Process):
         return arr
 
     def process_triggers(self,pixdata,longtime):
+        start = time.time()
         coarsetime = pixdata >>12 & 0xFFFFFFFF
         coarsetime = self.correct_global_time(coarsetime,longtime)
         tmpfine = (pixdata  >> 5 ) & 0xF
@@ -141,12 +164,17 @@ class PacketProcessor(multiprocessing.Process):
 
         # time_unit=25./4096
         m_trigTime = tdc_time
+
+        self._process_trig_time+= time.time() - start
+        self._process_trig_count+=1
         #print('TRIGGERS',m_trigTime,longtime*25E-9)
+        start = time.time()
         if self._triggers is None:
             self._triggers = m_trigTime
         else:
             self._triggers = np.append(self._triggers,m_trigTime)
-        
+        self._append_time += time.time()-start
+        self._append_count+=1
     def updateBuffers(self,val_filter):
         self._col = self._col[val_filter]
         self._row = self._row[val_filter]
@@ -199,13 +227,13 @@ class PacketProcessor(multiprocessing.Process):
             self._triggers = self._triggers[-1:]
             return None
         
-
+        start_time = time.time()
         #Get our start/end triggers to get events
-        start = self._triggers[0:-2:]
-        end = self._triggers[1:-1:]
+        start = self._triggers[0:-1:]
+        # end = self._triggers[1:-1:]
         #Get the first and last triggers in pile
-        first_trigger = start.min()
-        last_trigger = end.max()
+        first_trigger = start[0]
+        last_trigger = start[-1]
         #Delete useless pixels beyond the trigger
         self.updateBuffers(self._toa  >= first_trigger)
         #grab only pixels we care about
@@ -216,12 +244,17 @@ class PacketProcessor(multiprocessing.Process):
         #Delete them from the rest of the array
         #self.updateBuffers(self._toa >= last_trigger)
         #Our event filters
-        evt_filter = (toa[None,:] >= start[:,None]) & (toa[None,:] < end[:,None])
+        #evt_filter = (toa[None,:] >= start[:,None]) & (toa[None,:] < end[:,None])
 
         #Get the mapping
-        event_mapping = np.where(evt_filter)
-        event_triggers = self._triggers[:-2:]
-        self._triggers = self._triggers[-2:]
+        event_mapping = np.digitize(toa,start)-1
+        event_triggers = self._triggers[:-1:]
+        
+        self._triggers = self._triggers[-1:]
+
+        self._find_event_time+= time.time() - start_time
+        self._find_event_count+=1
+
         return event_triggers,x,y,toa,tot,event_mapping
 
 
@@ -263,7 +296,10 @@ class PacketProcessor(multiprocessing.Process):
 
                 if events is not None and self._output_queue is not None:
                     #print('EVENT FOUND')
+                    start = time.time()
                     self._output_queue.put(events)
+                    self._put_time += time.time()-start
+                    self._put_count+=1
 
         
             except Exception as e:
@@ -271,3 +307,10 @@ class PacketProcessor(multiprocessing.Process):
                 traceback.print_exc()
                 break
 
+        fmt = "{} Total time: {}s calls {} Avg Time {}s"
+
+        print(fmt.format('PIXEL',self._process_pix_time,self._process_pix_count,self._process_pix_count/max(self._process_pix_count,1)))
+        print(fmt.format('TRIGG',self._process_trig_time,self._process_trig_count,self._process_trig_count/max(self._process_trig_count,1)))
+        print(fmt.format('FIND ',self._find_event_time,self._find_event_count,self._find_event_count/max(self._find_event_count,1)))
+        print(fmt.format('APPND',self._append_time,self._append_count,self._append_count/max(self._append_count,1)))
+        print(fmt.format('PUTQ ',self._put_time,self._put_count,self._put_count/max(self._put_count,1)))
