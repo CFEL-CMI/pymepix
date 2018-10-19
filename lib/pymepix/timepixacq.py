@@ -21,6 +21,7 @@ class TimePixAcq(object):
             self._timer = (self._timer_msb & 0xFFFFFFFF)<<32 |(self._timer_lsb & 0xFFFFFFFF)
             self._shared_timer.value = self._timer
             while self._pause and self._run_timer:
+                time.sleep(1.0)
                 continue
     def dataThread(self):
 
@@ -32,20 +33,18 @@ class TimePixAcq(object):
             self.onEvent(value)
 
 
-    def __init__(self,ip_port,device_num=0):
+    def __init__(self,ip_port,device_num=0,master_mode=True):
         self._spidr = SPIDRController(ip_port)
 
         self._device = self._spidr[device_num]
-
-        #self._spidr.enableDecoders(False)
-        #self._device.reinitDevice()
-        #self._device.getPixelConfig()
         self._eventCallback = None
-        UDP_IP = self._device.ipAddrDest
-        UDP_PORT = self._device.serverPort
-        self._open_shutter = True
-        #self._device.outBlockConfig &= ~(0x1000)
+        self._udp_address = (self._device.ipAddrDest,self._device.serverPort)
+        self._master_mode = master_mode
 
+        self.startupDevice()
+        self.setupDaqThreads()
+
+    def setupDaqThreads(self):
         self._data_queue = multiprocessing.Queue()
         self._file_queue =  multiprocessing.Queue()
         self._pause = False
@@ -66,12 +65,39 @@ class TimePixAcq(object):
         self._data_thread = threading.Thread(target=self.dataThread)
         self._data_thread.start()
         self._file_storage = FileStorage(self._file_queue)
-        self._packet_sampler = PacketSampler((UDP_IP,UDP_PORT),self._file_queue,self._shared_timer,self._shared_acq)
+        self._packet_sampler = PacketSampler(self._udp_address,self._file_queue,self._shared_timer,self._shared_acq)
         self._packet_processor = PacketProcessor(self._packet_sampler.outputQueue,self._data_queue)
 
         self._packet_processor.start()
         self._file_storage.start()
         self._packet_sampler.start()
+
+    def startupDevice(self):
+
+        if self._master_mode:
+            self._spidr.enableExternalRefClock()
+        else:
+            self._spidr.disableExternalRefClock()
+        
+        #Enable triggers
+        TdcEnable = 0x0000
+        self._spidr.setSpidrReg(0x2B8,TdcEnable)
+
+        for device in self._spidr:
+            linkstatus,linkenabled,linklocked = device.linkStatus
+        
+        for device in self._spidr:
+            eth_mask, cpu_mask = device.headerFilter
+            eth_mask = 0xFFFF
+            device.setHeaderFilter(eth_mask,cpu_mask)
+            eth_mask, cpu_mask = device.headerFilter
+            print('Dev: {} eth_mask :{:8X} cpu_mask: {:8X}'.format(device.deviceId,eth_mask,cpu_mask))
+
+        #Enable FPGA decoding of counters
+        self._spidr.enableDecoders(True)
+
+        self._spidr.resetTimers()
+
 
     def pauseTimer(self):
         self._pause = True
@@ -97,6 +123,13 @@ class TimePixAcq(object):
         if self._eventCallback is not None:
             self._eventCallback(data)
 
+    @property
+    def biasVoltage(self):
+        return self._spidr.biasVoltage
+    
+    @biasVoltage.setter
+    def biasVoltage(self,value):
+        self._spidr.biasVoltage = value
 
 
     #-----General Configuration-------
@@ -491,18 +524,25 @@ class TimePixAcq(object):
 
     def startAcquisition(self):
         #self._spidr.closeShutter()
-        #self._spidr.resetTimers()
+        self._spidr.resetTimers()
         #self._device.t0Sync()
         # self._spidr.resetTimers()
         # if self.shutterTriggerMode == SpidrShutterMode.Auto:
         #     self._spidr.startAutoTrigger()
         # elif self._open_shutter:
-        #self._spidr.openShutter()
+        self._spidr.openShutter()
         self.resumeTimer()
         self._shared_acq.value = 1
         print('Starting acquisition')
     def stopAcquisition(self):
         self.pauseTimer()
+        trig_mode = 0
+        trig_length_us = 10000
+        trig_freq_hz = 5
+        nr_of_trigs = 1
+
+        self._spidr.setShutterTriggerConfig(trig_mode, trig_length_us,
+                                                 trig_freq_hz, nr_of_trigs,0)
         # self._spidr.closeShutter()
         print('Stopping acqusition')
         self._shared_acq.value = 0
