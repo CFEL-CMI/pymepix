@@ -61,8 +61,8 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
         #print('TOA DIFF:', cov_diff)
         #print('Bins', np.linspace(0.0,cov_diff.max(),100,dtype=np.float))
         #y,x = np.histogram(cov_diff,np.linspace(0.0,cov_diff.max(),10000,dtype=np.float))
-        y,x = np.histogram(cov_diff,np.linspace(2780e-6,2800e-6,1000,dtype=np.float))
-        #y,x = np.histogram(cov_diff,np.linspace(0,1,100,dtype=np.float))
+        #y,x = np.histogram(cov_diff,np.linspace(2780e-6,2800e-6,1000,dtype=np.float))
+        y,x = np.histogram(cov_diff,np.linspace(0,3e-3,1000,dtype=np.float))
         if self._hist_y is None:
             self._hist_y = y
             self._hist_x = x
@@ -96,18 +96,20 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
     def onNewTriggerData(self,data):
         #Unpack
         
-        for item in data:
-            counter,trigger,x,y,toa,tot = item
-            self.x = x
-            self.y = y
-            self.toa = toa
-            self.tot = tot
-            self.diff = toa-trigger
-            print(self.diff.max())
-            #print(self.diff)
-            if self.updateToA(self.diff):
-                #self.updateToT(self.tot)
-                self.updateMainPlot()
+        #print('Found event')
+        triggers,x,y,toa,tot,mapping = data
+        trg_idx,toa_idx = mapping
+
+        tof = toa[toa_idx]-triggers[trg_idx]
+        self.x = x
+        self.y = y
+        self.toa = toa
+        self.tot = tot
+        self.diff = tof
+        #print(self.diff)
+        if self.updateToA(tof):
+            #self.updateToT(self.tot)
+            self.updateMainPlot()
         self.updatePlots()
     def updateMainPlot(self):
         
