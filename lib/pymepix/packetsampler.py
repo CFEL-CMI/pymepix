@@ -39,7 +39,7 @@ class PacketSampler(multiprocessing.Process):
         
         if packet.size > 0 and self._output_queue is not None:
             #print('UPLOADING')
-            self._output_queue.put((packet,longtime))
+            self._output_queue.put((tpx_packets,longtime))
 
     def convert_data_to_ints(self,data, big_endian=True):
         #print(len(data))
