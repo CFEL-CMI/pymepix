@@ -95,7 +95,6 @@ class TimePixAcq(object):
 
         #Enable FPGA decoding of counters
         self._spidr.enableDecoders(True)
-        self._device.t0Sync()
         self._spidr.resetTimers()
 
 
