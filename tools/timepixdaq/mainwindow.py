@@ -36,7 +36,6 @@ class MainWindow(QtGui.QMainWindow,Ui_MainWindow):
     
     def onNewTrigger(self,trigger):
 
-        print('new Trigger')
         self.newTriggerData.emit(trigger)
 
     def onNewPixel(self,pixel):
@@ -53,6 +52,7 @@ def main():
     daq = MainWindow()
     daq.show()
     app.exec_()
+    daq._timepix.stopAcquisition()
     daq._timepix.stopThreads()
 if __name__=="__main__":
     main()
