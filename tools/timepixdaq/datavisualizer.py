@@ -98,9 +98,8 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
         
         #print('Found event')
         triggers,x,y,toa,tot,mapping = data
-        trg_idx,toa_idx = mapping
 
-        tof = toa[toa_idx]-triggers[trg_idx]
+        tof = toa-triggers[mapping]
         self.x = x
         self.y = y
         self.toa = toa
