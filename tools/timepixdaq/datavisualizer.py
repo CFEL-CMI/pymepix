@@ -6,7 +6,7 @@ from pyqtgraph.parametertree import Parameter, ParameterTree, ParameterItem, reg
 import weakref
 import numpy as np
 from pymepix import *
-from ui.dataviewer_designer import Ui_Form
+from ui.dataview_designer_new import Ui_Form
 import time
 
 class DataVisualizer(QtGui.QWidget,Ui_Form):
@@ -17,6 +17,9 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
         self.setupUi(self)
         self._mode  = OperationMode.ToAandToT
         self._toa_roi = pg.LinearRegionItem([2780e-6,2800e-6])
+        self._toa_max = 300E-6
+        self._toa_min = 0
+        self._toa_bins=1000
         #self._toa_roi = pg.LinearRegionItem([1.688e-3,1.698e-3])
         self._tot_roi = pg.LinearRegionItem([0,0.001])
         
@@ -46,11 +49,36 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
         self._toa_roi.sigRegionChangeFinished.connect(self.clearAndChange)
 
         self._start_time = time.time()
-    
+
+        self.exposure.returnPressed.connect(self.onExposureSet)
+        self.sexposure.returnPressed.connect(self.onSexposureSet)
+        self.bins.returnPressed.connect(self.onBinSet)
+        self.reset_toa.clicked.connect(self.onReset)
+
     def clearAndChange(self):
 
         self._viewer_data[...]=0.0
         self.updateMainPlot()
+
+    def onSexposureSet(self):
+        self._toa_min = float(self.sexposure.text())*1E-6
+        self.clearToa()
+        self.clearAndChange()
+
+    def onExposureSet(self):
+        self._toa_max = float(self.exposure.text())*1E-6
+        self.clearToa()
+        self.clearAndChange()
+    def onBinSet(self):
+        self._toa_bins  =int(self.bins.text())
+        self.clearToa()
+    def onReset(self):
+        self.clearToa()
+        self.clearAndChange()
+
+    def clearToa(self):
+        self._hist_x = None
+        self._hist_y = None
 
     def onModeChange(self,new_mode):
         self._mode = new_mode
@@ -62,7 +90,7 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
         #print('Bins', np.linspace(0.0,cov_diff.max(),100,dtype=np.float))
         #y,x = np.histogram(cov_diff,np.linspace(0.0,cov_diff.max(),10000,dtype=np.float))
         #y,x = np.histogram(cov_diff,np.linspace(2780e-6,2800e-6,1000,dtype=np.float))
-        y,x = np.histogram(cov_diff,np.linspace(0,3e-3,1000,dtype=np.float))
+        y,x = np.histogram(cov_diff,np.linspace(self._toa_min,self._toa_max,self._toa_bins,dtype=np.float))
         if self._hist_y is None:
             self._hist_y = y
             self._hist_x = x
@@ -90,7 +118,7 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
         if end - self._start_time > 0.5:
             if self._hist_x is not None:
                 self._toa_data.setData(x=self._hist_x,y=self._hist_y, stepMode=True, fillLevel=0, brush=(0,0,255,150))
-            self.viewer.setImage(self._viewer_data,autoLevels=False)
+            self.viewer.setImage(self._viewer_data,autoLevels=False,autoRange=False)
             self._start_time = end
 
     def onNewTriggerData(self,data):
@@ -98,6 +126,7 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
         
         #print('Found event')
         triggers,x,y,toa,tot,mapping = data
+        
 
         tof = toa-triggers[mapping]
         self.x = x

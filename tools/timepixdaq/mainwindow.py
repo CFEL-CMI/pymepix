@@ -22,13 +22,6 @@ class MainWindow(QtGui.QMainWindow,Ui_MainWindow):
         self.setCentralWidget(self._viewer_widget)
         self._timepix = TimePixAcq(('192.168.1.10',50000))
 
-        tabwidget = QtGui.QTabWidget(parent=self)
-        
-
-        self._dock_tab_widget = QtGui.QDockWidget(parent=self)
-        self._dock_tab_widget.setWidget(tabwidget)
-        self.addDockWidget(QtCore.Qt.RightDockWidgetArea,self._dock_tab_widget)
-
         self._timepix.attachEventCallback(self.onNewTrigger)
         self.connectSignals()
 
