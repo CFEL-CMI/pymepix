@@ -27,6 +27,15 @@ class MainWindow(QtGui.QMainWindow,Ui_MainWindow):
 
         self._timepix.startAcquisition()
     
+    def startWrite(self,path,prefix):
+        self._timepix.filePath=path
+        self._timepix.filePrefix = prefix
+        self._timepix.beginFileWrite()
+    
+    def stopWrite(self):
+        self._timepix.stopFileWrite()
+
+
     def onNewTrigger(self,trigger):
 
         self.newTriggerData.emit(trigger)
@@ -38,7 +47,8 @@ class MainWindow(QtGui.QMainWindow,Ui_MainWindow):
     def connectSignals(self):
 
         self.newTriggerData.connect(self._viewer_widget.onNewTriggerData)
-
+        self._viewer_widget.startAcqWrite.connect(self.startWrite)
+        self._viewer_widget.stopAcqWrite.connect(self.stopWrite)
 def main():
     import sys
     app = QtGui.QApplication([])

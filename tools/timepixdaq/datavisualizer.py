@@ -11,6 +11,9 @@ import time
 
 class DataVisualizer(QtGui.QWidget,Ui_Form):
 
+    startAcqWrite = QtCore.pyqtSignal(str,str)
+    stopAcqWrite = QtCore.pyqtSignal()
+
 
     def __init__(self,parent=None):
         super(DataVisualizer,self).__init__(parent)
@@ -49,6 +52,8 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
         self.bins.returnPressed.connect(self.onBinSet)
         self.reset_toa.clicked.connect(self.onReset)
         self.openpath.clicked.connect(self.openPath)
+        self.startAcq.stateChanged.connect(self.onCheck)
+
 
     def openPath(self):
         directory = QtGui.QFileDialog.getExistingDirectory(self, "Open Directory",
@@ -57,6 +62,20 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
                                              | QtGui.QFileDialog.DontResolveSymlinks)
 
         self.path_name.setText(directory)
+    
+    def onCheck(self,status):
+        if status == 2:
+            self.onStartAcq()
+        else:
+            self.onStopAcq()
+
+    def onStartAcq(self):
+        print(self.path_name.text(),self.file_prefix.text())
+        self.startAcqWrite.emit(self.path_name.text(),self.file_prefix.text())
+
+    def onStopAcq(self):
+        self.stopAcqWrite.emit()
+
     def clearAndChange(self):
 
         self._viewer_data[...]=0.0
@@ -113,7 +132,7 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
     def updatePlots(self):
 
         end = time.time()
-        if end - self._start_time > 0.25:
+        if end - self._start_time > 0.125:
             if self._hist_x is not None:
                 self._toa_data.setData(x=self._hist_x,y=self._hist_y, stepMode=True, fillLevel=0, brush=(0,0,255,150))
             self.viewer.setImage(self._viewer_data,autoLevels=False,autoRange=False)
@@ -123,7 +142,10 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
 
     def onNewTriggerData(self,data):
         #Unpack
-        
+        # self._num+=1
+        # if self._num % 10 != 0:
+        #     return
+
         #print('Found event')
         triggers,x,y,toa,tot,mapping = data
         #print('Trigger delta',triggers,np.ediff1d(triggers))
