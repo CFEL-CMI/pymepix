@@ -14,7 +14,7 @@ class PacketSampler(multiprocessing.Process):
         self.createConnection(address)
         self._packets_collected = 0
         self._output_queue = Queue()
-        self._file_queue = Queue()
+        self._file_queue = file_queue
 
 
         
@@ -39,6 +39,7 @@ class PacketSampler(multiprocessing.Process):
         
         if packet.size > 0 and self._output_queue is not None:
             #print('UPLOADING')
+            self._file_queue.put(('WRITE',tpx_packets.tostring()))
             self._output_queue.put((tpx_packets,longtime))
 
     def convert_data_to_ints(self,data, big_endian=True):
@@ -65,7 +66,7 @@ class PacketSampler(multiprocessing.Process):
             # big = int.from_bytes(raw_packet, byteorder='big')
                     
             # print('Little: {:16X} Big: {:16X} '.format(little,big))
-
+            
             packet = np.frombuffer(raw_packet,dtype='<u8')
             #self._file_queue.put(('WRITE',packet.tostring()))
             current_time = self._long_time.value
