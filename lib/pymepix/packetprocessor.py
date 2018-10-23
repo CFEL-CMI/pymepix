@@ -201,35 +201,36 @@ class PacketProcessor(multiprocessing.Process):
         return self.find_events_fast()
 
     def filterBadTriggers(self):
-        OToA = np.roll(self._triggers,1)
-        #Make sure the first is the same
-        OToA[0] = self._triggers[0]
-        diff = np.abs(self._triggers - OToA)
-        #print(diff.max())
-        #print('MAX',diff.max())
-        #Find where the difference is larger than 20 seconds
-        diff = np.where(diff > 20.0)[0]
-        if diff.size > 0:
-            self._triggers = self._triggers[diff[0]:]
-
+        # OToA = np.roll(self._triggers,1)
+        # #Make sure the first is the same
+        # OToA[0] = self._triggers[0]
+        # diff = np.abs(self._triggers - OToA)
+        # #print(diff.max())
+        # #print('MAX',diff.max())
+        # #Find where the difference is larger than 20 seconds
+        # diff = np.where(diff > 20.0)[0]
+        # if diff.size > 0:
+        #     self._triggers = self._triggers[diff[0]:]
+        self._triggers = self._triggers[np.argmin(self._triggers):]
 
     def find_events_fast(self):
         if self._triggers is None:
             return None
         self.filterBadTriggers()
-        if self._triggers.size < 3:
+        if self._triggers.size < 5:
             return None
 
         if self._toa is None:
             return None
         if self._toa.size == 0:
             #Clear out the triggers since they have nothing
-            self._triggers = self._triggers[-1:]
             return None
         
         start_time = time.time()
         #Get our start/end triggers to get events
         start = self._triggers[0:-1:]
+        if start.size ==0:
+            return None
         # end = self._triggers[1:-1:]
         #Get the first and last triggers in pile
         first_trigger = start[0]
@@ -254,6 +255,9 @@ class PacketProcessor(multiprocessing.Process):
 
         self._find_event_time+= time.time() - start_time
         self._find_event_count+=1
+
+        
+        #print('Triggers',event_triggers,np.ediff1d(event_triggers))
 
         return event_triggers,x,y,toa,tot,event_mapping
 
