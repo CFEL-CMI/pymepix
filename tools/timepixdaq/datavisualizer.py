@@ -6,6 +6,7 @@ from pyqtgraph.parametertree import Parameter, ParameterTree, ParameterItem, reg
 import weakref
 import numpy as np
 from pymepix import *
+import threading
 from ui.dataview_designer_new import Ui_Form
 import time
 
@@ -14,13 +15,15 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
     startAcqWrite = QtCore.pyqtSignal(str,str)
     stopAcqWrite = QtCore.pyqtSignal()
 
+    startCamera = QtCore.pyqtSignal(str,str)
+    stopCamera = QtCore.pyqtSignal()
 
     def __init__(self,parent=None):
         super(DataVisualizer,self).__init__(parent)
         self.setupUi(self)
         self._mode  = OperationMode.ToAandToT
-        self._toa_roi = pg.LinearRegionItem([2780e-6,2800e-6])
-        self._toa_max = 300E-6
+        self._toa_roi = pg.LinearRegionItem([0e-6,20e-6])
+        self._toa_max = 20E-6
         self._toa_min = 0
         self._toa_bins=1000
         #self._toa_roi = pg.LinearRegionItem([1.688e-3,1.698e-3])
@@ -70,9 +73,13 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
             self.onStopAcq()
 
     def onStartAcq(self):
+
         print(self.path_name.text(),self.file_prefix.text())
         self.startAcqWrite.emit(self.path_name.text(),self.file_prefix.text())
-
+        if self.timeValue.text() != "":
+            seconds_to_stop = float(self.timeValue.text())
+            timer = threading.Timer(seconds_to_stop,lambda: self.startAcq.setChecked(False))
+            timer.start()
     def onStopAcq(self):
         self.stopAcqWrite.emit()
 
