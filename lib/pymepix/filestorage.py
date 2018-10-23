@@ -6,7 +6,7 @@ import socket
 from multiprocessing import Queue
 class FileStorage(multiprocessing.Process):
 
-    def __init__(self,data_queue):
+    def __init__(self,data_queue,file_status):
         multiprocessing.Process.__init__(self)
         self._input_queue = data_queue
         self._file_io = None
