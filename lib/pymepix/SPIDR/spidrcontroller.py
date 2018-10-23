@@ -335,6 +335,9 @@ class SPIDRController(list):
     def shutterCounter(self):
         return self.requestGetInt(SpidrCmds.CMD_GET_SHUTTERCNTR,0)
 
+    def restartTimers(self):
+        return self.requestSetInt( SpidrCmds.CMD_RESTART_TIMERS, 0, 0 )
+
     def resetCounters(self):
         self.requestSetInt(SpidrCmds.CMD_RESET_COUNTERS,0,0)
 

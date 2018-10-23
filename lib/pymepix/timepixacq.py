@@ -566,7 +566,7 @@ class TimePixAcq(object):
 
     def startAcquisition(self):
         #self._spidr.closeShutter()
-        self._spidr.resetTimers()
+        self._spidr.restartTimers()
 
         # self._spidr.resetTimers()
         # if self.shutterTriggerMode == SpidrShutterMode.Auto:
