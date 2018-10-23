@@ -59,10 +59,10 @@ class PacketSampler(multiprocessing.Process):
 
             
 
-            assert (len(raw_packet) % 8 == 0)
+            # assert (len(raw_packet) % 8 == 0)
 
-            little = int.from_bytes(raw_packet, byteorder='little')
-            big = int.from_bytes(raw_packet, byteorder='big')
+            # little = int.from_bytes(raw_packet, byteorder='little')
+            # big = int.from_bytes(raw_packet, byteorder='big')
                     
             # print('Little: {:16X} Big: {:16X} '.format(little,big))
 
