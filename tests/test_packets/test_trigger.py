@@ -1,12 +1,11 @@
 import socket
 import numpy as np
 import threading
-from .timepixdef import PacketType
 import time
-class TimepixUDPListener(threading.Thread):
+class TimepixUDPListener(object):
 
-    def __init__(self,udpipport,queue=None):
-        threading.Thread.__init__(self)
+    def __init__(self,udpipport,print_triggers=True,print_pixels=True,queue=None):
+        #threading.Thread.__init__(self)
         self._sock = socket.socket(socket.AF_INET, # Internet
                             socket.SOCK_DGRAM) # UDP
         self._sock.bind(udpipport)
@@ -21,6 +20,9 @@ class TimepixUDPListener(threading.Thread):
         self._in_acq = False
         self._total_time = 0
         self._calls = 0
+        self._print_triggers = print_triggers
+        self._print_pixels = print_pixels
+
     def reset(self):
         self.stopRunning()
         self._packets_collected = 0
@@ -48,12 +50,19 @@ class TimepixUDPListener(threading.Thread):
 
 
     def processTriggers(self,trigger_data):
+        #Get only the trigger
+        subheader = ((trigger_data & 0x0F00000000000000) >> 56) & 0xF
+        trigger_data = trigger_data[subheader == 0xF]
+        if trigger_data.size == 0:
+            return
         #reserved = trigger_data & 0x1F
-        stamp = (trigger_data >> 5) &0xF
-        timestamp = (trigger_data >> 9) & 0x7FFFFFFFF
-        trigger_counter = (trigger_data>>44) &0xFFF
-        if self._queue is not None:
-            self._queue.put((PacketType.Trigger,(trigger_counter,timestamp,stamp)))
+        trigger_counter = ((trigger_data & 0x00FFF00000000000) >> 44) & 0xFFF
+        timestamp = ((trigger_data & 0x00000FFFFFFFF000) >> 12) & 0xFFFFFFFF
+        stamp = (trigger_data >> 5 ) & 0xF
+        if self._print_triggers:
+            print('Detected trigger')
+            print('Counter: {} Timestamp: {} Stamp: {}'.format(trigger_counter,timestamp,stamp))
+
     def processPixels(self,pixdata):
         dcol = ((pixdata & 0x0FE0000000000000) >> 52)
         spix  = ((pixdata & 0x001F800000000000) >> 45)
@@ -65,16 +74,13 @@ class TimepixUDPListener(threading.Thread):
         ts = (pixdata & 0x000000000000FFFF)
         x = dcol + pix//4
         y = spix + (pix &0x3)
-        print('TOA:',toa,(toa<<4).astype(np.float)*1.5625/1000.0)
-        if self._queue is not None:
-            self._queue.put((PacketType.Pixel,(x,y,toa,tot,hit,ts)))
+        if self._print_pixels:
+            print('Pixel data: x {} y {} toa: {}'.format(x,y,toa))
+        #print('TOA:',toa,(toa<<4).astype(np.float)*1.5625/1000.0)
 
     def run(self):
 
         while self._run:
-            if not self._in_acq:
-                
-                continue
 
 
             
@@ -83,73 +89,50 @@ class TimepixUDPListener(threading.Thread):
             raw_bytes = self._raw_bytes[0:size//8]
             self._packets_collected+=1
 
-            # #print (np.unpackbits(raw_bytes.view(dtype=np.uint8))[0:64])
-            # #arr= raw_bytes.view(dtype='<I')
-            # #print (raw_bytes)
-            #Numpyize it!!!
             
-            trigger_header = raw_bytes &  0x6F00000000000000
-            trigger_data = raw_bytes[trigger_header!= 0]
+            header = ((raw_bytes & 0xF000000000000000) >> 60) & 0xF
+            #Handle trigger packets
+            trigger_data = raw_bytes[np.logical_or(header == 0x4,header==0x6)]
             if trigger_data.size !=0:
                 self.processTriggers(trigger_data)
 
-            header = raw_bytes &  0xF000000000000000
-
-            pixdata = raw_bytes[np.logical_or(header == 0xB000000000000000,header == 0xA000000000000000)]
+            #Handle pixel packets
+            pixdata = raw_bytes[np.logical_or(header == 0xA,header==0xB)]
             if pixdata.size !=0:
                 self.processPixels(pixdata)
             self._total_time+= time.time()-start
             self._calls +=1
+def deviceInfoString(spidr):
 
+    output_string = "-------------------SPIDR Board Info----------------------\n"
+    output_string += "\tFW version: {:8X}\n SW Version: {:8X}\n".format(spidr.firmwareVersion,spidr.softwareVersion)
+    output_string += "\tNumber of devices: {} \nDevice Ids: {}\n".format(len(spidr),spidr.deviceIds)
+    output_string += "\tPressure: {} mbar\n Temperature {}".format(spidr.pressure,spidr.localTemperature)
+
+    return output_string
 
 if __name__=="__main__":
-    from .SPIDR.spidrcontroller import SPIDRController
+    from SPIDR.spidrcontroller import SPIDRController
     import time
-    from pyqtgraph.Qt import QtGui, QtCore
     import numpy as np
-    import pyqtgraph as pg
     spidr = SPIDRController(('192.168.1.10',50000))
-    print('Local temp: {} C'.format(spidr.localTemperature))
+    print(deviceInfoString(spidr))
 
     UDP_IP = spidr[0].ipAddrDest
     UDP_PORT = spidr[0].serverPort
 
-    print(UDP_IP,UDP_PORT)
 
-    # spidr[0].reset()
-    #spidr[0].reinitDevice()
-    # spidr.resetTimers()
-    # eth,cpu = spidr[0].headerFilter
-    # #spidr[0].setHeaderFilter(0xFFFF,cpu)
-    # eth,cpu = spidr[0].headerFilter
-    #print ('{:4X}'.format(eth))
+
     spidr.resetPacketCounters()
     spidr.datadrivenReadout()
-    #print(spidr.chipboardId)
-    #spidr[0].getPixelConfig()
-    #print (spidr[0].currentPixelConfig)
-    #plt.matshow(spidr[0].currentPixelConfig)
-    #plt.show()
-    #spidr.startAutoTrigger()
 
 
-    def print_data(x,y,toa,tot,hit,ts):
-        print('X:',x,'Y:',y,'TOA:',toa,'TOT:',tot,'HIT',hit,'TS:',ts)
 
     spidr.openShutter()
     time_spent = 0
     calls = 0
 
-    udp_thread = TimepixUDPListener((UDP_IP,UDP_PORT))
-    udp_thread.startAcquisition()
-    try:
-        while True:
-            udp_thread.run()
-    except:
-        pass
-    finally:
-        udp_thread.stopRunning()
-        print('Packets Collected: {}'.format(udp_thread.packetsCollected))
-        print('Packet Counters: {} {} {} PIXEL: {} '.format(spidr.UdpPacketCounter,spidr.UdpMonPacketCounter,spidr.UdpPausePacketCounter,spidr[0].pixelPacketCounter))
-        #spidr.closeShutter()
+    udp_thread = TimepixUDPListener((UDP_IP,UDP_PORT),print_pixels=False)
+    print('Started acquisition')
+    udp_thread.run()
 
