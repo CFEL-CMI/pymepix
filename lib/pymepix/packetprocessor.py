@@ -129,10 +129,10 @@ class PacketProcessor(multiprocessing.Process):
         diff = ltimebits - pixelbits
         neg = (diff == 1) | (diff == -3)
         pos = (diff == -1) | (diff == 3)
-        zero = (diff == 0)
+        arr = ( (ltime) & 0xFFFFC0000000) | (arr & 0x3FFFFFFF)
         arr[neg] =   ( (ltime - 0x10000000) & 0xFFFFC0000000) | (arr[neg] & 0x3FFFFFFF)
         arr[pos] =   ( (ltime + 0x10000000) & 0xFFFFC0000000) | (arr[pos] & 0x3FFFFFFF)
-        arr[zero] =   ( (ltime) & 0xFFFFC0000000) | (arr[zero] & 0x3FFFFFFF)
+        #arr[zero] =   ( (ltime) & 0xFFFFC0000000) | (arr[zero] & 0x3FFFFFFF)
         
         return arr
 
@@ -313,8 +313,8 @@ class PacketProcessor(multiprocessing.Process):
 
         fmt = "{} Total time: {}s calls {} Avg Time {}s"
 
-        print(fmt.format('PIXEL',self._process_pix_time,self._process_pix_count,self._process_pix_count/max(self._process_pix_count,1)))
-        print(fmt.format('TRIGG',self._process_trig_time,self._process_trig_count,self._process_trig_count/max(self._process_trig_count,1)))
-        print(fmt.format('FIND ',self._find_event_time,self._find_event_count,self._find_event_count/max(self._find_event_count,1)))
-        print(fmt.format('APPND',self._append_time,self._append_count,self._append_count/max(self._append_count,1)))
-        print(fmt.format('PUTQ ',self._put_time,self._put_count,self._put_count/max(self._put_count,1)))
+        print(fmt.format('PIXEL',self._process_pix_time,self._process_pix_count,self._process_pix_time/max(self._process_pix_count,1)))
+        print(fmt.format('TRIGG',self._process_trig_time,self._process_trig_count,self._process_trig_time/max(self._process_trig_count,1)))
+        print(fmt.format('FIND ',self._find_event_time,self._find_event_count,self._find_event_time/max(self._find_event_count,1)))
+        print(fmt.format('APPND',self._append_time,self._append_count,self._append_time/max(self._append_count,1)))
+        print(fmt.format('PUTQ ',self._put_time,self._put_count,self._put_time/max(self._put_count,1)))
