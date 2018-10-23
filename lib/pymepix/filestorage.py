@@ -21,15 +21,18 @@ class FileStorage(multiprocessing.Process):
                     break
 
                 message = packet[0]
-                data = packet[1]
+                # print(packet)
                 #Check signal type
                 if message == 'OPEN':
                     filename = packet[1]
+                    print('Opening filename ',filename)
                     if self._file_io is not None:
                         self._file_io.close()
                     
-                    self._file_io = open(filename,'w')
+                    self._file_io = open(filename,'wb')
                 elif message == 'WRITE':
+                    data = packet[1]
+                    # print(packet)
                     if self._file_io is not None:
                         self._file_io.write(data)
                 elif message == 'CLOSE':
