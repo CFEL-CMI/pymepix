@@ -44,6 +44,9 @@ class TimePixAcq(object):
         self.startupDevice()
         self.setupDaqThreads()
 
+        self._file_path = ""
+        self._file_prefix = "test_"
+
     def setupDaqThreads(self):
         self._data_queue = multiprocessing.Queue()
         self._file_queue =  multiprocessing.Queue()
@@ -56,6 +59,9 @@ class TimePixAcq(object):
         self._shared_timer = Value('I',0)
         self._shared_acq = Value('I',0)
         self._shared_exp_time = Value('I',10000)
+
+        self._save_data = Value('I',0)
+
         self._timer_lsb = 0
         self._timer_msb = 0
         self._timer_thread = threading.Thread(target = self.updateTimer)
@@ -64,7 +70,7 @@ class TimePixAcq(object):
         self.pauseTimer()
         self._data_thread = threading.Thread(target=self.dataThread)
         self._data_thread.start()
-        self._file_storage = FileStorage(self._file_queue)
+        self._file_storage = FileStorage(self._file_queue,self._save_data)
         self._packet_sampler = PacketSampler(self._udp_address,self._file_queue,self._shared_timer,self._shared_acq)
         self._packet_processor = PacketProcessor(self._packet_sampler.outputQueue,self._data_queue)
 
@@ -103,6 +109,19 @@ class TimePixAcq(object):
 
     def resumeTimer(self):
         self._pause = False
+
+
+    @property
+    def filePath(self):
+        return self._file_path
+    
+    @property
+    def filePrefix(self):
+        return self._file_prefix
+    
+
+    
+    
 
     @property
     def deviceInfoString(self):
