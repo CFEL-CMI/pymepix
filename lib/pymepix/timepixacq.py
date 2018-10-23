@@ -11,6 +11,7 @@ from multiprocessing.sharedctypes import Value
 from .packetsampler import PacketSampler
 from .packetprocessor import PacketProcessor
 from .filestorage import FileStorage
+import os
 class TimePixAcq(object):
 
 
@@ -20,6 +21,12 @@ class TimePixAcq(object):
             self._timer_lsb,self._timer_msb = self._device.timer
             self._timer = (self._timer_msb & 0xFFFFFFFF)<<32 |(self._timer_lsb & 0xFFFFFFFF)
             self._shared_timer.value = self._timer
+            # if self._in_acquisition:
+            to_write = 0x6400000000000000 | (self._timer_lsb & 0xFFFFFFFF) << 16
+            self._file_queue.put(('WRITE',to_write))
+            to_write = 0x6500000000000000 | (self._timer_msb & 0xFFFFF) << 16
+            self._file_queue.put(('WRITE',to_write))                
+
             while self._pause and self._run_timer:
                 time.sleep(1.0)
                 continue
@@ -54,7 +61,7 @@ class TimePixAcq(object):
         #self._spidr.datadrivenReadout()
 
         self._run_timer = True
-
+        self._in_acquisition = False
         self._timer = 0
         self._shared_timer = Value('I',0)
         self._shared_acq = Value('I',0)
@@ -77,6 +84,8 @@ class TimePixAcq(object):
         self._packet_processor.start()
         self._file_storage.start()
         self._packet_sampler.start()
+
+        
 
     def startupDevice(self):
 
@@ -118,10 +127,25 @@ class TimePixAcq(object):
     @property
     def filePrefix(self):
         return self._file_prefix
-    
 
+    @filePath.setter
+    def filePath(self,value):
+        self._file_path = value
     
+    @filePrefix.setter
+    def filePrefix(self,value):
+        self._file_prefix = value
+
+
+    def beginFileWrite(self):
+        if self._file_prefix != "":
+            file_to_write = os.path.join(self.filePath,self.filePrefix)+time.strftime("%Y%m%d-%H%M%S")+'.dat'
+            self._file_queue.put(('OPEN',file_to_write))
+            self._in_acquisition = True
     
+    def stopFileWrite(self):
+        self._file_queue.put(('CLOSE',))
+        self._in_acquisition = False        
 
     @property
     def deviceInfoString(self):
@@ -568,16 +592,23 @@ class TimePixAcq(object):
         self._device.resetPixels()
     #
     def stopThreads(self):
-        self._file_queue.put(('CLOSE'))
         self._packet_sampler.terminate()
-        self._packet_processor.terminate()
-        self._file_storage.terminate()
+        self._packet_sampler.outputQueue.put(None)
+        
+        #self._file_storage.terminate()
+        self._file_queue.put(('CLOSE',))
+        self._file_queue.put(None)
+
         self._data_queue.put(None)
+        self._packet_processor.join()
         self._run_timer = False
         print('Joing data thread')
         self._data_thread.join()
         print('Joining timer thread')
         self._timer_thread.join()
+        print('Waiting for file')
+        self._file_storage.join()
+
 def main():
 
 
@@ -600,10 +631,12 @@ def main():
     # print(tpx.Ibias_Preamp_ON)
     # print (tpx.Ibias_Ikrum)
     # print (tpx.Vfbk)
+
     tpx.startAcquisition()
-    time.sleep(5)
+    tpx.beginFileWrite()
+    time.sleep(2)
     tpx.stopAcquisition()
-    
+    tpx.stopFileWrite()
     tpx.stopThreads()
 
 if __name__=="__main__":
