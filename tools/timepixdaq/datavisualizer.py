@@ -21,23 +21,16 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
         self._toa_min = 0
         self._toa_bins=1000
         #self._toa_roi = pg.LinearRegionItem([1.688e-3,1.698e-3])
-        self._tot_roi = pg.LinearRegionItem([0,0.001])
         
         self.toa_view.addItem(self._toa_roi)
-        self.tot_view.addItem(self._tot_roi)
         toa = self.toa_view.getPlotItem()
         #toa.setXRange(0, 500e-6, padding=0)
         toa.setLabel('bottom',text='Trigger Offset',units='s')
         toa.setLabel('left',text='Hits')
         self._toa_data = pg.PlotDataItem()
         toa.addItem(self._toa_data)
-
-        tot = self.tot_view.getPlotItem()
-        tot.setLabel('bottom',text='Trigger Offset',units='s')
-        tot.setLabel('left',text='Hits')
-        self._tot_data = pg.PlotDataItem()
-        tot.addItem(self._tot_data)
         self._viewer_data = np.ndarray(shape=(256,256))
+        self._live_viewer_data = np.ndarray(shape=(256,256))
         self.x = None
         self.y = None
         self._hist_x = None
@@ -46,6 +39,7 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
         self.tot_diff = None
         self._num = 0
         self._viewer_data[...] = 0.0
+        self._live_viewer_data[...] = 0.0
         self._toa_roi.sigRegionChangeFinished.connect(self.clearAndChange)
 
         self._start_time = time.time()
@@ -54,10 +48,19 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
         self.sexposure.returnPressed.connect(self.onSexposureSet)
         self.bins.returnPressed.connect(self.onBinSet)
         self.reset_toa.clicked.connect(self.onReset)
+        self.openpath.clicked.connect(self.openPath)
 
+    def openPath(self):
+        directory = QtGui.QFileDialog.getExistingDirectory(self, "Open Directory",
+                                             "/home",
+                                             QtGui.QFileDialog.ShowDirsOnly
+                                             | QtGui.QFileDialog.DontResolveSymlinks)
+
+        self.path_name.setText(directory)
     def clearAndChange(self):
 
         self._viewer_data[...]=0.0
+        self._live_viewer_data[...] = 0.0
         self.updateMainPlot()
 
     def onSexposureSet(self):
@@ -100,25 +103,22 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
         
         return True
 
-    def updateToT(self,tot_diff):
+    def updateToT(self,filt):
         #print('TOT DIFF:', tot_diff)
-        if tot_diff.size == 0:
-            return
         #compute the difference
-        try:
-            y,x = np.histogram(tot_diff,np.linspace(0.0,tot_diff.max(),100,dtype=np.float))
-        except:
-            return
-        self._tot_data.setData(x=x,y=y, stepMode=True, fillLevel=0, brush=(0,0,255,150))
+        pass
+        #self._tot_data.setData(x=self.diff[filt],y=self.tot[filt],  pen=None, symbol='o', symbolPen=None, symbolSize=3, symbolBrush=(100, 100, 255, 50))
 
 
     def updatePlots(self):
 
         end = time.time()
-        if end - self._start_time > 0.5:
+        if end - self._start_time > 0.25:
             if self._hist_x is not None:
                 self._toa_data.setData(x=self._hist_x,y=self._hist_y, stepMode=True, fillLevel=0, brush=(0,0,255,150))
             self.viewer.setImage(self._viewer_data,autoLevels=False,autoRange=False)
+            
+            self.live_viewer.setImage(self._live_viewer_data,autoLevels=True,autoRange=False)
             self._start_time = end
 
     def onNewTriggerData(self,data):
@@ -126,7 +126,7 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
         
         #print('Found event')
         triggers,x,y,toa,tot,mapping = data
-        
+        #print('Trigger delta',triggers,np.ediff1d(triggers))
 
         tof = toa-triggers[mapping]
         self.x = x
@@ -136,21 +136,22 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
         self.diff = tof
         #print(self.diff)
         if self.updateToA(tof):
-            #self.updateToT(self.tot)
+            
             self.updateMainPlot()
         self.updatePlots()
     def updateMainPlot(self):
-        
+        self._live_viewer_data[...]=0.0
         min_t,max_t = self._toa_roi.getRegion()
-        print(self._toa_roi.getRegion())
+        #print(self._toa_roi.getRegion())
         view_filter = np.logical_and(self.diff >= min_t,self.diff <= max_t)
         
  
         x = self.x[view_filter]
         y=self.y[view_filter]
         diff=self.diff[view_filter]
-
+        self.updateToT(view_filter)
         self._viewer_data[x,y] += 1.0
+        self._live_viewer_data[x,y] = diff
         #print(np.where(self._viewer_data != 0))
         
 def main():
