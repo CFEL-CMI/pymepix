@@ -25,6 +25,8 @@ class PacketProcessor(multiprocessing.Process):
         self._process_pix_time = 0
         self._find_event_time = 0
 
+        self._decode_time = 0
+
         self._append_time = 0
 
         self._put_time = 0
@@ -92,8 +94,11 @@ class PacketProcessor(multiprocessing.Process):
         data        = ((pixdata & 0x00000FFFFFFF0000) >> 16)
         spidr_time  = (pixdata & 0x000000000000FFFF)
         ToA         = ((data & 0x0FFFC000) >> 14 )
-        ToA_coarse  = self.correct_global_time((spidr_time << 14) | ToA,longtime)
         FToA        = (data & 0xF)
+        ToT         = ((data & 0x00003FF0) >> 4)*25 
+        self._decode_time += time.time()- start
+        ToA_coarse  = self.correct_global_time((spidr_time << 14) | ToA,longtime)
+        
 
 
 
@@ -314,6 +319,7 @@ class PacketProcessor(multiprocessing.Process):
         fmt = "{} Total time: {}s calls {} Avg Time {}s"
 
         print(fmt.format('PIXEL',self._process_pix_time,self._process_pix_count,self._process_pix_time/max(self._process_pix_count,1)))
+        print(fmt.format('::DECODE',self._decode_time,self._process_pix_count,self._decode_time/max(self._process_pix_count,1)))
         print(fmt.format('TRIGG',self._process_trig_time,self._process_trig_count,self._process_trig_time/max(self._process_trig_count,1)))
         print(fmt.format('FIND ',self._find_event_time,self._find_event_count,self._find_event_time/max(self._find_event_count,1)))
         print(fmt.format('APPND',self._append_time,self._append_count,self._append_time/max(self._append_count,1)))
