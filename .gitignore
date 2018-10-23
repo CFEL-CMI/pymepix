@@ -6,3 +6,7 @@ build/*
 lib/pymepix.egg-info/*
 *.egg
 setup.cfg
+*.dat
+*.tpx3
+*.spx
+
