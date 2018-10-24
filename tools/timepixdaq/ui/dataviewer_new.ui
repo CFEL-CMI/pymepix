@@ -7,13 +7,13 @@
     <x>0</x>
     <y>0</y>
     <width>1166</width>
-    <height>801</height>
+    <height>820</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QHBoxLayout" name="horizontalLayout_8">
+  <layout class="QHBoxLayout" name="horizontalLayout_9">
    <item>
     <layout class="QVBoxLayout" name="verticalLayout_6">
      <item>
@@ -46,7 +46,7 @@
                  </sizepolicy>
                 </property>
                 <property name="text">
-                 <string>Exposure</string>
+                 <string>Exposure Window</string>
                 </property>
                </widget>
               </item>
@@ -195,11 +195,32 @@
              </widget>
             </item>
             <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_8">
+              <item>
+               <widget class="QLabel" name="label_10">
+                <property name="text">
+                 <string>Max Exposure:</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLineEdit" name="exposure_time"/>
+              </item>
+              <item>
+               <widget class="QLabel" name="label_11">
+                <property name="text">
+                 <string>us</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
              <layout class="QHBoxLayout" name="horizontalLayout_6">
               <item>
                <widget class="QLabel" name="label_8">
                 <property name="text">
-                 <string>Time:</string>
+                 <string>Acquisition Time:</string>
                 </property>
                </widget>
               </item>
