@@ -8,10 +8,11 @@ from multiprocessing import Queue
 from .timepixdef import PacketType
 class PacketProcessor(multiprocessing.Process):
 
-    def __init__(self,input_queue,output_queue):
+    def __init__(self,input_queue,output_queue,file_queue=None):
         multiprocessing.Process.__init__(self)
         self._input_queue = input_queue
         self._output_queue = output_queue
+        self._file_queue = file_queue
         self._col = None
         self._row = None
         self._tot = None
@@ -217,7 +218,7 @@ class PacketProcessor(multiprocessing.Process):
         # if diff.size > 0:
         #     self._triggers = self._triggers[diff[0]:]
         self._triggers = self._triggers[np.argmin(self._triggers):]
-
+        
     def find_events_fast(self):
         if self._triggers is None:
             return None
@@ -236,6 +237,11 @@ class PacketProcessor(multiprocessing.Process):
         start = self._triggers[0:-1:]
         if start.size ==0:
             return None
+
+        trigger_counter= np.arange(self._trigger_counter,self._trigger_counter+start.size,dtype=np.int)
+
+        self._trigger_counter = trigger_counter[-1]+1
+
         # end = self._triggers[1:-1:]
         #Get the first and last triggers in pile
         first_trigger = start[0]
@@ -254,17 +260,23 @@ class PacketProcessor(multiprocessing.Process):
 
         #Get the mapping
         event_mapping = np.digitize(toa,start)-1
-        event_triggers = self._triggers[:-1:]
-        
+        event_triggers = self._triggers[:-1:]   
         self._triggers = self._triggers[-1:]
 
         self._find_event_time+= time.time() - start_time
         self._find_event_count+=1
+        #print('Trigger delta',triggers,np.ediff1d(triggers))
+
+        tof = toa-event_triggers[event_mapping]
+        event_number = trigger_counter[event_mapping]
+
+
+
 
         
         #print('Triggers',event_triggers,np.ediff1d(event_triggers))
 
-        return event_triggers,x,y,toa,tot,event_mapping
+        return event_number,x,y,tof,tot
 
 
     def find_events(self):
@@ -309,6 +321,9 @@ class PacketProcessor(multiprocessing.Process):
                     self._output_queue.put(events)
                     self._put_time += time.time()-start
                     self._put_count+=1
+
+                    if self._file_queue is not None:
+                        self._file_queue.put(('WRITETOF',events))
 
         
             except Exception as e:
