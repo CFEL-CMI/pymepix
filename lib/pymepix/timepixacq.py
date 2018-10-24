@@ -22,10 +22,10 @@ class TimePixAcq(object):
             self._timer = (self._timer_msb & 0xFFFFFFFF)<<32 |(self._timer_lsb & 0xFFFFFFFF)
             self._shared_timer.value = self._timer
             # if self._in_acquisition:
-            to_write = 0x6400000000000000 | (self._timer_lsb & 0xFFFFFFFF) << 16
-            self._file_queue.put(('WRITE',to_write))
-            to_write = 0x6500000000000000 | (self._timer_msb & 0xFFFFF) << 16
-            self._file_queue.put(('WRITE',to_write))                
+            # to_write = 0x6400000000000000 | (self._timer_lsb & 0xFFFFFFFF) << 16
+            # self._file_queue.put(('WRITE',to_write))
+            # to_write = 0x6500000000000000 | (self._timer_msb & 0xFFFFF) << 16
+            # self._file_queue.put(('WRITE',to_write))                
 
             while self._pause and self._run_timer:
                 time.sleep(1.0)
@@ -78,8 +78,8 @@ class TimePixAcq(object):
         self._data_thread = threading.Thread(target=self.dataThread)
         self._data_thread.start()
         self._file_storage = FileStorage(self._file_queue,self._save_data)
-        self._packet_sampler = PacketSampler(self._udp_address,self._file_queue,self._shared_timer,self._shared_acq)
-        self._packet_processor = PacketProcessor(self._packet_sampler.outputQueue,self._data_queue)
+        self._packet_sampler = PacketSampler(self._udp_address,self._shared_timer,self._shared_acq)
+        self._packet_processor = PacketProcessor(self._packet_sampler.outputQueue,self._data_queue,self._file_queue)
 
         self._packet_processor.start()
         self._file_storage.start()
