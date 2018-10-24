@@ -12,7 +12,7 @@ import time
 
 class DataVisualizer(QtGui.QWidget,Ui_Form):
 
-    startAcqWrite = QtCore.pyqtSignal(str,str)
+    startAcqWrite = QtCore.pyqtSignal(str,str,float)
     stopAcqWrite = QtCore.pyqtSignal()
 
     startCamera = QtCore.pyqtSignal(str,str)
@@ -57,7 +57,6 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
         self.openpath.clicked.connect(self.openPath)
         self.startAcq.stateChanged.connect(self.onCheck)
 
-
     def openPath(self):
         directory = QtGui.QFileDialog.getExistingDirectory(self, "Open Directory",
                                              "/home",
@@ -75,7 +74,12 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
     def onStartAcq(self):
 
         print(self.path_name.text(),self.file_prefix.text())
-        self.startAcqWrite.emit(self.path_name.text(),self.file_prefix.text())
+        exposure = 10000.0
+        if self.exposure_time.text() != "":
+            exposure = float(self.exposure_time.text())*1e-6
+
+
+        self.startAcqWrite.emit(self.path_name.text(),self.file_prefix.text(),exposure)
         if self.timeValue.text() != "":
             seconds_to_stop = float(self.timeValue.text())
             timer = threading.Timer(seconds_to_stop,lambda: self.startAcq.setChecked(False))
