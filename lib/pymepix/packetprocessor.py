@@ -8,15 +8,16 @@ from multiprocessing import Queue
 from .timepixdef import PacketType
 class PacketProcessor(multiprocessing.Process):
 
-    def __init__(self,input_queue,output_queue):
+    def __init__(self,input_queue,output_queue,file_queue=None,exposure_time = None):
         multiprocessing.Process.__init__(self)
         self._input_queue = input_queue
         self._output_queue = output_queue
+        self._file_queue = file_queue
         self._col = None
         self._row = None
         self._tot = None
         self._toa = None
-
+        self._exposure_time = exposure_time
         self._triggers = None
         self._trigger_counter = 0
 
@@ -134,9 +135,10 @@ class PacketProcessor(multiprocessing.Process):
         diff = ltimebits - pixelbits
         neg = (diff == 1) | (diff == -3)
         pos = (diff == -1) | (diff == 3)
-        arr = ( (ltime) & 0xFFFFC0000000) | (arr & 0x3FFFFFFF)
+        zero = (diff == 0) | (diff == 2)
         arr[neg] =   ( (ltime - 0x10000000) & 0xFFFFC0000000) | (arr[neg] & 0x3FFFFFFF)
         arr[pos] =   ( (ltime + 0x10000000) & 0xFFFFC0000000) | (arr[pos] & 0x3FFFFFFF)
+        arr[zero] = ( (ltime) & 0xFFFFC0000000) | (arr[zero] & 0x3FFFFFFF)
         #arr[zero] =   ( (ltime) & 0xFFFFC0000000) | (arr[zero] & 0x3FFFFFFF)
         
         return arr
@@ -217,7 +219,7 @@ class PacketProcessor(multiprocessing.Process):
         # if diff.size > 0:
         #     self._triggers = self._triggers[diff[0]:]
         self._triggers = self._triggers[np.argmin(self._triggers):]
-
+        
     def find_events_fast(self):
         if self._triggers is None:
             return None
@@ -236,6 +238,11 @@ class PacketProcessor(multiprocessing.Process):
         start = self._triggers[0:-1:]
         if start.size ==0:
             return None
+
+        trigger_counter= np.arange(self._trigger_counter,self._trigger_counter+start.size,dtype=np.int)
+
+        self._trigger_counter = trigger_counter[-1]+1
+
         # end = self._triggers[1:-1:]
         #Get the first and last triggers in pile
         first_trigger = start[0]
@@ -253,18 +260,32 @@ class PacketProcessor(multiprocessing.Process):
         #evt_filter = (toa[None,:] >= start[:,None]) & (toa[None,:] < end[:,None])
 
         #Get the mapping
-        event_mapping = np.digitize(toa,start)-1
-        event_triggers = self._triggers[:-1:]
-        
+        try:
+            event_mapping = np.digitize(toa,start)-1
+        except Exception as e:
+            print(str(e))
+            print(toa)
+            print(start)
+            raise
+        event_triggers = self._triggers[:-1:]   
         self._triggers = self._triggers[-1:]
 
         self._find_event_time+= time.time() - start_time
         self._find_event_count+=1
+        #print('Trigger delta',triggers,np.ediff1d(triggers))
 
+        tof = toa-event_triggers[event_mapping]
+        event_number = trigger_counter[event_mapping]
+
+        if self._exposure_time is not None:
+            exposure_time = self._exposure_time.value
+
+            exp_filter = tof <= exposure_time
+
+            return event_number[exp_filter],x[exp_filter],y[exp_filter],tof[exp_filter],tot[exp_filter]
+        else:
+            return event_number,x,y,tof,tot
         
-        #print('Triggers',event_triggers,np.ediff1d(event_triggers))
-
-        return event_triggers,x,y,toa,tot,event_mapping
 
 
     def find_events(self):
@@ -298,6 +319,10 @@ class PacketProcessor(multiprocessing.Process):
                     if self._output_queue is not None:
                         self._output_queue.put(None)
                         break
+                if packet == "RESTART":
+                    self._trigger_counter = 0
+                    continue
+
                 data = packet[0]
                 longtime = packet[1]
                 #print('GOT DATA')
@@ -309,6 +334,9 @@ class PacketProcessor(multiprocessing.Process):
                     self._output_queue.put(events)
                     self._put_time += time.time()-start
                     self._put_count+=1
+
+                    if self._file_queue is not None:
+                        self._file_queue.put(('WRITETOF',events))
 
         
             except Exception as e:

@@ -22,10 +22,10 @@ class TimePixAcq(object):
             self._timer = (self._timer_msb & 0xFFFFFFFF)<<32 |(self._timer_lsb & 0xFFFFFFFF)
             self._shared_timer.value = self._timer
             # if self._in_acquisition:
-            to_write = 0x6400000000000000 | (self._timer_lsb & 0xFFFFFFFF) << 16
-            self._file_queue.put(('WRITE',to_write))
-            to_write = 0x6500000000000000 | (self._timer_msb & 0xFFFFF) << 16
-            self._file_queue.put(('WRITE',to_write))                
+            # to_write = 0x6400000000000000 | (self._timer_lsb & 0xFFFFFFFF) << 16
+            # self._file_queue.put(('WRITE',to_write))
+            # to_write = 0x6500000000000000 | (self._timer_msb & 0xFFFFF) << 16
+            # self._file_queue.put(('WRITE',to_write))                
 
             while self._pause and self._run_timer:
                 time.sleep(1.0)
@@ -49,12 +49,13 @@ class TimePixAcq(object):
         self._master_mode = master_mode
 
         self.startupDevice()
-        self.setupDaqThreads()
+        self.setupAcq()
+        self.startDaqThreads()
 
         self._file_path = ""
         self._file_prefix = "test_"
 
-    def setupDaqThreads(self):
+    def setupAcq(self):
         self._data_queue = multiprocessing.Queue()
         self._file_queue =  multiprocessing.Queue()
         self._pause = False
@@ -65,21 +66,21 @@ class TimePixAcq(object):
         self._timer = 0
         self._shared_timer = Value('I',0)
         self._shared_acq = Value('I',0)
-        self._shared_exp_time = Value('I',10000)
+        self._shared_exp_time = Value('d',10000.0)
 
         self._save_data = Value('I',0)
-
         self._timer_lsb = 0
         self._timer_msb = 0
         self._timer_thread = threading.Thread(target = self.updateTimer)
         self._timer_thread.start()
-
         self.pauseTimer()
         self._data_thread = threading.Thread(target=self.dataThread)
         self._data_thread.start()
+
+    def startDaqThreads(self):
         self._file_storage = FileStorage(self._file_queue,self._save_data)
-        self._packet_sampler = PacketSampler(self._udp_address,self._file_queue,self._shared_timer,self._shared_acq)
-        self._packet_processor = PacketProcessor(self._packet_sampler.outputQueue,self._data_queue)
+        self._packet_sampler = PacketSampler(self._udp_address,self._shared_timer,self._shared_acq)
+        self._packet_processor = PacketProcessor(self._packet_sampler.outputQueue,self._data_queue,self._file_queue,self._shared_exp_time)
 
         self._packet_processor.start()
         self._file_storage.start()
@@ -140,6 +141,7 @@ class TimePixAcq(object):
     def beginFileWrite(self):
         if self._file_prefix != "":
             file_to_write = os.path.join(self.filePath,self.filePrefix)+time.strftime("%Y%m%d-%H%M%S")+'.dat'
+            self._packet_sampler.outputQueue.put('RESTART')
             self._file_queue.put(('OPEN',file_to_write))
             self._in_acquisition = True
     
@@ -568,7 +570,7 @@ class TimePixAcq(object):
         #self._spidr.closeShutter()
         self._spidr.restartTimers()
 
-        # self._spidr.resetTimers()
+        self._spidr.resetTimers()
         # if self.shutterTriggerMode == SpidrShutterMode.Auto:
         #     self._spidr.startAutoTrigger()
         # elif self._open_shutter:
@@ -631,10 +633,10 @@ def main():
     # print(tpx.Ibias_Preamp_ON)
     # print (tpx.Ibias_Ikrum)
     # print (tpx.Vfbk)
-
+    tpx.eventWindowTime = 10E-6
     tpx.startAcquisition()
     tpx.beginFileWrite()
-    time.sleep(2)
+    time.sleep(20)
     tpx.stopAcquisition()
     tpx.stopFileWrite()
     tpx.stopThreads()
