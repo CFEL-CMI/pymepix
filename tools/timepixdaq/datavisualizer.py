@@ -152,7 +152,6 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
 
         self.x = x
         self.y = y
-        self.toa = toa
         self.tot = tot
         self.diff = tof
         #print(self.diff)
