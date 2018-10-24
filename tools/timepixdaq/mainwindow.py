@@ -27,9 +27,11 @@ class MainWindow(QtGui.QMainWindow,Ui_MainWindow):
 
         self._timepix.startAcquisition()
     
-    def startWrite(self,path,prefix):
+    def startWrite(self,path,prefix,exposure):
         self._timepix.filePath=path
         self._timepix.filePrefix = prefix
+        self._timepix.eventWindowTime = exposure
+        print('Recieved',path,prefix,exposure)
         self._timepix.beginFileWrite()
     
     def stopWrite(self):
