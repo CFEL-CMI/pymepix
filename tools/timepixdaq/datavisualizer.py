@@ -147,13 +147,11 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
         #     return
 
         #print('Found event')
-        triggers,x,y,toa,tot,mapping = data
+        counter,x,y,tof,tot = data
         #print('Trigger delta',triggers,np.ediff1d(triggers))
 
-        tof = toa-triggers[mapping]
         self.x = x
         self.y = y
-        self.toa = toa
         self.tot = tot
         self.diff = tof
         #print(self.diff)

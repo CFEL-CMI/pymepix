@@ -1,5 +1,5 @@
 import multiprocessing
-
+import time
 from multiprocessing.sharedctypes import RawArray 
 import numpy as np
 import socket
@@ -7,17 +7,17 @@ from multiprocessing import Queue
 import struct
 class PacketSampler(multiprocessing.Process):
 
-    def __init__(self,address,file_queue,shared_long_time,acq_status,sample_buffer_size=100000):
+    def __init__(self,address,shared_long_time,acq_status,sample_buffer_size=100000):
         multiprocessing.Process.__init__(self)
         self._acq_status = acq_status
         self._long_time = shared_long_time
         self.createConnection(address)
         self._packets_collected = 0
         self._output_queue = Queue()
-        self._file_queue = file_queue
 
-
-        
+        self._max_bytes = 16384*1000
+        self._flush_timeout = 0.3
+        self._packet_buffer = None
 
     @property
     def outputQueue(self):
@@ -39,7 +39,7 @@ class PacketSampler(multiprocessing.Process):
         
         if packet.size > 0 and self._output_queue is not None:
             #print('UPLOADING')
-            self._file_queue.put(('WRITE',tpx_packets.tostring()))
+            #self._file_queue.put(('WRITE',tpx_packets.tostring()))
             self._output_queue.put((tpx_packets,longtime))
 
     def convert_data_to_ints(self,data, big_endian=True):
@@ -50,6 +50,7 @@ class PacketSampler(multiprocessing.Process):
         return struct.unpack(fmt, data[:int_count * 8])
 
     def run(self):
+        self._start = time.time()
         while True:
             if self._acq_status.value==0:
                 
@@ -58,21 +59,32 @@ class PacketSampler(multiprocessing.Process):
 
             raw_packet = self._sock.recv(16384) # buffer size is 1024 bytes
 
-            
+            if self._packet_buffer is None:
+                self._packet_buffer = raw_packet
+            else:
+                self._packet_buffer+= raw_packet
 
+            
+            self._packets_collected+=1
+
+            end = time.time()-self._start
             # assert (len(raw_packet) % 8 == 0)
+
+            # print(len(self._packet_buffer),self._max_bytes)
 
             # little = int.from_bytes(raw_packet, byteorder='little')
             # big = int.from_bytes(raw_packet, byteorder='big')
                     
             # print('Little: {:16X} Big: {:16X} '.format(little,big))
-            
-            packet = np.frombuffer(raw_packet,dtype='<u8')
-            #self._file_queue.put(('WRITE',packet.tostring()))
-            current_time = self._long_time.value
-            self.upload_packet(packet,current_time)
+            if (len(self._packet_buffer) > self._max_bytes) or (end > self._flush_timeout):
+                packet = np.frombuffer(self._packet_buffer,dtype='<u8')
+                #self._file_queue.put(('WRITE',packet.tostring()))
+                current_time = self._long_time.value
+                self.upload_packet(packet,current_time)
+                self._packet_buffer = None
+                self._start = time.time()
 
-            self._packets_collected+=1
+           
 
 
 

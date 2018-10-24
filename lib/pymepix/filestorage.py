@@ -35,6 +35,15 @@ class FileStorage(multiprocessing.Process):
                     # print(packet)
                     if self._file_io is not None:
                         self._file_io.write(data)
+                elif message == 'WRITETOF':
+                    counter,x,y,tof,tot = packet[1]
+                    # print(packet)
+                    if self._file_io is not None:
+                        np.save(self._file_io,counter)  
+                        np.save(self._file_io,x) 
+                        np.save(self._file_io,y) 
+                        np.save(self._file_io,tof) 
+                        np.save(self._file_io,tot)                   
                 elif message == 'CLOSE':
                     if self._file_io is not None:
                         self._file_io.close()
