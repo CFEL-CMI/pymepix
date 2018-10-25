@@ -7,10 +7,11 @@ from multiprocessing import Queue
 import struct
 class PacketSampler(multiprocessing.Process):
 
-    def __init__(self,address,shared_long_time,acq_status,sample_buffer_size=100000):
+    def __init__(self,address,shared_long_time,acq_status,file_queue,sample_buffer_size=100000):
         multiprocessing.Process.__init__(self)
         self._acq_status = acq_status
         self._long_time = shared_long_time
+        self._file_queue = file_queue
         self.createConnection(address)
         self._packets_collected = 0
         self._output_queue = Queue()
@@ -78,7 +79,7 @@ class PacketSampler(multiprocessing.Process):
             # print('Little: {:16X} Big: {:16X} '.format(little,big))
             if (len(self._packet_buffer) > self._max_bytes) or (end > self._flush_timeout):
                 packet = np.frombuffer(self._packet_buffer,dtype='<u8')
-                #self._file_queue.put(('WRITE',packet.tostring()))
+                self._file_queue.put(('WRITE',self._packet_buffer))
                 current_time = self._long_time.value
                 self.upload_packet(packet,current_time)
                 self._packet_buffer = None

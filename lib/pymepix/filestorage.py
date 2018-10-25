@@ -3,6 +3,7 @@ import multiprocessing
 from multiprocessing.sharedctypes import RawArray 
 import numpy as np
 import socket
+import time,os
 from multiprocessing import Queue
 class FileStorage(multiprocessing.Process):
 
@@ -10,6 +11,7 @@ class FileStorage(multiprocessing.Process):
         multiprocessing.Process.__init__(self)
         self._input_queue = data_queue
         self._file_io = None
+        self._raw_file_io = None
     def run(self):
 
         while True:
@@ -24,20 +26,26 @@ class FileStorage(multiprocessing.Process):
                 # print(packet)
                 #Check signal type
                 if message == 'OPEN':
-                    filename = packet[1]
-                    print('Opening filename ',filename)
+                    path = packet[1]
+                    prefix = packet[2]
+                    tof_filename = os.path.join(path,prefix)+time.strftime("%Y%m%d-%H%M%S")+'.dat'
+                    raw_filename = os.path.join(path,'raw_'+prefix)+time.strftime("%Y%m%d-%H%M%S")+'.dat'
+                    print('Opening filenames ',tof_filename,raw_filename)
                     if self._file_io is not None:
                         self._file_io.close()
+                        self._raw_file_io.close()
                     
-                    self._file_io = open(filename,'wb')
+                    self._file_io = open(tof_filename,'wb')
+                    self._raw_file_io = open(raw_filename,'wb')
                 elif message == 'WRITE':
                     data = packet[1]
-                    # print(packet)
-                    if self._file_io is not None:
-                        self._file_io.write(data)
+                    #print(packet)
+                    if self._raw_file_io is not None:
+                        self._raw_file_io.write(data)
                 elif message == 'WRITETOF':
                     counter,x,y,tof,tot = packet[1]
-                    # print(packet)
+                    
+                    #print(packet)
                     if self._file_io is not None:
                         np.save(self._file_io,counter)  
                         np.save(self._file_io,x) 
@@ -47,7 +55,9 @@ class FileStorage(multiprocessing.Process):
                 elif message == 'CLOSE':
                     if self._file_io is not None:
                         self._file_io.close()
+                        self._raw_file_io.close()
                         self._file_io = None
+                        self._raw_file_io = None
             except Exception as e:
                 print(str(e))
             

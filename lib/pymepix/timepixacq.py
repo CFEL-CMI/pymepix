@@ -21,11 +21,11 @@ class TimePixAcq(object):
             self._timer_lsb,self._timer_msb = self._device.timer
             self._timer = (self._timer_msb & 0xFFFFFFFF)<<32 |(self._timer_lsb & 0xFFFFFFFF)
             self._shared_timer.value = self._timer
-            # if self._in_acquisition:
-            # to_write = 0x6400000000000000 | (self._timer_lsb & 0xFFFFFFFF) << 16
-            # self._file_queue.put(('WRITE',to_write))
-            # to_write = 0x6500000000000000 | (self._timer_msb & 0xFFFFF) << 16
-            # self._file_queue.put(('WRITE',to_write))                
+            if self._in_acquisition:
+                to_write = 0x6400000000000000 | (self._timer_lsb & 0xFFFFFFFF) << 16
+                self._file_queue.put(('WRITE',to_write))
+                to_write = 0x6500000000000000 | (self._timer_msb & 0xFFFFF) << 16
+                self._file_queue.put(('WRITE',to_write))                
 
             while self._pause and self._run_timer:
                 time.sleep(1.0)
@@ -79,7 +79,7 @@ class TimePixAcq(object):
 
     def startDaqThreads(self):
         self._file_storage = FileStorage(self._file_queue,self._save_data)
-        self._packet_sampler = PacketSampler(self._udp_address,self._shared_timer,self._shared_acq)
+        self._packet_sampler = PacketSampler(self._udp_address,self._shared_timer,self._shared_acq,self._file_queue)
         self._packet_processor = PacketProcessor(self._packet_sampler.outputQueue,self._data_queue,self._file_queue,self._shared_exp_time)
 
         self._packet_processor.start()
@@ -140,9 +140,9 @@ class TimePixAcq(object):
 
     def beginFileWrite(self):
         if self._file_prefix != "":
-            file_to_write = os.path.join(self.filePath,self.filePrefix)+time.strftime("%Y%m%d-%H%M%S")+'.dat'
+
             self._packet_sampler.outputQueue.put('RESTART')
-            self._file_queue.put(('OPEN',file_to_write))
+            self._file_queue.put(('OPEN',self.filePath,self.filePrefix,))
             self._in_acquisition = True
     
     def stopFileWrite(self):
@@ -636,7 +636,7 @@ def main():
     tpx.eventWindowTime = 10E-6
     tpx.startAcquisition()
     tpx.beginFileWrite()
-    time.sleep(20)
+    time.sleep(2)
     tpx.stopAcquisition()
     tpx.stopFileWrite()
     tpx.stopThreads()
