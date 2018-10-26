@@ -60,37 +60,117 @@ def read_timepix_data(f):
         
         return shot,x,y,tof,tot
 
+
+def gaussian(height, center_x, center_y, width_x, width_y):
+    """Returns a gaussian function with the given parameters"""
+    width_x = float(width_x)
+    width_y = float(width_y)
+    return lambda x,y: height*np.exp(
+                -(((center_x-x)/width_x)**2+((center_y-y)/width_y)**2)/2)
+
+def moments(X,Y,tot):
+    """Returns (height, x, y, width_x, width_y)
+    the gaussian parameters of a 2D distribution by calculating its
+    moments """
+    total = tot.sum()
+    x = (X*tot).sum()/total
+    y = (Y*tot).sum()/total
+    
+    # x_filt = X == int(x)
+    # y_filt = Y == int(y)
+    # width_x = np.sqrt(((X[x_filt]-x)**2)*tot[x_filt]).sum()/tot[x_filt].sum()
+    # width_y = np.sqrt(((Y[y_filt]-y)**2)*tot[y_filt]).sum()/tot[y_filt].sum()
+    #print('YMIN',Y,tot)
+    width_x = np.std(X)
+    width_y = np.std(Y)
+    height = tot.max()
+    return height, x, y, width_x, width_y
+
+def cluster_properties(shot,x,y,tof,tot,labels):
+    import scipy.ndimage as nd
+    label_iter = np.unique(labels[labels!=0])
+    total_objects = label_iter.size
+
+
+    #Prepare our output
+    cluster_shot = np.ndarray(shape=(total_objects,),dtype=np.int)
+    cluster_x = np.ndarray(shape=(total_objects,),dtype=np.int)
+    cluster_y = np.ndarray(shape=(total_objects,),dtype=np.int)
+    cluster_wx = np.ndarray(shape=(total_objects,),dtype=np.int)
+    cluster_wy = np.ndarray(shape=(total_objects,),dtype=np.int)
+    cluster_h = np.ndarray(shape=(total_objects,),dtype=np.int)
+    cluster_tof = np.ndarray(shape=(total_objects,),dtype=np.int)
+    
+
+    for idx in range(total_objects):
+
+
+        obj_slice = (labels == label_iter[idx])
+        obj_shot = shot[obj_slice]
+        obj_x = x[obj_slice]
+        obj_y = y[obj_slice]
+        obj_tof = tof[obj_slice]
+        obj_tot = tot[obj_slice]
+        max_tot = np.argmax(obj_tot)
+
+        cluster_tof[idx] = obj_tof[max_tot]
+
+        moment = moments(obj_x,obj_y,obj_tot)
+        #print(moment)
+        gauss = fitgaussian(obj_x,obj_y,obj_tot)
+        gh,gx,gy,gwx,gwy = gauss
+        cluster_h[idx] = gh
+        cluster_x[idx] = gx
+        cluster_y[idx] = gy
+        cluster_wx[idx] = gwx
+        cluster_wy[idx] = gwy
+        cluster_shot[idx] = obj_shot[0]
+
+        print('Moment ', moment,' Gaussian ',gauss)
+
+    return cluster_shot,cluster_x,cluster_y,cluster_wx,cluster_wy,cluster_tof,cluster_h
+
+def fitgaussian(x,y,tot):
+    from scipy.optimize import leastsq
+    """Returns (height, x, y, width_x, width_y)
+    the gaussian parameters of a 2D distribution found by a fit"""
+    params = moments(x,y,tot)
+    errorfunction = lambda p: gaussian(*p)(x,y) - tot
+    print(params,len(x))
+    p, success = leastsq(errorfunction, params)
+    return p
+
 def find_cluster(shot,x,y,tof,tot,epsilon=2,min_samples=2):
     from sklearn.cluster import DBSCAN
-    import scipy.ndimage as nd
+    
     tof_eps = 81920*(25./4096)*1E-9
 
     tof_scale = epsilon/tof_eps
     X = np.vstack((shot*epsilon*1000,x,y,tof*tof_scale)).transpose()
     dist= DBSCAN(eps=epsilon, min_samples=min_samples,metric='euclidean').fit(X)
     labels = dist.labels_ + 1
-    label_index = np.unique(labels)
-    print()
+    # label_index = np.unique(labels)
+    # print()
 
-    # tot_max = nd.maximum_position(tot,labels=labels,index=label_index)
-    # x_mean = nd.mean(x,labels=labels,index=label_index)
-    # y_mean = nd.mean(tot,labels=labels,index=label_index)
+    # # tot_max = nd.maximum_position(tot,labels=labels,index=label_index)
+    # # x_mean = nd.mean(x,labels=labels,index=label_index)
+    # # y_mean = nd.mean(tot,labels=labels,index=label_index)
 
-    tot_max = np.array(nd.maximum_position(tot,labels=labels,index=label_index)).flatten()
-    cluster_x = np.array(nd.mean(x,labels=labels,index=label_index)).flatten()
-    cluster_y = np.array(nd.mean(y,labels=labels,index=label_index)).flatten()
-    new_tof = np.copy(tof)
-    cluster_tof = tof[tot_max]
-    cluster_shot = shot[tot_max]
-    clusters = nd.find_objects(labels)
-    for cluster in clusters:
-        ob = cluster[0]
-        max_tot = np.argmax(tot[ob])
-        tof_Val = tof[ob][max_tot]
-        new_tof[ob] = tof_Val
+    # tot_max = np.array(nd.maximum_position(tot,labels=labels,index=label_index)).flatten()
+    # cluster_x = np.array(nd.mean(x,labels=labels,index=label_index)).flatten()
+    # cluster_y = np.array(nd.mean(y,labels=labels,index=label_index)).flatten()
+    # new_tof = np.copy(tof)
+    # cluster_tof = tof[tot_max]
+    # cluster_shot = shot[tot_max]
+    # clusters = nd.find_objects(labels)
+    # for cluster in clusters:
+    #     ob = cluster[0]
+    #     max_tot = np.argmax(tot[ob])
+    #     tof_Val = tof[ob][max_tot]
+    #     new_tof[ob] = tof_Val
 
 
-    return cluster_shot,cluster_x,cluster_y,cluster_tof,tot[tot_max],label_index,new_tof
+    return labels
 
 
 
@@ -105,10 +185,11 @@ def main():
     from sklearn import metrics
     import sklearn
     import scipy
-    with open('C:\\Users\\Bahamut\\Documents\\repos\\libtimepix\\lib\\pymepix\\processing\\Lenscan_-80020181024-143826.dat','rb') as f:
+    with open('/Users/alrefaie/Documents/repos/libtimepix/lib/pymepix/processing/Lenscan_-80020181024-143826.dat','rb') as f:
+    #with open('C:\\Users\\Bahamut\\Documents\\repos\\libtimepix\\lib\\pymepix\\processing\\Lenscan_-80020181024-143826.dat','rb') as f:
         shot,x,y,tof,tot = read_timepix_data(f)
         shot_avail = np.unique(shot)
-        evt_filt = (shot > 0) # (shot < 10) #& (tot > 300) #(shot == shot_avail[2]) | (shot == shot_avail[1]) | (shot == shot_avail[0])
+        evt_filt = (shot >= 0 )# & (x > 146) & ( x < 158) & (y > 126) & (y < (136))# (shot < 10) #& (tot > 300) #(shot == shot_avail[2]) | (shot == shot_avail[1]) | (shot == shot_avail[0])
 
         #~25 clusters
         shot = shot[evt_filt]
@@ -132,6 +213,8 @@ def main():
         # tof_us = tof*1E6
         # evt_filt =  (tof_us > 1.6)& (tof_us < 2.1)
 
+
+
         # # plt.hist2d(tof_us[evt_filt],tot[evt_filt],bins=100,cmap='hsv')
         # # plt.show()
         # # quit()
@@ -152,46 +235,107 @@ def main():
         # dist= DBSCAN(eps=desired_epsilon, min_samples=2,metric='euclidean').fit(X)
         # print(np.unique(dist.labels_))
         # labels = dist.labels_
-        cluster_shot,cluster_x,cluster_y,cluster_tof,cluster_tot,labels,new_tof = find_cluster(shot,x,y,tof,tot)
 
-        cluster_tof*=1E6
-        print(new_tof*1E6,tot)
-        plt.hist2d(new_tof*1E6,tot,bins=100,cmap='hot',range=[[1.75,2],[0,4000]])
-        plt.show()
-        # print('DISTANCE',dist)
-        # print('SHAPE',dist.shape)
-        # print(dist.max())
-        # print(tof_dist)
-        # print(tof_dist.shape)
-        # print(81920*(25./4096)*1E-9)
-        # quit()
-        # print(dist.max())
-        # print(np.mean(dist))
+        labels = find_cluster(shot,x,y,tof,tot,epsilon=2,min_samples=5)
+        c_s,c_x,c_y,c_wx,c_wy,c_tof,c_tot = cluster_properties(shot,x,y,tof,tot,labels)
+
+
+
+        matrix = np.ndarray(shape=(256,256,),dtype=np.float)
+        matrix[...]=0.0
+        matrix[x,y] = tot
         
-        # # print(X.shape)
-        # # print(X)
-        # # print(labels)
-        # # print(labels.min(),labels.max())
-        # # n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
-        # # print(n_clusters_)
-        # shot_avail = np.unique(shot)
-        # print(np.unique(labels))
+        # #matrix = np.ndarray(shape=(256,256,),dtype=np.float)
+
+
+
+        plt.matshow(matrix,cmap='jet')
+        fig = plt.gcf()
+        ax = fig.gca()
+        for idx in range(c_s.size):
+            # fit = gaussian(c_tot[idx],c_x[idx],c_y[idx],c_wx[idx],c_wy[idx])
+            # x_r = np.linspace(c_x[idx]-c_wx[idx]/2,c_x[idx]+c_wx[idx]/2,10)
+            # y_r = np.linspace(c_y[idx]-c_wy[idx]/2,c_y[idx]+c_wy[idx]/2,10)
+            # gridx,gridy = np.meshgrid(y_r,x_r)
+            # print(x_r)
+            # c_x[idx],c_y[idx],c_wx[idx],c_wy[idx]
+            # plt.contour(gridx,gridy,fit(gridx,gridy), cmap=plt.cm.hot)
+            # print(int(c_x[idx]),int(c_y[idx]))
+            ax.add_artist(plt.Circle((c_y[idx],c_x[idx]),5,color='r',fill=False))
+            
+            # if idx ==0:
+            #     break
+        #ax = plt.gca()
+        plt.show()
+
+
+
+
+
+        # cluster_shot,cluster_x,cluster_y,cluster_tof,cluster_tot,labels,new_tof = find_cluster(shot,x,y,tof,tot)
+
+        # cluster_tof*=1E6
+        # print(new_tof*1E6,tot)
+        # # plt.hist2d(new_tof*1E6,tot,bins=100,cmap='hot',range=[[1.75,2],[0,4000]])
+        # # plt.show()
+        # # print('DISTANCE',dist)
+        # # print('SHAPE',dist.shape)
+        # # print(dist.max())
+        # # print(tof_dist)
+        # # print(tof_dist.shape)
+        # # print(81920*(25./4096)*1E-9)
+        # # quit()
+        # # print(dist.max())
+        # # print(np.mean(dist))
+        
+        # # # print(X.shape)
+        # # # print(X)
+        # # # print(labels)
+        # # # print(labels.min(),labels.max())
+        # # # n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
+        # # # print(n_clusters_)
+        # # shot_avail = np.unique(shot)
+        # # print(np.unique(labels))
 
         # fig = plt.figure()
-        # ax = fig.add_subplot(111, projection='3d')
-        # bx = fig.add_subplot(122, projection='3d')
-        # # tof_us = tof*1E6
-        # # tot_ns = tot.astype(np.float)
-        # # #evt_filt =   (tof_us > 1.75) & (tof_us < 2.1) 
-        # # # print(np.where(evt_filt))
+        # ax = fig.add_subplot(221, projection='3d')
+        # bx = fig.add_subplot(222, projection='3d')
+        # cx = fig.add_subplot(223)
+        # dx = fig.add_subplot(224)
 
 
-        # p = ax.scatter(x, y, zs=new_tof, s=6, c=tot, depthshade=True, cmap="hot")
-        # # bx.scatter(cluster_x, cluster_y, zs=cluster_tof, s=10, c=labels, depthshade=True, cmap="hsv")
-        # plt.colorbar(p)
+        # # # tof_us = tof*1E6
+        # # # tot_ns = tot.astype(np.float)
+        # # # #evt_filt =   (tof_us > 1.75) & (tof_us < 2.1) 
+        # # # # print(np.where(evt_filt))
+        # tof_us = tof*1E6
+        # new_tof_us = new_tof*1E6
+
+        # tof_filt = (tof_us > 1.6) & (tof_us < 2.0)
+        # new_tof_filt = (new_tof_us > 1.6) & (new_tof_us < 2.0)
+        # p = ax.scatter(x[tof_filt], y[tof_filt], zs=tof_us[tof_filt], s=3, c=tot[tof_filt], depthshade=True, cmap="hot")
+        # bx.scatter(x[new_tof_filt], y[new_tof_filt], zs=new_tof_us[new_tof_filt], s=3, c=tot[new_tof_filt], depthshade=True, cmap="hot")
+        # cx.hist2d(tof_us[tof_filt],tot[tof_filt],bins=100,cmap='hot')
+        # dx.hist2d(new_tof_us[new_tof_filt],tot[new_tof_filt],bins=100,cmap='hot')
+        # ax.set_xlabel('x')
+        # ax.set_ylabel('y')
+        # ax.set_zlabel('tof')
+
+        # bx.set_xlabel('x')
+        # bx.set_ylabel('y')
+        # bx.set_zlabel('tof')
+
+
+        # cx.set_xlabel('TOF (us)')
+        # cx.set_ylabel('TOT (ns)')
+
+        # dx.set_xlabel('TOF (us)')
+        # dx.set_ylabel('TOT (ns)')
+
+        # #plt.colorbar(p)
         # plt.show()
-        plt.hist(new_tof*1E6,bins=500)
-        plt.show()
+        # plt.hist(new_tof*1E6,bins=500)
+        # plt.show()
 
 if __name__=="__main__":
     main()
