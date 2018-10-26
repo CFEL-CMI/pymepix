@@ -1,24 +1,139 @@
 import numpy as np
-
+import traceback
 
 class TimepixCentroid(object):
     
-    def __init__(self):
-        pass
+    def __init__(self,input_queue,output_queue = None,file_queue=None):
+        self._input_queue = input_queue
+        self._output_queue = output_queue
+        self._file_queue = file_queue
+
     
+    def run(self):
+        while True:
+            try:
+                # get a new message
+                packet = self._input_queue.get()
+                # this is the 'TERM' signal
+                if packet is None:
+                    break
+                    # if self._output_queue is not None:
+                    #     self._output_queue.put(None)
+                    #     break
+
+                # data = packet[0]
+                # longtime = packet[1]
+                #print('GOT DATA')
+                blob_data = self.compute_blob(*packet)
+
+                if blob_data is not None 
+                    #print('EVENT FOUND')
+                    if self._output_queue is not None:
+                        self._output_queue.put(blob_data)
+
+                    if self._file_queue is not None:
+                        self._file_queue.put(('WRITEBLOB',blob_data))
+
+        
+            except Exception as e:
+                print (str(e))
+                traceback.print_exc()
+                break            
 
 
-    def centroid(self,x,y,tof,tot,tot_filter):
-        clust_count = 0
-
-        highest_tot = np.where(tot_filter)
-
-        label = np.ndarray(x.shape,dtype=np.int)
-
-        label[...]=-1
+    def compute_blob(self,shot,x,y,tof,tot):
+        labels = self.find_cluster(shot,x,y,tof,tot,epsilon=2,min_samples=5)
+        if labels[labels!=0].size == 0:
+            return None
+        else:
+            return self.cluster_properties(shot,x,y,tof,tot,labels)
 
 
 
+
+
+    def moments_com(self,X,Y,tot):
+
+        total = tot.sum()
+        x_bar = (X*tot).sum()/total
+        y_bar = (Y*tot).sum()/total
+        area = tot.size
+
+        x_cm = X - x_bar
+        y_cm = Y - y_bar
+        coords = np.vstack([x_cm, y_cm])
+        
+        cov = np.cov(coords)
+        evals, evecs = np.linalg.eig(cov)
+
+        return x_bar,y_bar,area,total,evals,evecs.flatten()
+
+    def find_cluster(self,shot,x,y,tof,tot,epsilon=2,min_samples=2):
+        from sklearn.cluster import DBSCAN
+        
+        tof_eps = 81920*(25./4096)*1E-9
+
+        tof_scale = epsilon/tof_eps
+        X = np.vstack((shot*epsilon*1000,x,y,tof*tof_scale)).transpose()
+        dist= DBSCAN(eps=epsilon, min_samples=min_samples,metric='euclidean').fit(X)
+        labels = dist.labels_ + 1
+        return labels
+
+    def cluster_properties(self,shot,x,y,tof,tot,labels):
+        label_iter = np.unique(labels[labels!=0])
+        total_objects = label_iter.size
+
+
+        #Prepare our output
+        cluster_shot = np.ndarray(shape=(total_objects,),dtype=np.int)
+        cluster_x = np.ndarray(shape=(total_objects,),dtype=np.float64)
+        cluster_y = np.ndarray(shape=(total_objects,),dtype=np.float64)
+        cluster_eig = np.ndarray(shape=(total_objects,2,),dtype=np.float64)
+        cluster_vect = np.ndarray(shape=(total_objects,4,),dtype=np.float64)
+        cluster_area = np.ndarray(shape=(total_objects,),dtype=np.float64)
+        cluster_integral = np.ndarray(shape=(total_objects,),dtype=np.float64)
+        cluster_tof = np.ndarray(shape=(total_objects,),dtype=np.float64)
+        
+
+        for idx in range(total_objects):
+
+
+            obj_slice = (labels == label_iter[idx])
+            obj_shot = shot[obj_slice]
+            obj_x = x[obj_slice]
+            obj_y = y[obj_slice]
+            obj_tof = tof[obj_slice]
+            obj_tot = tot[obj_slice]
+            max_tot = np.argmax(obj_tot)
+
+            cluster_tof[idx] = obj_tof[max_tot]
+
+            x_bar,y_bar,area,integral,evals,evecs = self.moments_com(obj_x,obj_y,obj_tot)
+            cluster_x[idx] = x_bar
+            cluster_y[idx] = y_bar
+            cluster_area[idx] = area
+            cluster_integral[idx] = integral
+            cluster_eig[idx]=evals
+            cluster_vect[idx] = evecs
+            cluster_shot[idx] = obj_shot[0]
+
+
+
+            # moment = moments(obj_x,obj_y,obj_tot)
+            # moments_com(obj_x,obj_y,obj_tot)
+            #print(moment)
+            # gauss = fitgaussian(obj_x,obj_y,obj_tot)
+            # gh,gx,gy,gwx,gwy = gauss
+            # cluster_h[idx] = gh
+            # cluster_x[idx] = gx
+            # cluster_y[idx] = gy
+            # cluster_wx[idx] = gwx
+            # cluster_wy[idx] = gwy
+            # cluster_shot[idx] = obj_shot[0]
+
+            #print('Moment ', moment,' Gaussian ',gauss)
+
+        return cluster_shot,cluster_x,cluster_y,cluster_area,cluster_integral,cluster_eig,cluster_vect
 
 
 
@@ -86,81 +201,9 @@ def moments(X,Y,tot):
     height = tot.max()
     return height, x, y, width_x, width_y
 
-def moments_com(X,Y,tot):
-
-    total = tot.sum()
-    x_bar = (X*tot).sum()/total
-    y_bar = (Y*tot).sum()/total
-    area = tot.size
-
-    x_cm = X - x_bar
-    y_cm = Y - y_bar
-    coords = np.vstack([x_cm, y_cm])
-    
-    cov = np.cov(coords)
-    evals, evecs = np.linalg.eig(cov)
 
 
 
-
-    return x_bar,y_bar,area,total,evals,evecs.flatten()
-
-def cluster_properties(shot,x,y,tof,tot,labels):
-    import scipy.ndimage as nd
-    label_iter = np.unique(labels[labels!=0])
-    total_objects = label_iter.size
-
-
-    #Prepare our output
-    cluster_shot = np.ndarray(shape=(total_objects,),dtype=np.int)
-    cluster_x = np.ndarray(shape=(total_objects,),dtype=np.float64)
-    cluster_y = np.ndarray(shape=(total_objects,),dtype=np.float64)
-    cluster_eig = np.ndarray(shape=(total_objects,2,),dtype=np.float64)
-    cluster_vect = np.ndarray(shape=(total_objects,4,),dtype=np.float64)
-    cluster_area = np.ndarray(shape=(total_objects,),dtype=np.float64)
-    cluster_integral = np.ndarray(shape=(total_objects,),dtype=np.float64)
-    cluster_tof = np.ndarray(shape=(total_objects,),dtype=np.float64)
-    
-
-    for idx in range(total_objects):
-
-
-        obj_slice = (labels == label_iter[idx])
-        obj_shot = shot[obj_slice]
-        obj_x = x[obj_slice]
-        obj_y = y[obj_slice]
-        obj_tof = tof[obj_slice]
-        obj_tot = tot[obj_slice]
-        max_tot = np.argmax(obj_tot)
-
-        cluster_tof[idx] = obj_tof[max_tot]
-
-        x_bar,y_bar,area,integral,evals,evecs = moments_com(obj_x,obj_y,obj_tot)
-        cluster_x[idx] = x_bar
-        cluster_y[idx] = y_bar
-        cluster_area[idx] = area
-        cluster_integral[idx] = integral
-        cluster_eig[idx]=evals
-        cluster_vect[idx] = evecs
-        cluster_shot[idx] = obj_shot[0]
-
-
-
-        # moment = moments(obj_x,obj_y,obj_tot)
-        # moments_com(obj_x,obj_y,obj_tot)
-        #print(moment)
-        # gauss = fitgaussian(obj_x,obj_y,obj_tot)
-        # gh,gx,gy,gwx,gwy = gauss
-        # cluster_h[idx] = gh
-        # cluster_x[idx] = gx
-        # cluster_y[idx] = gy
-        # cluster_wx[idx] = gwx
-        # cluster_wy[idx] = gwy
-        # cluster_shot[idx] = obj_shot[0]
-
-        #print('Moment ', moment,' Gaussian ',gauss)
-
-    return cluster_shot,cluster_x,cluster_y,cluster_area,cluster_integral,cluster_eig,cluster_vect
 
 def fitgaussian(x,y,tot):
     from scipy.optimize import leastsq
@@ -172,37 +215,7 @@ def fitgaussian(x,y,tot):
     p, success = leastsq(errorfunction, params)
     return p
 
-def find_cluster(shot,x,y,tof,tot,epsilon=2,min_samples=2):
-    from sklearn.cluster import DBSCAN
-    
-    tof_eps = 81920*(25./4096)*1E-9
 
-    tof_scale = epsilon/tof_eps
-    X = np.vstack((shot*epsilon*1000,x,y,tof*tof_scale)).transpose()
-    dist= DBSCAN(eps=epsilon, min_samples=min_samples,metric='euclidean').fit(X)
-    labels = dist.labels_ + 1
-    # label_index = np.unique(labels)
-    # print()
-
-    # # tot_max = nd.maximum_position(tot,labels=labels,index=label_index)
-    # # x_mean = nd.mean(x,labels=labels,index=label_index)
-    # # y_mean = nd.mean(tot,labels=labels,index=label_index)
-
-    # tot_max = np.array(nd.maximum_position(tot,labels=labels,index=label_index)).flatten()
-    # cluster_x = np.array(nd.mean(x,labels=labels,index=label_index)).flatten()
-    # cluster_y = np.array(nd.mean(y,labels=labels,index=label_index)).flatten()
-    # new_tof = np.copy(tof)
-    # cluster_tof = tof[tot_max]
-    # cluster_shot = shot[tot_max]
-    # clusters = nd.find_objects(labels)
-    # for cluster in clusters:
-    #     ob = cluster[0]
-    #     max_tot = np.argmax(tot[ob])
-    #     tof_Val = tof[ob][max_tot]
-    #     new_tof[ob] = tof_Val
-
-
-    return labels
 
 
 
@@ -217,6 +230,7 @@ def main():
     from sklearn import metrics
     import sklearn
     import scipy
+    import time
     with open('/Users/alrefaie/Documents/repos/libtimepix/lib/pymepix/processing/Lenscan_-80020181024-143826.dat','rb') as f:
     #with open('C:\\Users\\Bahamut\\Documents\\repos\\libtimepix\\lib\\pymepix\\processing\\Lenscan_-80020181024-143826.dat','rb') as f:
         shot,x,y,tof,tot = read_timepix_data(f)
@@ -268,9 +282,14 @@ def main():
         # print(np.unique(dist.labels_))
         # labels = dist.labels_
 
-        labels = find_cluster(shot,x,y,tof,tot,epsilon=2,min_samples=5)
-        c_s,c_x,c_y,c_a,c_int,c_eig,c_vecs = cluster_properties(shot,x,y,tof,tot,labels)
+        label_time = time.time()
 
+        labels = find_cluster(shot,x,y,tof,tot,epsilon=2,min_samples=5)
+        label_time = time.time() - label_time
+
+        moment_time = time.time()
+        c_s,c_x,c_y,c_a,c_int,c_eig,c_vecs = cluster_properties(shot,x,y,tof,tot,labels)
+        moment_time = time.time() - moment_time
 
 
         matrix = np.ndarray(shape=(256,256,),dtype=np.float)
@@ -300,9 +319,11 @@ def main():
         #ax = plt.gca()
         plt.show()
 
+        num_triggers = np.unique(shot).size
+        num_objects = np.unique(labels).size
 
-
-
+        print('Time taken: Labelling: {} s Moments: {} s'.format(label_time,moment_time))
+        print('Number of triggers {} , Avg label time: {} , number of objects: {} Avg moment time: {}'.format(num_triggers,label_time/num_triggers,num_objects,moment_time/num_objects))
 
         # cluster_shot,cluster_x,cluster_y,cluster_tof,cluster_tot,labels,new_tof = find_cluster(shot,x,y,tof,tot)
 
