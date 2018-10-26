@@ -86,6 +86,25 @@ def moments(X,Y,tot):
     height = tot.max()
     return height, x, y, width_x, width_y
 
+def moments_com(X,Y,tot):
+
+    total = tot.sum()
+    x_bar = (X*tot).sum()/total
+    y_bar = (Y*tot).sum()/total
+    area = tot.size
+
+    x_cm = X - x_bar
+    y_cm = Y - y_bar
+    coords = np.vstack([x_cm, y_cm])
+    
+    cov = np.cov(coords)
+    evals, evecs = np.linalg.eig(cov)
+
+
+
+
+    return x_bar,y_bar,area,total,evals,evecs.flatten()
+
 def cluster_properties(shot,x,y,tof,tot,labels):
     import scipy.ndimage as nd
     label_iter = np.unique(labels[labels!=0])
@@ -94,12 +113,13 @@ def cluster_properties(shot,x,y,tof,tot,labels):
 
     #Prepare our output
     cluster_shot = np.ndarray(shape=(total_objects,),dtype=np.int)
-    cluster_x = np.ndarray(shape=(total_objects,),dtype=np.int)
-    cluster_y = np.ndarray(shape=(total_objects,),dtype=np.int)
-    cluster_wx = np.ndarray(shape=(total_objects,),dtype=np.int)
-    cluster_wy = np.ndarray(shape=(total_objects,),dtype=np.int)
-    cluster_h = np.ndarray(shape=(total_objects,),dtype=np.int)
-    cluster_tof = np.ndarray(shape=(total_objects,),dtype=np.int)
+    cluster_x = np.ndarray(shape=(total_objects,),dtype=np.float64)
+    cluster_y = np.ndarray(shape=(total_objects,),dtype=np.float64)
+    cluster_eig = np.ndarray(shape=(total_objects,2,),dtype=np.float64)
+    cluster_vect = np.ndarray(shape=(total_objects,4,),dtype=np.float64)
+    cluster_area = np.ndarray(shape=(total_objects,),dtype=np.float64)
+    cluster_integral = np.ndarray(shape=(total_objects,),dtype=np.float64)
+    cluster_tof = np.ndarray(shape=(total_objects,),dtype=np.float64)
     
 
     for idx in range(total_objects):
@@ -115,20 +135,32 @@ def cluster_properties(shot,x,y,tof,tot,labels):
 
         cluster_tof[idx] = obj_tof[max_tot]
 
-        moment = moments(obj_x,obj_y,obj_tot)
-        #print(moment)
-        gauss = fitgaussian(obj_x,obj_y,obj_tot)
-        gh,gx,gy,gwx,gwy = gauss
-        cluster_h[idx] = gh
-        cluster_x[idx] = gx
-        cluster_y[idx] = gy
-        cluster_wx[idx] = gwx
-        cluster_wy[idx] = gwy
+        x_bar,y_bar,area,integral,evals,evecs = moments_com(obj_x,obj_y,obj_tot)
+        cluster_x[idx] = x_bar
+        cluster_y[idx] = y_bar
+        cluster_area[idx] = area
+        cluster_integral[idx] = integral
+        cluster_eig[idx]=evals
+        cluster_vect[idx] = evecs
         cluster_shot[idx] = obj_shot[0]
 
-        print('Moment ', moment,' Gaussian ',gauss)
 
-    return cluster_shot,cluster_x,cluster_y,cluster_wx,cluster_wy,cluster_tof,cluster_h
+
+        # moment = moments(obj_x,obj_y,obj_tot)
+        # moments_com(obj_x,obj_y,obj_tot)
+        #print(moment)
+        # gauss = fitgaussian(obj_x,obj_y,obj_tot)
+        # gh,gx,gy,gwx,gwy = gauss
+        # cluster_h[idx] = gh
+        # cluster_x[idx] = gx
+        # cluster_y[idx] = gy
+        # cluster_wx[idx] = gwx
+        # cluster_wy[idx] = gwy
+        # cluster_shot[idx] = obj_shot[0]
+
+        #print('Moment ', moment,' Gaussian ',gauss)
+
+    return cluster_shot,cluster_x,cluster_y,cluster_area,cluster_integral,cluster_eig,cluster_vect
 
 def fitgaussian(x,y,tot):
     from scipy.optimize import leastsq
@@ -136,7 +168,7 @@ def fitgaussian(x,y,tot):
     the gaussian parameters of a 2D distribution found by a fit"""
     params = moments(x,y,tot)
     errorfunction = lambda p: gaussian(*p)(x,y) - tot
-    print(params,len(x))
+    #print(params,len(x))
     p, success = leastsq(errorfunction, params)
     return p
 
@@ -237,7 +269,7 @@ def main():
         # labels = dist.labels_
 
         labels = find_cluster(shot,x,y,tof,tot,epsilon=2,min_samples=5)
-        c_s,c_x,c_y,c_wx,c_wy,c_tof,c_tot = cluster_properties(shot,x,y,tof,tot,labels)
+        c_s,c_x,c_y,c_a,c_int,c_eig,c_vecs = cluster_properties(shot,x,y,tof,tot,labels)
 
 
 
