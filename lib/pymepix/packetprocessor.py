@@ -103,7 +103,7 @@ class PacketProcessor(multiprocessing.Process):
 
 
 
-        ToT         = ((data & 0x00003FF0) >> 4)*25 #Convert to ns
+        ToT         = ((data & 0x00003FF0) >> 4) #Convert to ns
 
 
         globalToA = (ToA_coarse << 12) - (FToA << 8)
