@@ -11,6 +11,7 @@ from multiprocessing.sharedctypes import Value
 from .packetsampler import PacketSampler
 from .packetprocessor import PacketProcessor
 from .filestorage import FileStorage
+from .processing.centroiding import TimepixCentroid
 import os
 class TimePixAcq(object):
 
@@ -140,7 +141,7 @@ class TimePixAcq(object):
         self._file_prefix = value
 
 
-    def beginFileWrite(self):
+    def beginFileWrite(self,write_raw=False,write_numpy=False,write_blob=False):
         if self._file_prefix != "":
             file_to_write = os.path.join(self.filePath,self.filePrefix)+time.strftime("%Y%m%d-%H%M%S")+'.dat'
             self._packet_sampler.outputQueue.put('RESTART')
