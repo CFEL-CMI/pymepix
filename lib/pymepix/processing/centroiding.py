@@ -3,11 +3,11 @@ import traceback
 
 class TimepixCentroid(object):
     
-    def __init__(self,input_queue,output_queue = None,file_queue=None):
+    def __init__(self,input_queue,output_queue = None,view_queue=None,file_queue=None):
         self._input_queue = input_queue
         self._output_queue = output_queue
         self._file_queue = file_queue
-
+        self._view_queue = view_queue
     
     def run(self):
         while True:
@@ -26,10 +26,13 @@ class TimepixCentroid(object):
                 #print('GOT DATA')
                 blob_data = self.compute_blob(*packet)
 
-                if blob_data is not None 
+                if blob_data is not None:
                     #print('EVENT FOUND')
                     if self._output_queue is not None:
                         self._output_queue.put(blob_data)
+
+                    if self._view_queue is not None:
+                        self._output_queue.put((packet[1],packet[2],packet[3],*blob_data))
 
                     if self._file_queue is not None:
                         self._file_queue.put(('WRITEBLOB',blob_data))
@@ -231,7 +234,7 @@ def main():
     import sklearn
     import scipy
     import time
-    with open('/Users/alrefaie/Documents/repos/libtimepix/lib/pymepix/processing/Lenscan_-80020181024-143826.dat','rb') as f:
+    with open('C:\\Users\\Bahamut\\Documents\\repos\\libtimepix\\lib\\pymepix\\processing\\Lenscan_-80020181024-143826.dat','rb') as f:
     #with open('C:\\Users\\Bahamut\\Documents\\repos\\libtimepix\\lib\\pymepix\\processing\\Lenscan_-80020181024-143826.dat','rb') as f:
         shot,x,y,tof,tot = read_timepix_data(f)
         shot_avail = np.unique(shot)
@@ -247,83 +250,83 @@ def main():
         # tw = open('/Users/alrefaie/Documents/repos/libtimepix/lib/pymepix/processing/timewalkCorrection.csv','r')
         # timewalk = np.loadtxt(tw,dtype=float,delimiter=',')[:,1]
         # print(timewalk)
-        # tw.close()
+        # # tw.close()
 
-        # raw_tot = tot//25
-        # correction = timewalk[raw_tot]
-        # print(correction)
+        # # raw_tot = tot//25
+        # # correction = timewalk[raw_tot]
+        # # print(correction)
         
 
-        # tof += correction*4.5E-7
+        # # tof += correction*4.5E-7
 
-        # tof_us = tof*1E6
-        # evt_filt =  (tof_us > 1.6)& (tof_us < 2.1)
-
-
-
-        # # plt.hist2d(tof_us[evt_filt],tot[evt_filt],bins=100,cmap='hsv')
-        # # plt.show()
-        # # quit()
-
-        # # #print()
-        # # #generate
-
-        # # db = DBSCAN(eps=6, min_samples=4,metric='euclidean').fit(X)
-        # # labels = db.labels_
-
-        # desired_epsilon = 2
+        # # tof_us = tof*1E6
+        # # evt_filt =  (tof_us > 1.6)& (tof_us < 2.1)
 
 
-        # tof_eps = 81920*(25./4096)*1E-9
 
-        # tof_scale = desired_epsilon/tof_eps
-        # X = np.vstack((shot*desired_epsilon*1000,x,y,tof*tof_scale)).transpose()
-        # dist= DBSCAN(eps=desired_epsilon, min_samples=2,metric='euclidean').fit(X)
-        # print(np.unique(dist.labels_))
-        # labels = dist.labels_
+        # # # plt.hist2d(tof_us[evt_filt],tot[evt_filt],bins=100,cmap='hsv')
+        # # # plt.show()
+        # # # quit()
 
-        label_time = time.time()
+        # # # #print()
+        # # # #generate
 
-        labels = find_cluster(shot,x,y,tof,tot,epsilon=2,min_samples=5)
-        label_time = time.time() - label_time
+        # # # db = DBSCAN(eps=6, min_samples=4,metric='euclidean').fit(X)
+        # # # labels = db.labels_
 
-        moment_time = time.time()
-        c_s,c_x,c_y,c_a,c_int,c_eig,c_vecs = cluster_properties(shot,x,y,tof,tot,labels)
-        moment_time = time.time() - moment_time
+        # # desired_epsilon = 2
 
 
-        matrix = np.ndarray(shape=(256,256,),dtype=np.float)
-        matrix[...]=0.0
-        matrix[x,y] = tot
+        # # tof_eps = 81920*(25./4096)*1E-9
+
+        # # tof_scale = desired_epsilon/tof_eps
+        # # X = np.vstack((shot*desired_epsilon*1000,x,y,tof*tof_scale)).transpose()
+        # # dist= DBSCAN(eps=desired_epsilon, min_samples=2,metric='euclidean').fit(X)
+        # # print(np.unique(dist.labels_))
+        # # labels = dist.labels_
+
+        # label_time = time.time()
+
+        # labels = find_cluster(shot,x,y,tof,tot,epsilon=2,min_samples=5)
+        # label_time = time.time() - label_time
+
+        # moment_time = time.time()
+        # c_s,c_x,c_y,c_a,c_int,c_eig,c_vecs = cluster_properties(shot,x,y,tof,tot,labels)
+        # moment_time = time.time() - moment_time
+
+
+        # matrix = np.ndarray(shape=(256,256,),dtype=np.float)
+        # matrix[...]=0.0
+        # matrix[x,y] = tot
         
-        # #matrix = np.ndarray(shape=(256,256,),dtype=np.float)
+        # # #matrix = np.ndarray(shape=(256,256,),dtype=np.float)
 
 
 
-        plt.matshow(matrix,cmap='jet')
-        fig = plt.gcf()
-        ax = fig.gca()
-        for idx in range(c_s.size):
-            # fit = gaussian(c_tot[idx],c_x[idx],c_y[idx],c_wx[idx],c_wy[idx])
-            # x_r = np.linspace(c_x[idx]-c_wx[idx]/2,c_x[idx]+c_wx[idx]/2,10)
-            # y_r = np.linspace(c_y[idx]-c_wy[idx]/2,c_y[idx]+c_wy[idx]/2,10)
-            # gridx,gridy = np.meshgrid(y_r,x_r)
-            # print(x_r)
-            # c_x[idx],c_y[idx],c_wx[idx],c_wy[idx]
-            # plt.contour(gridx,gridy,fit(gridx,gridy), cmap=plt.cm.hot)
-            # print(int(c_x[idx]),int(c_y[idx]))
-            ax.add_artist(plt.Circle((c_y[idx],c_x[idx]),5,color='r',fill=False))
+        # plt.matshow(matrix,cmap='jet')
+        # fig = plt.gcf()
+        # ax = fig.gca()
+        # for idx in range(c_s.size):
+        #     # fit = gaussian(c_tot[idx],c_x[idx],c_y[idx],c_wx[idx],c_wy[idx])
+        #     # x_r = np.linspace(c_x[idx]-c_wx[idx]/2,c_x[idx]+c_wx[idx]/2,10)
+        #     # y_r = np.linspace(c_y[idx]-c_wy[idx]/2,c_y[idx]+c_wy[idx]/2,10)
+        #     # gridx,gridy = np.meshgrid(y_r,x_r)
+        #     # print(x_r)
+        #     # c_x[idx],c_y[idx],c_wx[idx],c_wy[idx]
+        #     # plt.contour(gridx,gridy,fit(gridx,gridy), cmap=plt.cm.hot)
+        #     # print(int(c_x[idx]),int(c_y[idx]))
+        #     ax.add_artist(plt.Circle((c_y[idx],c_x[idx]),5,color='r',fill=False))
             
-            # if idx ==0:
-            #     break
-        #ax = plt.gca()
-        plt.show()
+        #     # if idx ==0:
+        #     #     break
+        # #ax = plt.gca()
+        # plt.show()
 
-        num_triggers = np.unique(shot).size
-        num_objects = np.unique(labels).size
+        # num_triggers = np.unique(shot).size
+        # num_objects = np.unique(labels).size
 
-        print('Time taken: Labelling: {} s Moments: {} s'.format(label_time,moment_time))
-        print('Number of triggers {} , Avg label time: {} , number of objects: {} Avg moment time: {}'.format(num_triggers,label_time/num_triggers,num_objects,moment_time/num_objects))
+        # print('Time taken: Labelling: {} s Moments: {} s'.format(label_time,moment_time))
+        # print('Number of triggers {} , Avg label time: {} , number of objects: {} Avg moment time: {}'.format(num_triggers,label_time/num_triggers,num_objects,moment_time/num_objects))
 
         # cluster_shot,cluster_x,cluster_y,cluster_tof,cluster_tot,labels,new_tof = find_cluster(shot,x,y,tof,tot)
 
@@ -350,8 +353,8 @@ def main():
         # # shot_avail = np.unique(shot)
         # # print(np.unique(labels))
 
-        # fig = plt.figure()
-        # ax = fig.add_subplot(221, projection='3d')
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
         # bx = fig.add_subplot(222, projection='3d')
         # cx = fig.add_subplot(223)
         # dx = fig.add_subplot(224)
@@ -361,12 +364,12 @@ def main():
         # # # tot_ns = tot.astype(np.float)
         # # # #evt_filt =   (tof_us > 1.75) & (tof_us < 2.1) 
         # # # # print(np.where(evt_filt))
-        # tof_us = tof*1E6
+        tof_us = tof*1E6
         # new_tof_us = new_tof*1E6
 
-        # tof_filt = (tof_us > 1.6) & (tof_us < 2.0)
+        tof_filt = (tof_us > 1.6) & (tof_us < 2.0)
         # new_tof_filt = (new_tof_us > 1.6) & (new_tof_us < 2.0)
-        # p = ax.scatter(x[tof_filt], y[tof_filt], zs=tof_us[tof_filt], s=3, c=tot[tof_filt], depthshade=True, cmap="hot")
+        p = ax.scatter(x[tof_filt], y[tof_filt], zs=tof_us[tof_filt], s=3, c=tot[tof_filt], depthshade=True, cmap="hot")
         # bx.scatter(x[new_tof_filt], y[new_tof_filt], zs=new_tof_us[new_tof_filt], s=3, c=tot[new_tof_filt], depthshade=True, cmap="hot")
         # cx.hist2d(tof_us[tof_filt],tot[tof_filt],bins=100,cmap='hot')
         # dx.hist2d(new_tof_us[new_tof_filt],tot[new_tof_filt],bins=100,cmap='hot')
@@ -386,7 +389,7 @@ def main():
         # dx.set_ylabel('TOT (ns)')
 
         # #plt.colorbar(p)
-        # plt.show()
+        plt.show()
         # plt.hist(new_tof*1E6,bins=500)
         # plt.show()
 
