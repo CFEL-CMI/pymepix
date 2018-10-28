@@ -72,9 +72,11 @@ class TimePixAcq(object):
         self._timer_lsb = 0
         self._timer_msb = 0
         self._timer_thread = threading.Thread(target = self.updateTimer)
+        self._timer_thread.daemon = True
         self._timer_thread.start()
         self.pauseTimer()
         self._data_thread = threading.Thread(target=self.dataThread)
+        self._data_thread.daemon = True
         self._data_thread.start()
 
     def startDaqThreads(self):
