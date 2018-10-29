@@ -176,6 +176,9 @@ class Ui_Form(object):
         self.live_viewer.setMaximumSize(QtCore.QSize(16777215, 16777215))
         self.live_viewer.setObjectName("live_viewer")
         self.verticalLayout_4.addWidget(self.live_viewer)
+        self.blob_count = QtWidgets.QLabel(Form)
+        self.blob_count.setObjectName("blob_count")
+        self.verticalLayout_4.addWidget(self.blob_count)
         self.horizontalLayout_9.addLayout(self.verticalLayout_4)
 
         self.retranslateUi(Form)
@@ -202,5 +205,6 @@ class Ui_Form(object):
         self.label_9.setText(_translate("Form", "s"))
         self.label_5.setText(_translate("Form", "Integrated"))
         self.label_4.setText(_translate("Form", "Live"))
+        self.blob_count.setText(_translate("Form", "TextLabel"))
 
 from pyqtgraph import ImageView, PlotWidget

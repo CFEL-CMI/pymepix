@@ -293,6 +293,13 @@
        </property>
       </widget>
      </item>
+     <item>
+      <widget class="QLabel" name="blob_count">
+       <property name="text">
+        <string>TextLabel</string>
+       </property>
+      </widget>
+     </item>
     </layout>
    </item>
   </layout>

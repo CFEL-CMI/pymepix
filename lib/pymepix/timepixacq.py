@@ -11,6 +11,7 @@ from multiprocessing.sharedctypes import Value
 from .packetsampler import PacketSampler
 from .packetprocessor import PacketProcessor
 from .filestorage import FileStorage
+from .processing.centroiding import TimepixCentroid
 import os
 class TimePixAcq(object):
 
@@ -56,6 +57,7 @@ class TimePixAcq(object):
 
     def setupAcq(self):
         self._data_queue = multiprocessing.Queue()
+        self._event_queue = multiprocessing.Queue()
         self._file_queue =  multiprocessing.Queue()
         self._pause = False
         #self._spidr.datadrivenReadout()
@@ -71,19 +73,23 @@ class TimePixAcq(object):
         self._timer_lsb = 0
         self._timer_msb = 0
         self._timer_thread = threading.Thread(target = self.updateTimer)
+        self._timer_thread.daemon = True
         self._timer_thread.start()
         self.pauseTimer()
         self._data_thread = threading.Thread(target=self.dataThread)
+        self._data_thread.daemon = True
         self._data_thread.start()
 
     def startDaqThreads(self):
         self._file_storage = FileStorage(self._file_queue,self._save_data)
-        self._packet_sampler = PacketSampler(self._udp_address,self._shared_timer,self._shared_acq,self._file_queue)
-        self._packet_processor = PacketProcessor(self._packet_sampler.outputQueue,self._data_queue,self._file_queue,self._shared_exp_time)
-
+        self._packet_sampler = PacketSampler(self._udp_address,self._shared_timer,self._shared_acq,file_queue=self._file_queue)
+        self._packet_processor = PacketProcessor(self._packet_sampler.outputQueue,self._event_queue,self._file_queue,self._shared_exp_time)
+        self._blob_processor = [TimepixCentroid(self._event_queue,view_queue=self._data_queue,file_queue=self._file_queue) for x in range (2)]
         self._packet_processor.start()
         self._file_storage.start()
         self._packet_sampler.start()
+        for b in self._blob_processor:
+            b.start()
 
         
 
@@ -137,7 +143,7 @@ class TimePixAcq(object):
         self._file_prefix = value
 
 
-    def beginFileWrite(self):
+    def beginFileWrite(self,write_raw=False,write_numpy=False,write_blob=False):
         if self._file_prefix != "":
 
             self._packet_sampler.outputQueue.put('RESTART')
@@ -601,7 +607,11 @@ class TimePixAcq(object):
         self._file_queue.put(None)
 
         self._data_queue.put(None)
+        print('Joining packet')
         self._packet_processor.join()
+        print('Joining blob')
+        for b in self._blob_processor:
+            b.terminate()
         self._run_timer = False
         print('Joing data thread')
         self._data_thread.join()
