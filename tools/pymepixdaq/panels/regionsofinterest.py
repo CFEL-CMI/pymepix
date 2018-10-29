@@ -105,7 +105,9 @@ class RoiItem(BaseItem):
     def onRemove(self):
         self.roiRemoved.emit(self._name)
 
-
+    @property
+    def region(self):
+        return self._start_region,self._end_region
 
 
 
