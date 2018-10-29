@@ -1,14 +1,20 @@
 import numpy as np
 import traceback
-
-class TimepixCentroid(object):
+import multiprocessing
+import time
+class TimepixCentroid(multiprocessing.Process):
     
     def __init__(self,input_queue,output_queue = None,view_queue=None,file_queue=None):
+        multiprocessing.Process.__init__(self)
         self._input_queue = input_queue
         self._output_queue = output_queue
         self._file_queue = file_queue
         self._view_queue = view_queue
-    
+
+        self._search_time = 0.0
+        self._blob_time = 0.0
+
+
     def run(self):
         while True:
             try:
@@ -43,13 +49,22 @@ class TimepixCentroid(object):
                 traceback.print_exc()
                 break            
 
-
+        print('Search time: {}'.format(self._search_time))
+        print('Blob time: {} '.format(self._blob_time))
     def compute_blob(self,shot,x,y,tof,tot):
+        start = time.time()
         labels = self.find_cluster(shot,x,y,tof,tot,epsilon=2,min_samples=5)
-        if labels[labels!=0].size == 0:
+        self._search_time += time.time() - start
+        label_filter = labels!=0
+        if labels is None:
+            return None
+        if labels[label_filter ].size ==0:
             return None
         else:
-            return self.cluster_properties(shot,x,y,tof,tot,labels)
+            start = time.time()
+            props = self.cluster_properties(shot[label_filter ],x[label_filter ],y[label_filter ],tof[label_filter ],tot[label_filter ],labels[label_filter ])
+            self._blob_time += time.time() - start
+            return props
 
 
 
@@ -61,19 +76,27 @@ class TimepixCentroid(object):
         x_bar = (X*tot).sum()/total
         y_bar = (Y*tot).sum()/total
         area = tot.size
-
         x_cm = X - x_bar
         y_cm = Y - y_bar
         coords = np.vstack([x_cm, y_cm])
         
         cov = np.cov(coords)
-        evals, evecs = np.linalg.eig(cov)
+        try:
+
+            evals, evecs = np.linalg.eig(cov)
+        except:
+            evals = np.array([0.0,0.0])
+            evecs = np.array([[0.0,0.0],[0.0,0.0]])
+
 
         return x_bar,y_bar,area,total,evals,evecs.flatten()
 
     def find_cluster(self,shot,x,y,tof,tot,epsilon=2,min_samples=2):
         from sklearn.cluster import DBSCAN
         
+        if shot.size == 0:
+            return None
+        #print(shot.size)
         tof_eps = 81920*(25./4096)*1E-9
 
         tof_scale = epsilon/tof_eps
@@ -83,7 +106,7 @@ class TimepixCentroid(object):
         return labels
 
     def cluster_properties(self,shot,x,y,tof,tot,labels):
-        label_iter = np.unique(labels[labels!=0])
+        label_iter = np.unique(labels)
         total_objects = label_iter.size
 
 
@@ -103,6 +126,7 @@ class TimepixCentroid(object):
 
             obj_slice = (labels == label_iter[idx])
             obj_shot = shot[obj_slice]
+            #print(obj_shot.size)
             obj_x = x[obj_slice]
             obj_y = y[obj_slice]
             obj_tof = tof[obj_slice]
