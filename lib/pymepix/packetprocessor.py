@@ -1138,7 +1138,7 @@ class PacketProcessor(multiprocessing.Process):
         #Add timewalk correction (guess)
         correction = self._timewalk[ToT]
 
-        finalToA += correction*4.5E-7
+        finalToA += correction*0.0
 
         ToT *= 25
 
