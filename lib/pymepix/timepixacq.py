@@ -82,13 +82,14 @@ class TimePixAcq(object):
 
     def startDaqThreads(self):
         self._file_storage = FileStorage(self._file_queue,self._save_data)
-        self._packet_sampler = PacketSampler(self._udp_address,self._shared_timer,self._shared_acq)
+        self._packet_sampler = PacketSampler(self._udp_address,self._shared_timer,self._shared_acq,file_queue=self._file_queue)
         self._packet_processor = PacketProcessor(self._packet_sampler.outputQueue,self._event_queue,self._file_queue,self._shared_exp_time)
-        self._blob_processor = TimepixCentroid(self._event_queue,view_queue=self._data_queue)
+        self._blob_processor = [TimepixCentroid(self._event_queue,view_queue=self._data_queue,file_queue=self._file_queue) for x in range (2)]
         self._packet_processor.start()
         self._file_storage.start()
         self._packet_sampler.start()
-        self._blob_processor.start()
+        for b in self._blob_processor:
+            b.start()
 
         
 
@@ -609,7 +610,8 @@ class TimePixAcq(object):
         print('Joining packet')
         self._packet_processor.join()
         print('Joining blob')
-        self._blob_processor.join()
+        for b in self._blob_processor:
+            b.terminate()
         self._run_timer = False
         print('Joing data thread')
         self._data_thread.join()
