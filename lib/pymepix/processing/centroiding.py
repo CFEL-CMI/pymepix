@@ -160,7 +160,7 @@ class TimepixCentroid(multiprocessing.Process):
 
             #print('Moment ', moment,' Gaussian ',gauss)
 
-        return cluster_shot,cluster_x,cluster_y,cluster_area,cluster_integral,cluster_eig,cluster_vect
+        return cluster_shot,cluster_x,cluster_y,cluster_area,cluster_integral,cluster_eig,cluster_vect,cluster_tof
 
 
 
