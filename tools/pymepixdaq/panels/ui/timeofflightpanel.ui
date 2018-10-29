@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>983</width>
+    <width>749</width>
     <height>787</height>
    </rect>
   </property>
@@ -44,7 +44,7 @@
          </property>
          <layout class="QVBoxLayout" name="verticalLayout">
           <item>
-           <widget class="QListView" name="roi_list">
+           <widget class="QTreeView" name="roi_list">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
               <horstretch>0</horstretch>
@@ -107,7 +107,11 @@
              </widget>
             </item>
             <item>
-             <widget class="QLineEdit" name="event_start"/>
+             <widget class="QLineEdit" name="event_start">
+              <property name="alignment">
+               <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+              </property>
+             </widget>
             </item>
             <item>
              <widget class="QLabel" name="label_2">

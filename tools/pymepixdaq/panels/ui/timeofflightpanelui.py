@@ -11,7 +11,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_Form(object):
     def setupUi(self, Form):
         Form.setObjectName("Form")
-        Form.resize(983, 787)
+        Form.resize(749, 787)
         self.verticalLayout_5 = QtWidgets.QVBoxLayout(Form)
         self.verticalLayout_5.setObjectName("verticalLayout_5")
         self.groupBox_3 = QtWidgets.QGroupBox(Form)
@@ -35,7 +35,7 @@ class Ui_Form(object):
         self.groupBox.setObjectName("groupBox")
         self.verticalLayout = QtWidgets.QVBoxLayout(self.groupBox)
         self.verticalLayout.setObjectName("verticalLayout")
-        self.roi_list = QtWidgets.QListView(self.groupBox)
+        self.roi_list = QtWidgets.QTreeView(self.groupBox)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -74,6 +74,7 @@ class Ui_Form(object):
         self.label.setObjectName("label")
         self.horizontalLayout_2.addWidget(self.label)
         self.event_start = QtWidgets.QLineEdit(self.groupBox_2)
+        self.event_start.setAlignment(QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter)
         self.event_start.setObjectName("event_start")
         self.horizontalLayout_2.addWidget(self.event_start)
         self.label_2 = QtWidgets.QLabel(self.groupBox_2)
