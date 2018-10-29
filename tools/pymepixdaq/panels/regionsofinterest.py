@@ -14,7 +14,7 @@ class BaseItem(QtCore.QObject):
         self._children.append(item)
 
     def removeChild(self,index):
-        self._children.pop(index)
+        return self._children.pop(index)
 
     def child(self,row):
         if row < self.childCount():
@@ -80,20 +80,22 @@ class RoiItem(BaseItem):
 
 
     def __init__(self,name,start_region,end_region,color=None):
+        BaseItem.__init__(self)
         self._name = name
         self._start_region = start_region
         self._end_region = end_region
 
         self._roi_item = pg.LinearRegionItem(values = [self._start_region,self._end_region],brush=color)
 
-        self._data = [self._name,str(self._start_region*1E6),str(self._end_region*1E6)]
+        self._data = [self._name,'{:4.2e} us'.format(self._start_region*1E6),'{:4.2e} us'.format(self._end_region*1E6)]
         self._roi_item.sigRegionChangeFinished.connect(self.onUserUpdateRoi)
 
     def onUserUpdateRoi(self):
         self._start_region,self._end_region = self._roi_item.getRegion()
 
-        self._data = [self._name,str(self._start_region*1E6),str(self._end_region*1E6)]
+        self._data = [self._name,'{:4.2e} us'.format(self._start_region*1E6),'{:4.2e} us'.format(self._end_region*1E6)]
 
+        print(self._data)
         self.roiUpdated.emit(self._name,self._start_region,self._end_region)
 
     @property
@@ -101,7 +103,7 @@ class RoiItem(BaseItem):
         return self._roi_item
     
     def onRemove(self):
-        self.roiRemoved.emit()
+        self.roiRemoved.emit(self._name)
 
 
 
@@ -111,17 +113,61 @@ class RoiItem(BaseItem):
 class RoiModel(QtCore.QAbstractItemModel):
 
 
-    modelChanged = QtCore.pyqtSignal()
-
+    roiUpdated = QtCore.pyqtSignal(str,float,float)
+    roiRemoved = QtCore.pyqtSignal(str,object)
     def __init__(self,parent=None):
         QtCore.QAbstractItemModel.__init__(self,parent)
         self.rootItem = BaseItem()
         self.rootItem._data = ['Name','Start','End']
+    
+
+    def onRoiUpdate(self,name,start,end):
+        self.layoutChanged.emit()
+
+        self.roiUpdated.emit(name,start,end)
+
+
     def headerData(self,section, orientation,role):
-        if orientation == QtGui.Qt.Horizontal and role == QtGui.Qt.DisplayRole:
+        if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
             return self.rootItem.data(section)
 
         return QtCore.QVariant()
+
+    def addRegionofInterest(self,name,start,end):
+        idx,item = self.searchItem(name)
+
+        if item is not None:
+            #Show dialog box that item already exists
+            QtGui.QMessageBox.warning(None, 'Duplicate ROI',
+                               'Roi with name {} already exists'.format(name),
+                               QtGui.QMessageBox.Ok,QtGui.QMessageBox.Ok);
+            return None
+
+        self.layoutAboutToBeChanged.emit()
+        roiItem =RoiItem(name,start,end)
+        self.rootItem.addChild(roiItem)
+        roiItem.roiUpdated.connect(self.onRoiUpdate)
+
+        self.layoutChanged.emit()
+        return roiItem
+
+    def removeRegionofInterest(self,name):
+        idx,item = self.searchItem(name)
+
+        if item is None:
+            #Show dialog box that item already exists
+            QtGui.QMessageBox.warning(None, 'ROI does not exist',
+                               'Roi with name {} does not exist'.format(name),
+                               QtGui.QMessageBox.Ok,QtGui.QMessageBox.Ok);
+            return
+
+        self.layoutAboutToBeChanged.emit()
+        roi = self.rootItem.removeChild(idx)
+        roi.roiUpdated.disconnect(self.onRoiUpdate)
+
+        self.layoutChanged.emit()
+        return roi
+
 
 
     def index(self,row,column,parent):
@@ -196,7 +242,15 @@ class RoiModel(QtCore.QAbstractItemModel):
 
     def searchItem(self,search_term):
 
-        for child in self.rootItem.children:
+        for idx,child in enumerate(self.rootItem._children):
+            #print (child.columnName)
             if child.columnName == search_term:
-                return child
-        return None
+                return idx,child
+        return -1,None
+
+    def roiNameExists(self,name):
+        idx,roi = self.searchItem(name)
+        return roi != None
+    
+    def isEmpty(self):
+        return self.rootItem.childCount() == 0
