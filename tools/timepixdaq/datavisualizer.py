@@ -167,12 +167,15 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
         #     return
 
         #print('Found event')
-        x,y,tof,cluster_shot,cluster_x,cluster_y,cluster_area,cluster_integral,cluster_eig,cluster_vect = data
+        x,y,tof,tot,cluster_shot,cluster_x,cluster_y,cluster_area,cluster_integral,cluster_eig,cluster_vect,cluster_tof = data
+        
+        self._blob_data =  data
+
         #print('Trigger delta',triggers,np.ediff1d(triggers))
 
         self.x = x
         self.y = y
-        #self.tot = tot
+        self.tot = tot
         self.diff = tof
         #print(self.diff)
         if self.updateToA(tof):
@@ -184,7 +187,14 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
         min_t,max_t = self._toa_roi.getRegion()
         #print(self._toa_roi.getRegion())
         view_filter = np.logical_and(self.diff >= min_t,self.diff <= max_t)
-        
+
+        _x,_y,_tof,tot,cluster_shot,cluster_x,cluster_y,cluster_area,cluster_integral,cluster_eig,cluster_vect,cluster_tof = self._blob_data
+        blob_filter = np.logical_and(cluster_tof >= min_t,cluster_tof <= max_t)
+
+        self.blob_count.setText(str(cluster_shot[blob_filter].size))
+
+
+
  
         x = self.x[view_filter]
         y=self.y[view_filter]
