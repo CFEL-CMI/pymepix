@@ -158,12 +158,12 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
         #     return
 
         #print('Found event')
-        counter,x,y,tof,tot = data
+        x,y,tof,cluster_shot,cluster_x,cluster_y,cluster_area,cluster_integral,cluster_eig,cluster_vect = data
         #print('Trigger delta',triggers,np.ediff1d(triggers))
 
         self.x = x
         self.y = y
-        self.tot = tot
+        #self.tot = tot
         self.diff = tof
         #print(self.diff)
         if self.updateToA(tof):
