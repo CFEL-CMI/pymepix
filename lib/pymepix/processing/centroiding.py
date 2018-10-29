@@ -38,7 +38,7 @@ class TimepixCentroid(multiprocessing.Process):
                         self._output_queue.put(blob_data)
 
                     if self._view_queue is not None:
-                        self._view_queue.put((packet[1],packet[2],packet[3],*blob_data))
+                        self._view_queue.put((packet[1],packet[2],packet[3],packet[4],*blob_data))
 
                     if self._file_queue is not None:
                         self._file_queue.put(('WRITEBLOB',blob_data))
@@ -134,6 +134,8 @@ class TimepixCentroid(multiprocessing.Process):
             max_tot = np.argmax(obj_tot)
 
             cluster_tof[idx] = obj_tof[max_tot]
+            
+
 
             x_bar,y_bar,area,integral,evals,evecs = self.moments_com(obj_x,obj_y,obj_tot)
             cluster_x[idx] = x_bar
