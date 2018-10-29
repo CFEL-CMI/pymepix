@@ -48,6 +48,8 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
         self._live_viewer_data[...] = 0.0
         self._toa_roi.sigRegionChangeFinished.connect(self.clearAndChange)
 
+        self._tot_histo = None
+
         self._start_time = time.time()
 
         self.exposure.returnPressed.connect(self.onExposureSet)
@@ -91,6 +93,7 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
 
         self._viewer_data[...]=0.0
         self._live_viewer_data[...] = 0.0
+        self._tot_histo = None
         self.updateMainPlot()
 
     def onSexposureSet(self):
@@ -136,7 +139,12 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
     def updateToT(self,filt):
         #print('TOT DIFF:', tot_diff)
         #compute the difference
-        pass
+        H, xedges, yedges = np.histogram2d(x=self.diff, y=self.tot, bins=100,range=[[self._toa_min,self._toa_max],[0,4000]])
+        
+        if self._tot_histo is None:
+            self._tot_histo = H
+        else:
+            self._tot_histo += H
         #self._tot_data.setData(x=self.diff[filt],y=self.tot[filt],  pen=None, symbol='o', symbolPen=None, symbolSize=3, symbolBrush=(100, 100, 255, 50))
 
 
@@ -147,7 +155,8 @@ class DataVisualizer(QtGui.QWidget,Ui_Form):
             if self._hist_x is not None:
                 self._toa_data.setData(x=self._hist_x,y=self._hist_y, stepMode=True, fillLevel=0, brush=(0,0,255,150))
             self.viewer.setImage(self._viewer_data,autoLevels=False,autoRange=False)
-            
+            if self._tot_histo is not None:
+                self.tot_view.setImage(self._tot_histo,autoLevels=False)
             self.live_viewer.setImage(self._live_viewer_data,autoLevels=True,autoRange=False)
             self._start_time = end
 
