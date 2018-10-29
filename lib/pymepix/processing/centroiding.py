@@ -38,7 +38,7 @@ class TimepixCentroid(multiprocessing.Process):
                         self._output_queue.put(blob_data)
 
                     if self._view_queue is not None:
-                        self._output_queue.put((packet[1],packet[2],packet[3],*blob_data))
+                        self._view_queue.put((packet[1],packet[2],packet[3],*blob_data))
 
                     if self._file_queue is not None:
                         self._file_queue.put(('WRITEBLOB',blob_data))
