@@ -48,7 +48,8 @@ class PymepixDAQ(QtGui.QMainWindow):
         self.displayNow.connect(self._overview_panel.plotData)
         self.newEvent.connect(self._overview_panel.onNewEvent)
         self.clearNow.connect(self._overview_panel.clearData)
-
+        self._config_panel.startAcquisition.connect(self.startAcquisition)
+        self._config_panel.stopAcquisition.connect(self.stopAcquisition)
     def onDisplayUpdate(self,value):
         self._display_rate = value
     def onEventCountUpdate(self,value):
@@ -67,7 +68,7 @@ class PymepixDAQ(QtGui.QMainWindow):
 
 
 
-        num_events = np.unique(event_shots).size
+        num_events = event_shots.max()-event_shots.min()+1
         self._current_event_count+= num_events
 
 
@@ -82,15 +83,16 @@ class PymepixDAQ(QtGui.QMainWindow):
 
 
     def startAcquisition(self,pathname,prefixname,do_raw,do_blob,exposure):
-        # self._timepix.filePath=path
-        # self._timepix.filePrefix = prefix
-        # self._timepix.eventWindowTime = exposure
-        # print('Recieved',path,prefix,exposure)
-        # self._timepix.beginFileWrite()
-        pass        
+        self._timepix.filePath=pathname
+        self._timepix.filePrefix = prefixname
+        self._timepix.eventWindowTime = exposure
+
+
+        print('Do raw',do_raw,'Do_blob',do_blob)
+        self._timepix.beginFileWrite(write_raw=do_raw,write_blob=do_blob)
 
     def stopAcquisition(self):
-        pass
+        self._timepix.stopFileWrite()
 
     def addViewWidget(self,name,start,end):
         if name in self._view_widgets:

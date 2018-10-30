@@ -147,7 +147,10 @@ class TimePixAcq(object):
         if self._file_prefix != "":
 
             self._packet_sampler.outputQueue.put('RESTART')
-            self._file_queue.put(('OPEN',self.filePath,self.filePrefix,))
+            if write_raw:
+                self._file_queue.put(('OPENRAW',self.filePath,self.filePrefix,))
+            if write_blob:
+                self._file_queue.put(('OPENBLOB',self.filePath,self.filePrefix,))
             self._in_acquisition = True
     
     def stopFileWrite(self):
@@ -644,7 +647,7 @@ def main():
     # print (tpx.Vfbk)
     tpx.eventWindowTime = 10E-6
     tpx.startAcquisition()
-    tpx.beginFileWrite()
+    tpx.beginFileWrite(write_raw=True,write_blob=True)
     time.sleep(2)
     tpx.stopAcquisition()
     tpx.stopFileWrite()
