@@ -27,19 +27,28 @@ class FileStorage(multiprocessing.Process):
                 # print(packet)
                 #Check signal type
                 if message == 'OPENRAW':
+
+                    index = 0
                     path = packet[1]
                     prefix = packet[2]                    
-                    raw_filename = os.path.join(path,prefix)+time.strftime("%Y%m%d-%H%M%S")+'.raw'
+                    raw_filename = os.path.join(path,prefix)+'_{}.raw'.format(index)
+                    while os.path.isfile(raw_filename):
+                        index+=1 
+                        raw_filename = os.path.join(path,prefix)+'_{}.raw'.format(index)
+
                     if self._raw_file_io is not None:
                         self._raw_file_io.close()
                     print('Opening filenames ',raw_filename)
                     self._raw_file_io = open(raw_filename,'wb')
                 
                 elif message == 'OPENBLOB':
+                    index = 0
                     path = packet[1]
-                    prefix = packet[2]
-                    #tof_filename = os.path.join(path,prefix)+time.strftime("%Y%m%d-%H%M%S")+'.dat'
-                    blob_filename = os.path.join(path,prefix)+time.strftime("%Y%m%d-%H%M%S")+'.blob'
+                    prefix = packet[2]                    
+                    blob_filename = os.path.join(path,prefix)+'_{}.blob'.format(index)
+                    while os.path.isfile(blob_filename):
+                        index+=1 
+                        blob_filename = os.path.join(path,prefix)+'_{}.blob'.format(index)
                     print('Opening filenames ',blob_filename)
                     if self._blob_file_io is not None:
                         self._blob_file_io.close()

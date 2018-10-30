@@ -82,13 +82,17 @@ class TimePixAcq(object):
 
     def startDaqThreads(self):
         self._file_storage = FileStorage(self._file_queue,self._save_data)
+        self._file_storage.daemon = True
         self._packet_sampler = PacketSampler(self._udp_address,self._shared_timer,self._shared_acq,file_queue=self._file_queue)
+        self._packet_sampler.daemon = True
         self._packet_processor = PacketProcessor(self._packet_sampler.outputQueue,self._event_queue,self._file_queue,self._shared_exp_time)
+        self._packet_processor.daemon = True
         self._blob_processor = [TimepixCentroid(self._event_queue,view_queue=self._data_queue,file_queue=self._file_queue) for x in range (2)]
         self._packet_processor.start()
         self._file_storage.start()
         self._packet_sampler.start()
         for b in self._blob_processor:
+            b.daemon=True
             b.start()
 
         
@@ -602,26 +606,28 @@ class TimePixAcq(object):
         self._device.resetPixels()
     #
     def stopThreads(self):
-        self._packet_sampler.terminate()
-        self._packet_sampler.outputQueue.put(None)
+        pass
+        # self._packet_sampler.terminate()
+        # self._packet_sampler.outputQueue.put(None)
         
-        #self._file_storage.terminate()
-        self._file_queue.put(('CLOSE',))
-        self._file_queue.put(None)
+        # #self._file_storage.terminate()
+        # self._file_queue.put(('CLOSE',))
+        # self._file_queue.put(None)
 
-        self._data_queue.put(None)
-        print('Joining packet')
-        self._packet_processor.join()
-        print('Joining blob')
-        for b in self._blob_processor:
-            b.terminate()
-        self._run_timer = False
-        print('Joing data thread')
-        self._data_thread.join()
-        print('Joining timer thread')
-        self._timer_thread.join()
-        print('Waiting for file')
-        self._file_storage.join()
+        # self._data_queue.put(None)
+        # print('Joining packet')
+        # self._packet_processor.join()
+        # print('Joining blob')
+        # for b in self._blob_processor:
+        # #     b.terminate()
+        # self._data_queue.put(None)
+        # self._run_timer = False
+        # print('Joing data thread')
+        # self._data_thread.join()
+        # print('Joining timer thread')
+        # self._timer_thread.join()
+        # print('Waiting for file')
+        # self._file_storage.join()
 
 def main():
 
