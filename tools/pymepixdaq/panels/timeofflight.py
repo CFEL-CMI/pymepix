@@ -19,7 +19,7 @@ class TimeOfFlightPanel(QtGui.QWidget,Ui_Form):
         self.setupUi(self)
 
 
-        self._roi_model = RoiModel()
+        self._roi_model = RoiModel(parent=self)
 
         self._histo_x = None
         self._histo_y = None
@@ -115,8 +115,9 @@ class TimeOfFlightPanel(QtGui.QWidget,Ui_Form):
                     except:
                         QtGui.QMessageBox.warning(self,'Invalid end region','Please enter a valid end region')
                         continue     
-
+                    print('Adding roi')
                     roi_item = self._roi_model.addRegionofInterest(name,start*1e-6,end*1E-6)
+                    
                     self.tof_view.addItem(roi_item.RoiPlotItem)
 
 

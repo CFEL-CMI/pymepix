@@ -1,15 +1,14 @@
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore, QtGui
-
+import weakref
 
 class BaseItem(QtCore.QObject):
 
     def __init__(self,parent=None):
         QtCore.QObject.__init__(self)
-        self._parent = parent
         self._data = ['','','']
         self._children = []
-
+        self._parent=parent
     def addChild(self,item):
         self._children.append(item)
 
@@ -79,8 +78,8 @@ class RoiItem(BaseItem):
     roiRemoved = QtCore.pyqtSignal(str)
 
 
-    def __init__(self,name,start_region,end_region,color=None):
-        BaseItem.__init__(self)
+    def __init__(self,name,start_region,end_region,color=None,parent=None):
+        BaseItem.__init__(self,parent=parent)
         self._name = name
         self._start_region = start_region
         self._end_region = end_region
@@ -124,7 +123,7 @@ class RoiModel(QtCore.QAbstractItemModel):
     
 
     def onRoiUpdate(self,name,start,end):
-        self.layoutChanged.emit()
+        #self.layoutChanged.emit()
 
         self.roiUpdated.emit(name,start,end)
 
@@ -144,12 +143,17 @@ class RoiModel(QtCore.QAbstractItemModel):
                                'Roi with name {} already exists'.format(name),
                                QtGui.QMessageBox.Ok,QtGui.QMessageBox.Ok);
             return None
+        #print('About to change')
+        
 
-        self.layoutAboutToBeChanged.emit()
-        roiItem =RoiItem(name,start,end)
-        self.rootItem.addChild(roiItem)
+        roiItem =RoiItem(name,start,end,parent=self.rootItem)
+        
+        #print('ADDING',name,start,end,self.rootItem)
+        
+        #print(self.rootItem)
         roiItem.roiUpdated.connect(self.onRoiUpdate)
-
+        self.layoutAboutToBeChanged.emit()
+        self.rootItem.addChild(roiItem)
         self.layoutChanged.emit()
         return roiItem
 
@@ -165,9 +169,13 @@ class RoiModel(QtCore.QAbstractItemModel):
 
         self.layoutAboutToBeChanged.emit()
         roi = self.rootItem.removeChild(idx)
-        roi.roiUpdated.disconnect(self.onRoiUpdate)
-
+        roi._parent=None
         self.layoutChanged.emit()
+        #print('REMOVING:',roi)
+        roi.roiUpdated.disconnect(self.onRoiUpdate)
+        
+        
+        p#rint(self.rootItem)
         return roi
 
 
@@ -175,7 +183,7 @@ class RoiModel(QtCore.QAbstractItemModel):
     def index(self,row,column,parent):
 
         if self.hasIndex(row, column, parent) == False:
-            return QtCore.QtCore.QModelIndex()
+            return QtCore.QModelIndex()
 
         parentItem = None
 
@@ -196,8 +204,9 @@ class RoiModel(QtCore.QAbstractItemModel):
 
         if  not index.isValid():
             return QtCore.QModelIndex()
-
+        #print(index)
         childItem = index.internalPointer()
+        #print(type(childItem))
         parentItem = childItem.parentItem()
 
         if (parentItem == self.rootItem):
@@ -256,3 +265,13 @@ class RoiModel(QtCore.QAbstractItemModel):
     
     def isEmpty(self):
         return self.rootItem.childCount() == 0
+
+def main():
+    test_model = RoiModel()
+    test_model.addRegionofInterest('test',0,100)
+    test_model.removeRegionofInterest('test')
+    test_model.addRegionofInterest('test',0,100)
+
+
+if __name__=="__main__":
+    main()
