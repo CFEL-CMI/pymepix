@@ -12,8 +12,8 @@ class TimeOfFlightPanel(QtGui.QWidget,Ui_Form):
     roiRemoved = QtCore.pyqtSignal(str)
     displayRoi = QtCore.pyqtSignal(str,float,float)
 
-    def __init__(self):
-        super(TimeOfFlightPanel, self).__init__()
+    def __init__(self,parent=None):
+        super(TimeOfFlightPanel, self).__init__(parent)
 
         # Set up the user interface from Designer.
         self.setupUi(self)
