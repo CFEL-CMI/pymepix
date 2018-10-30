@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'blobview.ui'
 #
-# Created by: PyQt5 UI code generator 5.6
+# Created by: PyQt5 UI code generator 5.9.2
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -11,13 +11,15 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_Form(object):
     def setupUi(self, Form):
         Form.setObjectName("Form")
-        Form.resize(618, 469)
-        self.horizontalLayout = QtWidgets.QHBoxLayout(Form)
+        Form.resize(618, 675)
+        self.verticalLayout_6 = QtWidgets.QVBoxLayout(Form)
+        self.verticalLayout_6.setObjectName("verticalLayout_6")
+        self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setObjectName("horizontalLayout")
         self.image_view = ImageView(Form)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(50)
+        sizePolicy.setVerticalStretch(80)
         sizePolicy.setHeightForWidth(self.image_view.sizePolicy().hasHeightForWidth())
         self.image_view.setSizePolicy(sizePolicy)
         self.image_view.setObjectName("image_view")
@@ -109,12 +111,29 @@ class Ui_Form(object):
         self.verticalLayout_5.addLayout(self.verticalLayout_4)
         spacerItem = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         self.verticalLayout_5.addItem(spacerItem)
+        self.checkBox = QtWidgets.QCheckBox(Form)
+        self.checkBox.setObjectName("checkBox")
+        self.verticalLayout_5.addWidget(self.checkBox)
+        self.label = QtWidgets.QLabel(Form)
+        self.label.setObjectName("label")
+        self.verticalLayout_5.addWidget(self.label)
+        self.histo_binning = QtWidgets.QSpinBox(Form)
+        self.histo_binning.setMinimum(100)
+        self.histo_binning.setMaximum(1000)
+        self.histo_binning.setProperty("value", 256)
+        self.histo_binning.setObjectName("histo_binning")
+        self.verticalLayout_5.addWidget(self.histo_binning)
         self.horizontalLayout.addLayout(self.verticalLayout_5)
-        self.label_3.raise_()
-        self.image_view.raise_()
-        self.int_blobs.raise_()
-        self.cos_theta.raise_()
-        self.cos2_theta.raise_()
+        self.verticalLayout_6.addLayout(self.horizontalLayout)
+        self.blob_trend = PlotWidget(Form)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.blob_trend.sizePolicy().hasHeightForWidth())
+        self.blob_trend.setSizePolicy(sizePolicy)
+        self.blob_trend.setMaximumSize(QtCore.QSize(1100000, 3000))
+        self.blob_trend.setObjectName("blob_trend")
+        self.verticalLayout_6.addWidget(self.blob_trend)
 
         self.retranslateUi(Form)
         QtCore.QMetaObject.connectSlotsByName(Form)
@@ -130,5 +149,7 @@ class Ui_Form(object):
         self.cos_theta.setText(_translate("Form", "0"))
         self.label_9.setText(_translate("Form", "cos2 theta"))
         self.cos2_theta.setText(_translate("Form", "0"))
+        self.checkBox.setText(_translate("Form", "Histogram"))
+        self.label.setText(_translate("Form", "Binning"))
 
-from pyqtgraph import ImageView
+from pyqtgraph import ImageView, PlotWidget

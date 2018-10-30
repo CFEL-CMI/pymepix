@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'daqconfig.ui'
 #
-# Created by: PyQt5 UI code generator 5.6
+# Created by: PyQt5 UI code generator 5.9.2
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -117,6 +117,9 @@ class Ui_Form(object):
         self.event_count.setObjectName("event_count")
         self.horizontalLayout_3.addWidget(self.event_count)
         self.verticalLayout.addLayout(self.horizontalLayout_3)
+        self.reset_plots = QtWidgets.QPushButton(self.groupBox)
+        self.reset_plots.setObjectName("reset_plots")
+        self.verticalLayout.addWidget(self.reset_plots)
         spacerItem = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         self.verticalLayout.addItem(spacerItem)
         self.horizontalLayout_10.addWidget(self.groupBox)
@@ -187,6 +190,7 @@ class Ui_Form(object):
         self.label_3.setText(_translate("Form", "30"))
         self.label_4.setText(_translate("Form", "Event Count:"))
         self.event_count.setText(_translate("Form", "-1"))
+        self.reset_plots.setText(_translate("Form", "Reset Plots"))
         self.label_12.setText(_translate("Form", "Status:"))
         self.text_status.setText(_translate("Form", "Live"))
         self.start_acq.setText(_translate("Form", "Start Acquisition"))

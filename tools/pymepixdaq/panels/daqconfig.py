@@ -10,6 +10,7 @@ class DaqConfigPanel(QtGui.QWidget,Ui_Form):
     startAcquisition = QtCore.pyqtSignal(str,str,bool,bool,float)
     stopAcquisition = QtCore.pyqtSignal()
 
+    resetPlots = QtCore.pyqtSignal()
     updateRateChange = QtCore.pyqtSignal(float)
     eventCountChange = QtCore.pyqtSignal(int)
 
@@ -34,6 +35,7 @@ class DaqConfigPanel(QtGui.QWidget,Ui_Form):
 
         self.start_acq.clicked.connect(self.startAcqClicked)
         self.end_acq.clicked.connect(self.endAcqClicked)
+        self.reset_plots.clicked.connect(self.resetPlots.emit)
 
     def openPath(self):
         directory = QtGui.QFileDialog.getExistingDirectory(self, "Open Directory",

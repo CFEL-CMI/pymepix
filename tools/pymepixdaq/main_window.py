@@ -50,6 +50,9 @@ class PymepixDAQ(QtGui.QMainWindow):
         self.clearNow.connect(self._overview_panel.clearData)
         self._config_panel.startAcquisition.connect(self.startAcquisition)
         self._config_panel.stopAcquisition.connect(self.stopAcquisition)
+
+        self._config_panel.resetPlots.connect(self.clearNow.emit)
+
     def onDisplayUpdate(self,value):
         self._display_rate = value
     def onEventCountUpdate(self,value):
@@ -133,7 +136,7 @@ class PymepixDAQ(QtGui.QMainWindow):
         self._dock_overview.setWidget(self._overview_panel)
 
         self.addDockWidget(QtCore.Qt.LeftDockWidgetArea,self._dock_tof)
-        self.addDockWidget(QtCore.Qt.BottomDockWidgetArea,self._dock_config)
+        self.addDockWidget(QtCore.Qt.LeftDockWidgetArea,self._dock_config)
         self.addDockWidget(QtCore.Qt.RightDockWidgetArea,self._dock_overview)
 
 
