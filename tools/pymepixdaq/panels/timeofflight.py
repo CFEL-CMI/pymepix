@@ -153,7 +153,7 @@ class TimeOfFlightPanel(QtGui.QWidget,Ui_Form):
 
 
     def onEvent(self,event):
-        x,y,tof,tot,cluster_shot,cluster_x,cluster_y,cluster_area,cluster_integral,cluster_eig,cluster_vect,cluster_tof = event
+        tof = event[2]
 
         self._updateTof(tof)
 
