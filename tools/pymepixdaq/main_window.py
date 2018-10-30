@@ -122,9 +122,9 @@ class PymepixDAQ(QtGui.QMainWindow):
             print('Widget for {} does not exist',)
 
     def setupWindow(self):
-        self._tof_panel = TimeOfFlightPanel(parent=self)
-        self._config_panel = DaqConfigPanel(parent=self)
-        self._overview_panel = BlobView(parent=self)
+        self._tof_panel = TimeOfFlightPanel()
+        self._config_panel = DaqConfigPanel()
+        self._overview_panel = BlobView()
         self._dock_tof = QtGui.QDockWidget('Time of Flight',self)
         self._dock_tof.setFeatures(QtGui.QDockWidget.DockWidgetMovable | QtGui.QDockWidget.DockWidgetFloatable)
         self._dock_tof.setWidget(self._tof_panel)
