@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>761</width>
-    <height>718</height>
+    <width>618</width>
+    <height>469</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,14 +15,30 @@
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout">
    <item>
-    <widget class="ImageView" name="image_view"/>
+    <widget class="ImageView" name="image_view">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+       <horstretch>0</horstretch>
+       <verstretch>50</verstretch>
+      </sizepolicy>
+     </property>
+    </widget>
    </item>
    <item>
     <layout class="QVBoxLayout" name="verticalLayout_5">
+     <property name="sizeConstraint">
+      <enum>QLayout::SetFixedSize</enum>
+     </property>
      <item>
       <layout class="QVBoxLayout" name="verticalLayout">
        <item>
         <widget class="QLabel" name="label_3">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="font">
           <font>
            <pointsize>12</pointsize>
@@ -30,7 +46,7 @@
           </font>
          </property>
          <property name="text">
-          <string>Recent Blob Count</string>
+          <string>Blob Count</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignCenter</set>
@@ -39,6 +55,12 @@
        </item>
        <item>
         <widget class="QLabel" name="rec_blob">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="font">
           <font>
            <pointsize>16</pointsize>
@@ -175,6 +197,16 @@
     </layout>
    </item>
   </layout>
+  <zorder>label_3</zorder>
+  <zorder>lcdNumber</zorder>
+  <zorder>layoutWidget</zorder>
+  <zorder>layoutWidget_2</zorder>
+  <zorder>layoutWidget_3</zorder>
+  <zorder>image_view</zorder>
+  <zorder>verticalSpacer</zorder>
+  <zorder>int_blobs</zorder>
+  <zorder>cos_theta</zorder>
+  <zorder>cos2_theta</zorder>
  </widget>
  <customwidgets>
   <customwidget>
