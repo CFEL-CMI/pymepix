@@ -1,7 +1,7 @@
 import pymepix
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore, QtGui
-from ui.daqconfigui import Ui_Form
+from .ui.daqconfigui import Ui_Form
 import threading
 
 

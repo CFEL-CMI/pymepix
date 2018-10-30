@@ -1,7 +1,7 @@
 import pymepix
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore, QtGui
-from ui.blobviewui import Ui_Form
+from .ui.blobviewui import Ui_Form
 import threading
 import numpy as np
 
@@ -40,7 +40,7 @@ class BlobView(QtGui.QWidget,Ui_Form):
     def onRegionChange(self,start,end):
         self._start_tof = start
         self._end_tof = end
-
+        self.clearData()
 
     def computeDirectionCosine(self,x,y,tof):
         pass
@@ -55,15 +55,20 @@ class BlobView(QtGui.QWidget,Ui_Form):
         tof = cluster_tof[tof_filter]
         shots = cluster_tof[tof_filter]
 
+        if x.size == 0:
+            return
+
         uniq_shot,counts = np.unique(shots,return_counts=True)
+
+
 
         self._int_blob_count += np.sum(counts)
 
-        avg_blobs = np.average(counts)
+        avg_blobs = counts.max()
 
         self.rec_blobs.setText(str(int(avg_blobs)))
         
-        self.int_blobs.setText(int(self._int_blob_count))
+        self.int_blobs.setText(str(self._int_blob_count))
 
         self.computeDirectionCosine(x,y,tof)
 
@@ -79,7 +84,7 @@ class BlobView(QtGui.QWidget,Ui_Form):
         
 
     def plotData(self):
-        self.image_view.setImage(self._matrix,autoLevels=True,autoRange=False)
+        self.image_view.setImage(self._matrix,autoLevels=False,autoRange=False)
     
     def clearData(self):
         self._matrix[...]=0.0

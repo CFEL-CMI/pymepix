@@ -1,8 +1,8 @@
 import pymepix
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore, QtGui
-from ui.roidialogui import Ui_Dialog
-from regionsofinterest import RoiModel,RoiItem
+from .ui.roidialogui import Ui_Dialog
+
 
 
 class RoiDialog(QtGui.QDialog,Ui_Dialog):

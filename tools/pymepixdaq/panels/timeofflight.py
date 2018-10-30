@@ -2,9 +2,9 @@ import pymepix
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore, QtGui
 import numpy as np
-from ui.timeofflightpanelui import Ui_Form
-from regionsofinterest import RoiModel,RoiItem
-from roidialog import RoiDialog
+from .ui.timeofflightpanelui import Ui_Form
+from .regionsofinterest import RoiModel,RoiItem
+from .roidialog import RoiDialog
 import traceback
 class TimeOfFlightPanel(QtGui.QWidget,Ui_Form):
 
@@ -21,12 +21,12 @@ class TimeOfFlightPanel(QtGui.QWidget,Ui_Form):
 
         self._roi_model = RoiModel()
 
-
         self._histo_x = None
         self._histo_y = None
         self._tof_data = pg.PlotDataItem()
         self.tof_view.addItem(self._tof_data)
-
+        self.tof_view.setLabel('bottom',text='Time of Flight',units='s')
+        self.tof_view.setLabel('left',text='Hits')
         self.roi_list.setModel(self._roi_model)
         self.setupTofConfig()
 
@@ -38,7 +38,7 @@ class TimeOfFlightPanel(QtGui.QWidget,Ui_Form):
         self.remove_roi.clicked.connect(self.onRemoveRoi)
         self.display_roi.clicked.connect(self.onDisplayRoi)
         self.update_config.clicked.connect(self.onUpdateTofConfig)
-
+        self._roi_model.roiUpdated.connect(self.onRoiUpdate)
     def clearTof(self):
         self._histo_x = None
         self._histo_y = None
@@ -46,9 +46,9 @@ class TimeOfFlightPanel(QtGui.QWidget,Ui_Form):
     def onUpdateTofConfig(self):
 
         try:
-            start = float(self.event_start.text())
-            end = float(self.event_end.text())
-            bin = int(self.bin_size.text())
+            start = float(self.event_start.text())*1e-6
+            end = float(self.event_end.text())*1E-6
+            binning = int(self.bin_size.text())
         except Exception as e:
             print(str(e))
             traceback.print_exc()
@@ -64,7 +64,8 @@ class TimeOfFlightPanel(QtGui.QWidget,Ui_Form):
             self._tof_end = end
 
 
-        self._tof_bin = bin 
+        self._tof_bin = binning
+        self.clearTof()
 
                    
     def _updateTof(self,tof):
@@ -82,7 +83,7 @@ class TimeOfFlightPanel(QtGui.QWidget,Ui_Form):
         if self._histo_x is None:
             return
         else:
-            self._tof_data.setData(x=self._hist_x,y=self._hist_y, stepMode=True, fillLevel=0, brush=(0,0,255,150))
+            self._tof_data.setData(x=self._histo_x,y=self._histo_y, stepMode=True, fillLevel=0, brush=(0,0,255,150))
 
 
     def onRoiUpdate(self,name,start,end):
@@ -148,7 +149,7 @@ class TimeOfFlightPanel(QtGui.QWidget,Ui_Form):
             return
         modelIndex = self.roi_list.currentIndex()
         roi = modelIndex.internalPointer()
-        self.displayRoi.emit(roi.columnName,*self.roi.region)
+        self.displayRoi.emit(roi.columnName,*roi.region)
 
 
 
