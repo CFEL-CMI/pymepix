@@ -102,7 +102,7 @@ class TimepixCentroid(multiprocessing.Process):
 
         tof_scale = epsilon/tof_eps
         X = np.vstack((shot*epsilon*1000,x,y,tof*tof_scale)).transpose()
-        dist= DBSCAN(eps=epsilon, min_samples=min_samples,metric='euclidean').fit(X)
+        dist= DBSCAN(eps=epsilon, min_samples=min_samples,metric='euclidean',n_jobs=1).fit(X)
         labels = dist.labels_ + 1
         return labels
 
