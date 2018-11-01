@@ -165,6 +165,13 @@
            </layout>
           </item>
           <item>
+           <widget class="QCheckBox" name="blob_tof">
+            <property name="text">
+             <string>Use Centroid TOF</string>
+            </property>
+           </widget>
+          </item>
+          <item>
            <spacer name="verticalSpacer">
             <property name="orientation">
              <enum>Qt::Vertical</enum>
