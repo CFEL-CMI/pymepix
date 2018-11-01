@@ -30,7 +30,8 @@ class FileStorage(multiprocessing.Process):
 
                     index = 0
                     path = packet[1]
-                    prefix = packet[2]                    
+                    prefix = packet[2]   
+                    index = packet[4]                   
                     raw_filename = os.path.join(path,prefix)+'_{}.raw'.format(index)
                     while os.path.isfile(raw_filename):
                         index+=1 
@@ -44,7 +45,8 @@ class FileStorage(multiprocessing.Process):
                 elif message == 'OPENBLOB':
                     index = 0
                     path = packet[1]
-                    prefix = packet[2]                    
+                    prefix = packet[2]  
+                    index = packet[3]                  
                     blob_filename = os.path.join(path,prefix)+'_{}.blob'.format(index)
                     while os.path.isfile(blob_filename):
                         index+=1 
@@ -85,6 +87,7 @@ class FileStorage(multiprocessing.Process):
                         np.save(self._blob_file_io,cluster_tof)
              
                 elif message == 'CLOSE':
+                    print('CLOSING')
                     if self._file_io is not None:
                         self._file_io.close()
                     if self._raw_file_io is not None:

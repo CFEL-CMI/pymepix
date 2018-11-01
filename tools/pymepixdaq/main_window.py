@@ -29,6 +29,7 @@ class PymepixDAQ(QtGui.QMainWindow):
         self.connectSignals()
         self.startupTimepix()
     def startupTimepix(self):
+
         self._timepix = pymepix.TimePixAcq(('192.168.1.10',50000))
 
         self._timepix.attachEventCallback(self.onEvent)
