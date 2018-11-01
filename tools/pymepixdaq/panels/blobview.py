@@ -34,7 +34,7 @@ class BlobView(QtGui.QWidget,Ui_Form):
         self._histogram_mode = False
         self._histogram_bins=256
         self.checkBox.stateChanged.connect(self.onHistogramCheck)
-
+        self.blob_trend_check.stateChanged.connect(self.onTrendCheck)
         self.histo_binning.valueChanged[int].connect(self.onHistBinChange)
 
         self._histogram = None
@@ -61,6 +61,11 @@ class BlobView(QtGui.QWidget,Ui_Form):
             self._histogram_mode = False
             self.clearData()
 
+    def onTrendCheck(self,status):
+        if status == 2:
+            self.blob_trend.show()
+        else:
+            self.blob_trend.hide()
 
     def updateMatrix(self,x,y,tof,tot):
         tof_filter = self.getFilter(tof)

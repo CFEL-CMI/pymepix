@@ -125,6 +125,10 @@ class Ui_Form(object):
         self.verticalLayout_5.addWidget(self.histo_binning)
         self.horizontalLayout.addLayout(self.verticalLayout_5)
         self.verticalLayout_6.addLayout(self.horizontalLayout)
+        self.blob_trend_check = QtWidgets.QCheckBox(Form)
+        self.blob_trend_check.setChecked(True)
+        self.blob_trend_check.setObjectName("blob_trend_check")
+        self.verticalLayout_6.addWidget(self.blob_trend_check)
         self.blob_trend = PlotWidget(Form)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
@@ -151,5 +155,6 @@ class Ui_Form(object):
         self.cos2_theta.setText(_translate("Form", "0"))
         self.checkBox.setText(_translate("Form", "Histogram"))
         self.label.setText(_translate("Form", "Binning"))
+        self.blob_trend_check.setText(_translate("Form", "Show Blob Trend"))
 
 from pyqtgraph import ImageView, PlotWidget
