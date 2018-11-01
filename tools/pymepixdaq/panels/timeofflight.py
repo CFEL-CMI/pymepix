@@ -28,9 +28,12 @@ class TimeOfFlightPanel(QtGui.QWidget,Ui_Form):
         self.tof_view.setLabel('bottom',text='Time of Flight',units='s')
         self.tof_view.setLabel('left',text='Hits')
         self.roi_list.setModel(self._roi_model)
+
+        self._blob_tof_mode = False
         self.setupTofConfig()
 
         self.connectSignals()
+
 
         
     def connectSignals(self):
@@ -39,10 +42,20 @@ class TimeOfFlightPanel(QtGui.QWidget,Ui_Form):
         self.display_roi.clicked.connect(self.onDisplayRoi)
         self.update_config.clicked.connect(self.onUpdateTofConfig)
         self._roi_model.roiUpdated.connect(self.onRoiUpdate)
+        self.blob_tof.stateChanged.connect(self.onCentroidCheck)
     def clearTof(self):
         self._histo_x = None
         self._histo_y = None
-    
+
+    def onCentroidCheck(self,status):
+        if status == 2:
+            self._blob_tof_mode = True
+            self.clearTof()
+        else:
+            self._blob_tof_mode = False
+            self.clearTof()
+
+
     def onUpdateTofConfig(self):
 
         try:
@@ -155,7 +168,11 @@ class TimeOfFlightPanel(QtGui.QWidget,Ui_Form):
 
 
     def onEvent(self,event):
-        tof = event[2]
+
+        if self._blob_tof_mode:
+            tof = event[11]
+        else:
+            tof = event[2]
 
         self._updateTof(tof)
 

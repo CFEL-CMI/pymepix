@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'timeofflightpanel.ui'
 #
-# Created by: PyQt5 UI code generator 5.6
+# Created by: PyQt5 UI code generator 5.9.2
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -111,6 +111,9 @@ class Ui_Form(object):
         self.bin_size.setObjectName("bin_size")
         self.horizontalLayout_3.addWidget(self.bin_size)
         self.verticalLayout_3.addLayout(self.horizontalLayout_3)
+        self.blob_tof = QtWidgets.QCheckBox(self.groupBox_2)
+        self.blob_tof.setObjectName("blob_tof")
+        self.verticalLayout_3.addWidget(self.blob_tof)
         spacerItem = QtWidgets.QSpacerItem(20, 10, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         self.verticalLayout_3.addItem(spacerItem)
         self.verticalLayout_4.addWidget(self.groupBox_2)
@@ -136,6 +139,7 @@ class Ui_Form(object):
         self.label_2.setText(_translate("Form", "-"))
         self.label_4.setText(_translate("Form", "us"))
         self.label_3.setText(_translate("Form", "Binning"))
+        self.blob_tof.setText(_translate("Form", "Use Centroid TOF"))
         self.update_config.setText(_translate("Form", "Update"))
 
 from pyqtgraph import PlotWidget
