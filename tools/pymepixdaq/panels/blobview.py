@@ -136,6 +136,10 @@ class BlobView(QtGui.QWidget,Ui_Form):
         
     
     def updateTrend(self,trigger,avg_blobs):
+        last_trigger = self._blob_trend_trigger[-1]
+        if trigger < last_trigger or (trigger-last_trigger)>10000:
+            self._blob_trend[...]=0.0
+            self._blob_trend_trigger[:] = trigger
         self._blob_trend = np.roll(self._blob_trend,-1)
         self._blob_trend_trigger = np.roll(self._blob_trend_trigger,-1)
         self._blob_trend[-1] = avg_blobs
@@ -148,11 +152,11 @@ class BlobView(QtGui.QWidget,Ui_Form):
 
     def plotData(self):
         if not self._histogram_mode:
-            self.image_view.setImage(self._matrix,autoLevels=False,autoRange=False)
+            self.image_view.setImage(self._matrix/self._matrix.max(),autoLevels=False,autoRange=False,autoHistogramRange=False)
         else:
             if self._histogram is not None:
                 
-                self.image_view.setImage(self._histogram,autoLevels=False,autoRange=False)
+                self.image_view.setImage(self._histogram/self._histogram.max(),autoLevels=False,autoRange=False,autoHistogramRange=False)
 
     
     def clearData(self):
