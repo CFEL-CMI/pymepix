@@ -31,7 +31,7 @@ class FileStorage(multiprocessing.Process):
                     index = 0
                     path = packet[1]
                     prefix = packet[2]   
-                    index = packet[4]                   
+                    index = packet[3]                   
                     raw_filename = os.path.join(path,prefix)+'_{}.raw'.format(index)
                     while os.path.isfile(raw_filename):
                         index+=1 
