@@ -163,7 +163,11 @@ class TimeOfFlightPanel(QtGui.QWidget,Ui_Form):
             return
         modelIndex = self.roi_list.currentIndex()
         roi = modelIndex.internalPointer()
-        self.displayRoi.emit(roi.columnName,*roi.region)
+        if roi is None:
+            QtGui.QMessageBox.warning(self,'No Roi selected','Please select an ROI')
+            return
+        else:
+            self.displayRoi.emit(roi.columnName,*roi.region)
 
 
 
