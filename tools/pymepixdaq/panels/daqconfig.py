@@ -35,7 +35,7 @@ class RepeatFunction(Thread):
 
 class DaqConfigPanel(QtGui.QWidget,Ui_Form):
 
-    startAcquisition = QtCore.pyqtSignal(str,str,bool,bool,float)
+    startAcquisition = QtCore.pyqtSignal(str,str,bool,bool,float,int)
     stopAcquisition = QtCore.pyqtSignal()
 
     resetPlots = QtCore.pyqtSignal()
@@ -43,9 +43,9 @@ class DaqConfigPanel(QtGui.QWidget,Ui_Form):
     eventCountChange = QtCore.pyqtSignal(int)
 
 
-    def run_acquisition(self,path_name,prefix,raw_checked,blob_checked,exposure):
+    def run_acquisition(self,path_name,prefix,raw_checked,blob_checked,exposure,startindex):
 
-        self.startAcquisition.emit(path_name,prefix,raw_checked,blob_checked,exposure)
+        self.startAcquisition.emit(path_name,prefix,raw_checked,blob_checked,exposure,startindex)
         self.text_status.setText('Acquiring.....')        
         print('STARTING')
         if self.acq_time.text() != "":
@@ -112,11 +112,13 @@ class DaqConfigPanel(QtGui.QWidget,Ui_Form):
         raw_checked = bool(self.raw_enable.isChecked())
         blob_checked = bool(self.blob_enable.isChecked())
 
+        start_index = int(self.startindex.text())
+
         if self._repeating_thread is not None:
             self._repeating_thread.cancel()
             self._repeating_thread = None
         repeats = int(self.repeat_value.text())
-        self._repeating_thread = RepeatFunction(repeats,self.run_acquisition,(self.path_name.text(),self.file_prefix.text(),raw_checked,blob_checked,exposure,))
+        self._repeating_thread = RepeatFunction(repeats,self.run_acquisition,(self.path_name.text(),self.file_prefix.text(),raw_checked,blob_checked,exposure,start_index,))
         self._repeating_thread.start()
 
         # self.startAcquisition.emit(self.path_name.text(),self.file_prefix.text(),raw_checked,blob_checked,exposure)
