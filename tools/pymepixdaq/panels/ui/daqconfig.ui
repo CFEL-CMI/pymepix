@@ -73,7 +73,7 @@
           <item>
            <widget class="QLineEdit" name="startindex">
             <property name="text">
-             <string>test_</string>
+             <string>0</string>
             </property>
            </widget>
           </item>
@@ -166,7 +166,7 @@
           <item>
            <widget class="QLabel" name="label_13">
             <property name="text">
-             <string>Repeats</string>
+             <string>No of Files</string>
             </property>
            </widget>
           </item>
