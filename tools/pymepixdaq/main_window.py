@@ -86,14 +86,14 @@ class PymepixDAQ(QtGui.QMainWindow):
 
 
 
-    def startAcquisition(self,pathname,prefixname,do_raw,do_blob,exposure):
+    def startAcquisition(self,pathname,prefixname,do_raw,do_blob,exposure,startindex):
         self._timepix.filePath=pathname
         self._timepix.filePrefix = prefixname
         self._timepix.eventWindowTime = exposure
 
 
         print('Do raw',do_raw,'Do_blob',do_blob)
-        self._timepix.beginFileWrite(write_raw=do_raw,write_blob=do_blob)
+        self._timepix.beginFileWrite(write_raw=do_raw,write_blob=do_blob,start_index=startindex)
 
     def stopAcquisition(self):
         self._timepix.stopFileWrite()
