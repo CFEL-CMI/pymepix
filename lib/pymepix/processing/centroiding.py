@@ -91,17 +91,18 @@ class TimepixCentroid(multiprocessing.Process):
 
         return x_bar,y_bar,area,total,evals,evecs.flatten()
 
-    def find_cluster(self,shot,x,y,tof,tot,epsilon=2,min_samples=2):
+    def find_cluster(self,shot,x,y,tof,tot,epsilon=2,min_samples=2,tof_epsilon=None):
         from sklearn.cluster import DBSCAN
         
         if shot.size == 0:
             return None
         #print(shot.size)
-        tof_eps = 81920*(25./4096)*1E-9
+        tof_eps = 81920*(25./4096)*1E-9/5.0
+
 
         tof_scale = epsilon/tof_eps
         X = np.vstack((shot*epsilon*1000,x,y,tof*tof_scale)).transpose()
-        dist= DBSCAN(eps=epsilon, min_samples=min_samples,metric='euclidean').fit(X)
+        dist= DBSCAN(eps=epsilon, min_samples=min_samples,metric='euclidean',n_jobs=1).fit(X)
         labels = dist.labels_ + 1
         return labels
 
