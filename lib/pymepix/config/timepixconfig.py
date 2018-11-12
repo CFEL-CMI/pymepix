@@ -23,6 +23,6 @@ class TimepixConfig(object):
         pass
     
     def thresholdPixels(self):
-        """Returns thrshold pixels"""
+        """Returns threshold pixels"""
         pass
 
