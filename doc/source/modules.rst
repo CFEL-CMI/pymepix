@@ -1,7 +1,7 @@
-cmidaq
-======
+lib
+===
 
 .. toctree::
    :maxdepth: 4
 
-   cmidaq
+   pymepix

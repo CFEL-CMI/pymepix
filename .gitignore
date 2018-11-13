@@ -9,4 +9,4 @@ setup.cfg
 *.dat
 *.tpx3
 *.spx
-
+doc/build/
