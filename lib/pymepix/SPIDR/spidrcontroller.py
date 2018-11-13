@@ -19,7 +19,7 @@ class SPIDRController(list):
         socket style tuple of SPIDR ip address and port
     src_ip_port : :obj:`tuple` of :obj:`str` and :obj:`int`, optional
         socket style tuple of the IP address and port of the interface that is connecting to SPIDR
-        
+
     Examples
     --------
     
@@ -38,7 +38,13 @@ class SPIDRController(list):
 
 
 
-        """
+    .. Warning::
+        This object assumes SPIDR is working as intended however since this is still in development there are a few functions
+        that do not behave as they should, this will be documented in their relevant areas.
+
+
+
+    """
     def __init__(self,dst_ip_port,src_ip_port=('192.168.1.1',0)):
 
 
@@ -63,11 +69,46 @@ class SPIDRController(list):
             self.append(SpidrDevice(self,x))
         
     def resetModule(self,readout_speed):
+        """Resets the SPIDR board and sets a new readout speed
+
+        Parameters
+        ----------
+        readout_speed : :class:`SpidrReadoutSpeed`
+            Read-out speed the device will operate at
+        
+        Notes
+        ----------
+        Its not clear if this does anything as its not usually used
+
+        """
         self.requestGetInt(SpidrCmds.CMD_RESET_MODULE,0,readout_speed.value)
 
     #-----------------Registers-----------------------
     @property
     def CpuToTpx(self):
+        """Cpu2Tpx register access
+
+        Parameters
+        ----------
+        value : int
+            Value to write to the register
+        
+        Returns
+        ----------
+        int
+            Current value of the register
+        
+        Raises
+        ----------
+        :class:`PymePixException`
+            Communication error
+        
+        Notes
+        ----------
+        It is not known what this register does exactly
+
+
+        """
         return self.getSpidrReg(SpidrRegs.SPIDR_CPU2TPX_WR_I)
     
     @CpuToTpx.setter
@@ -77,6 +118,26 @@ class SPIDRController(list):
         #---------Shutter registers---------
     @property
     def ShutterTriggerCtrl(self):
+        """Shutter Trigger Control register access
+
+        Parameters
+        ----------
+        value : int
+            Value to write to the register
+        
+        Returns
+        ----------
+        int
+            Current value of the register
+        
+        Raises
+        ----------
+        :class:`PymePixException`
+            Communication error
+
+
+        """
+
         return self.getSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_CTRL_I)
     
     @ShutterTriggerCtrl.setter
@@ -85,6 +146,29 @@ class SPIDRController(list):
 
     @property
     def ShutterTriggerMode(self):
+        """Controls how the shutter is triggered
+
+        Parameters
+        ----------
+        value : :class:`SpidrShutterMode`
+            Shutter trigger mode to set
+        
+        Returns
+        ----------
+        :class:`SpidrShutterMode`
+            Current shutter operation mode read from SPIDR
+        
+        Raises
+        ----------
+        :class:`PymePixException`
+            Communication error
+        
+        Notes
+        ----------
+        AutoTrigger is the only functioning trigger mode that SPIDR can operate in
+
+
+        """
         return SpidrShutterMode(self.ShutterTriggerCtrl &0x7)
     
     @ShutterTriggerMode.setter
@@ -98,6 +182,25 @@ class SPIDRController(list):
 
     @property
     def ShutterTriggerCount(self):
+        """Number of times the shutter is triggered in auto trigger mode
+
+        Parameters
+        ----------
+        value : int
+            Trigger count to set for auto trigger mode ( Set to 0 for infinite triggers)
+        
+        Returns
+        ----------
+        int:
+            Current value of the trigger count read from SPIDR
+        
+        Raises
+        ----------
+        :class:`PymePixException`
+            Communication error
+
+
+        """
         return self.getSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_CNT_I)
     
     @ShutterTriggerCount.setter
@@ -106,6 +209,24 @@ class SPIDRController(list):
 
     @property
     def ShutterTriggerFreq(self):
+        """Triggering frequency for the auto trigger
+
+        Parameters
+        ----------
+        value : float
+            Frequency in mHz
+        
+        Returns
+        ----------
+        float:
+            Frequency value in mHz read from SPIDR
+
+        Raises
+        ----------
+        :class:`PymePixException`
+            Communication error
+
+        """
         freq = self.getSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_FREQ_I)
 
         mhz = 40000000000.0/freq
@@ -121,6 +242,24 @@ class SPIDRController(list):
 
     @property
     def ShutterTriggerLength(self):
+        """Length of time shutter remains open at each trigger
+
+        Parameters
+        ----------
+        value : int
+            Length in ns
+        
+        Returns
+        ----------
+        value: int
+            Current length in ns read from SPIDR 
+
+        Raises
+        ----------
+        :class:`PymePixException`
+            Communication error
+
+        """
         return self.getSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_LENGTH_I)*25
     
     @ShutterTriggerLength.setter
@@ -129,6 +268,24 @@ class SPIDRController(list):
 
     @property
     def ShutterTriggerDelay(self):
+        """Delay time before shutter can be triggered again in auto trigger mode
+
+        Parameters
+        ----------
+        value : int
+            Time in ns
+        
+        Returns
+        ----------
+        value: int
+            Current time in ns read from SPIDR 
+
+        Raises
+        ----------
+        :class:`PymePixException`
+            Communication error
+
+        """
         return self.getSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_DELAY_I)*25
     
     @ShutterTriggerDelay.setter
@@ -234,10 +391,50 @@ class SPIDRController(list):
 
     @property
     def deviceCount(self):
+        """ Count of devices connected to SPIDR
+
+        Returns
+        ---------
+        int: 
+            Number of devices connected to SPIDR
+
+        Raises
+        ----------
+        :class:`PymePixException`
+            Communication error
+
+        .. Warning::
+            SPIDR always returns 4 since it currently can't determine if the devices
+            are actually valid or not
+
+        """
         return self.requestGetInt(SpidrCmds.CMD_GET_DEVICECOUNT,0)
 
     @property
     def deviceIds(self):
+        """ The ids of all devices connected to the SPIDR board
+
+        Returns
+        ---------
+        :obj:`list` of :obj:`int`:
+            A list all connected device ids
+
+
+        Raises
+        ----------
+        :class:`PymePixException`
+            Communication error
+
+        
+        Notes
+        --------
+        Index of devices are the same as the those in the SPIDRController list
+
+
+        >>> spidr[1].deviceId == spidr.deviceIds[1]
+        True
+
+        """
         device_count = self.deviceCount
         return self.requestGetInts(SpidrCmds.CMD_GET_DEVICEIDS,0,device_count)
 
@@ -264,9 +461,18 @@ class SPIDRController(list):
         return self.requestSetInt(SpidrCmds.CMD_CLEAR_BUSY,0,0)
 
     def resetDevices(self):
+        """ Resets all devices"""
         self.requestSetInt(SpidrCmds.CMD_RESET_DEVICES,0,0)
     
     def reinitDevices(self):
+        """ Resets and initializes all devices
+        
+        Raises
+        ----------
+        :class:`PymePixException`
+            Communication error
+
+        """
         self.requestSetInt(SpidrCmds.CMD_REINIT_DEVICES,0,0)
 
 
@@ -277,12 +483,46 @@ class SPIDRController(list):
         self.requestSetInt(SpidrCmds.CMD_TPX_POWER_ENA,0,int(enable))
 
     def setBiasSupplyEnable(self,enable):
+        """ Enables/Disables bias supply voltage
+
+        Parameters
+        -----------
+        enable : bool
+            True - enables bias supply voltage
+            False - disables bias supply voltage
+
+        Raises
+        ----------
+        :class:`PymePixException`
+            Communication error
+
+        """        
         self.requestSetInt(SpidrCmds.CMD_BIAS_SUPPLY_ENA,0,int(enable))
 
 
 
     @property
     def biasVoltage(self):
+        """ Bias voltage
+
+        Parameters
+        -----------
+        volts : int
+            Bias voltage to supply in volts
+            Minimum is 12V and Maximum is 104V
+
+        Returns
+        -----------
+        int:
+            Current bias supply in volts
+
+        Raises
+        ----------
+        :class:`PymePixException`
+            Communication error
+
+        """  
+
         adc_data = self.requestGetInt(SpidrCmds.CMD_GET_SPIDR_ADC,0,1)
         return (((adc_data & 0xFFF)*1500 + 4095) / 4096) / 10
     @biasVoltage.setter
