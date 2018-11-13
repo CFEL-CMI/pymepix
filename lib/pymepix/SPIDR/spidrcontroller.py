@@ -1,3 +1,5 @@
+"""SPIDR related classes"""
+
 import socket
 import numpy as np
 from .error import PymePixException
@@ -9,8 +11,15 @@ class SPIDRController(list):
     """Object that interfaces over ethernet with the SPIDR board
 
     This object interfaces with the spidr board through TCP and is used to send commands and receive data.
-    It can be treated as a list of SpidrDevice objects to talk to a specific device
-    
+    It can be treated as a list of :class:`SpidrDevice` objects to talk to a specific device
+
+    Parameters
+    ----------
+    dst_ip_port : :obj:`tuple` of :obj:`str` and :obj:`int`
+        socket style tuple of SPIDR ip address and port
+    src_ip_port : :obj:`tuple` of :obj:`str` and :obj:`int`, optional
+        socket style tuple of the IP address and port of the interface that is connecting to SPIDR
+        
     Examples
     --------
     
@@ -20,23 +29,17 @@ class SPIDRController(list):
     >>> spidr.fpgaTemperature
     39.5
 
-    Or access a specific SpidrDevice (e.g. Timepix/Medipix)
-
-    >>> len(spidr)
-    4
-
-    Devices can be accessed as such:
+    Or access a specific :class:`SpidrDevice` (e.g. Timepix/Medipix)
 
     >>> spidr[0].deviceId
     7272
     >>> spidr[1].deviceId
-    24156732
-    
-    
+    2147483648
 
-    """
+
+
+        """
     def __init__(self,dst_ip_port,src_ip_port=('192.168.1.1',0)):
-
 
 
         self._sock = socket.create_connection(dst_ip_port,source_address=src_ip_port)
