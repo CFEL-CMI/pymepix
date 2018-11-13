@@ -105,8 +105,7 @@ class SPIDRController(list):
         
         Notes
         ----------
-        It is not known what this register does exactly
-
+        Register controls clock setup
 
         """
         return self.getSpidrReg(SpidrRegs.SPIDR_CPU2TPX_WR_I)
@@ -298,10 +297,12 @@ class SPIDRController(list):
     
     @property
     def TdcTriggerCounter(self):
+        """Trigger packets sent by SPIDR since last counter reset"""
         return self.getSpidrReg(SpidrRegs.SPIDR_TDC_TRIGGERCOUNTER_I)
     
     @property
     def UdpPacketCounter(self):
+        """UDP packets sent by SPIDR since last counter reset"""
         return self.getSpidrReg(SpidrRegs.SPIDR_UDP_PKTCOUNTER_I)
 
     @property
@@ -310,6 +311,7 @@ class SPIDRController(list):
 
     @property
     def UdpPausePacketCounter(self):
+        """UDP packets collected during readout pause since last counter reset"""
         return self.getSpidrReg(SpidrRegs.SPIDR_UDPPAUSE_PKTCOUNTER_I)    
 
     @UdpPacketCounter.setter
@@ -328,31 +330,132 @@ class SPIDRController(list):
 
     @property
     def softwareVersion(self):
+        """Software version
+
+        Returns
+        --------
+        int:
+            Version number of software in the SPIDR board
+
+
+        Raises
+        ----------
+        :class:`PymePixException`
+            Communication error
+
+        """
+
         return self.requestGetInt(SpidrCmds.CMD_GET_SOFTWVERSION,0)
 
     @property
     def firmwareVersion(self):
+        """Firmware version
+
+        Returns
+        --------
+        int:
+            Version number of firmware within the FPGA
+
+
+        Raises
+        ----------
+        :class:`PymePixException`
+            Communication error
+
+        """
+
+
         return self.requestGetInt(SpidrCmds.CMD_GET_FIRMWVERSION,0)
 
     @property
     def localTemperature(self):
+        """Local ????!?!? Temperature read from sensor
+
+        Returns
+        --------
+        float:
+            Temperature in Celsius
+
+
+        Raises
+        ----------
+        :class:`PymePixException`
+            Communication error
+
+        """
         return self.requestGetInt(SpidrCmds.CMD_GET_LOCALTEMP,0)/1000
 
     @property
     def remoteTemperature(self):
+        """Remote ????!?!? Temperature read from sensor
+
+        Returns
+        --------
+        float:
+            Temperature in Celsius
+
+
+        Raises
+        ----------
+        :class:`PymePixException`
+            Communication error
+
+        """
         return self.requestGetInt(SpidrCmds.CMD_GET_REMOTETEMP,0)/1000
 
     @property
     def fpgaTemperature(self):
+        """Temperature of FPGA board read from sensor
+
+        Returns
+        --------
+        float:
+            Temperature in Celsius
+
+
+        Raises
+        ----------
+        :class:`PymePixException`
+            Communication error
+
+        """
         return self.requestGetInt(SpidrCmds.CMD_GET_FPGATEMP,0)/1000
 
 
     @property
     def humidity(self):
+        """Humidity read from sensor
+
+        Returns
+        --------
+        int:
+            Humidity as percentage
+
+
+        Raises
+        ----------
+        :class:`PymePixException`
+            Communication error
+
+        """
         return self.requestGetInt(SpidrCmds.CMD_GET_HUMIDITY,0)
 
     @property
     def pressure(self):
+        """Pressure read from sensor
+
+        Returns
+        --------
+        int:
+            Pressure in bar
+
+
+        Raises
+        ----------
+        :class:`PymePixException`
+            Communication error
+
+        """
         return self.requestGetInt(SpidrCmds.CMD_GET_PRESSURE,0)
 
     @property
@@ -402,6 +505,8 @@ class SPIDRController(list):
         ----------
         :class:`PymePixException`
             Communication error
+
+
 
         .. Warning::
             SPIDR always returns 4 since it currently can't determine if the devices
@@ -535,6 +640,29 @@ class SPIDRController(list):
 
 
     def enableDecoders(self,enable):
+        """Determines whether the internal FPGA decodes ToA values
+
+        Time of Arrival from UDP packets are gray encoded
+        if this is enabled then SPIDR will decode them for you, otherwise
+        you have to do this yourself after extracting them
+
+        Parameters
+        -----------
+        enable: bool
+            True - enable FPGA decoding
+            False - disable FPGA decoding
+
+        Raises
+        ----------
+        :class:`PymePixException`
+            Communication error        
+
+
+        .. Tip::
+            Enable this
+
+
+        """
         self.requestSetInt(SpidrCmds.CMD_DECODERS_ENA,0,int(enable))
 
     def enablePeriphClk80Mhz(self):
@@ -544,9 +672,32 @@ class SPIDRController(list):
         self.CpuToTpx &= ~(1<<24)
     
     def enableExternalRefClock(self):
+        """SPIDR recieves its reference clock externally
+
+        This is often used when combining multiple Timepixs together so they can synchronize their clocks. 
+        The SPIDR board essentially acts as a slave to other SPIDRs
+
+        Raises
+        ----------
+        :class:`PymePixException`
+            Communication error    
+
+        """
+
         self.CpuToTpx |= ( 1<<25)
 
     def disableExternalRefClock(self):
+        """SPIDR recieves its reference clock internally
+
+        This should be set in single SPIDR mode. When combining other SPIDR board, the master will set this
+        to disabled
+
+        Raises
+        ----------
+        :class:`PymePixException`
+            Communication error    
+
+        """
         self.CpuToTpx &= ~(1<<25)
 
 
@@ -559,7 +710,21 @@ class SPIDRController(list):
 
 
     def datadrivenReadout(self):
+        """Set SPIDR into data driven readout mode
 
+        Data driven mode refers to the pixels packets sent as they are hit rather
+        than camera style frames
+
+        Raises
+        ----------
+        :class:`PymePixException`
+            Communication error    
+
+
+        .. Warning::
+            This is the only tested mode for pymepix. It is recommended that this is enabled
+
+        """
         self.requestSetInt( SpidrCmds.CMD_DDRIVEN_READOUT, 0, 0 )
 
 
@@ -572,6 +737,34 @@ class SPIDRController(list):
 
 
     def setShutterTriggerConfig(self,mode,length_us,freq_hz,count,delay_ns=0):
+        """Set the shutter configuration in one go
+
+
+        Parameters
+        ----------
+        mode: int
+            Shutter trigger mode
+        
+        length_us: int
+            Shutter open time in microseconds
+        
+        freq_hz: int
+            Auto trigger frequency in Hertz
+
+        count: int
+            Number of triggers
+
+        delay_ns: int, optional
+            Delay between each trigger (Default: 0)
+
+        Raises
+        ----------
+        :class:`PymePixException`
+            Communication error
+
+        
+        """
+
 
         data =  [mode,length_us,freq_hz,count,delay_ns]
 
@@ -587,17 +780,55 @@ class SPIDRController(list):
         return tuple(config)
 
     def startAutoTrigger(self):
+        """Starts the auto trigger
+        
+        Raises
+        ----------
+        :class:`PymePixException`
+            Communication error
+
+        """
         self.requestSetInt(SpidrCmds.CMD_AUTOTRIG_START,0,0)
 
     def stopAutoTrigger(self):
+        """Stops the auto trigger
+        
+        Raises
+        ----------
+        :class:`PymePixException`
+            Communication error
+
+        """
+
         self.requestSetInt(SpidrCmds.CMD_AUTOTRIG_STOP,0,0)
 
 
     def openShutter(self):
+        """Immediately opens the shutter indefinetly
+        
+        Raises
+        ----------
+        :class:`PymePixException`
+            Communication error
+
+        Notes
+        ---------
+        This overwrites shutter configurations with one that forces
+        an open shutter
+
+        """
         self.setShutterTriggerConfig( SpidrShutterMode.Auto.value, 0, 10, 1,0)
         self.startAutoTrigger()
     
     def closeShutter(self):
+        """Immediately closes the shutter
+        
+        Raises
+        ----------
+        :class:`PymePixException`
+            Communication error
+
+        """
         self.stopAutoTrigger()
 
     @property
@@ -609,12 +840,41 @@ class SPIDRController(list):
         return self.requestGetInt(SpidrCmds.CMD_GET_SHUTTERCNTR,0)
 
     def restartTimers(self):
+        """Restarts SPIDR and Device timers
+
+        Synchronizes both the SPIDR clock and Timepix/Medipix clocks so both trigger
+        and ToA timestamps match
+
+        .. Important::
+            This must be done if event selection is required (e.g. time of flight) otherwise
+            the timestamps will be offset
+
+
+        
+        
+        Raises
+        ----------
+        :class:`PymePixException`
+            Communication error
+
+        """
         return self.requestSetInt( SpidrCmds.CMD_RESTART_TIMERS, 0, 0 )
 
     def resetCounters(self):
         self.requestSetInt(SpidrCmds.CMD_RESET_COUNTERS,0,0)
 
     def resetTimers(self):
+        """Resets all timers to zero
+
+        Sets the internal 48-bit timers for all Timepix/Medipix devices to zero
+
+
+        Raises
+        ----------
+        :class:`PymePixException`
+            Communication error
+        
+        """
         self.requestSetInt(SpidrCmds.CMD_RESET_TIMER,0,0)
 
     def getAdc(self,channel,nr_of_samples):
@@ -635,6 +895,7 @@ class SPIDRController(list):
 
     
     def getSpidrReg(self,addr):
+
         res = self.requestGetInts(SpidrCmds.CMD_GET_SPIDRREG,0,2,addr)
         if res[0] != addr:
             raise Exception('Incorrect register address returned {} expected {}'.format(res[0],addr))
@@ -683,14 +944,14 @@ class SPIDRController(list):
             return _replyMsg
 
 
-    def customRequest(self,request,total_bytes):
-        self._sock.send(self._req_buffer.tobytes()[0:total_bytes])
-        sock_recv= self._sock.recv(4096)
-        missing_bytes = ((len(sock_recv)//32) + 1)*32
-        buffer = sock_recv + b" "*missing_bytes
+    # def customRequest(self,request,total_bytes):
+    #     self._sock.send(self._req_buffer.tobytes()[0:total_bytes])
+    #     sock_recv= self._sock.recv(4096)
+    #     missing_bytes = ((len(sock_recv)//32) + 1)*32
+    #     buffer = sock_recv + b" "*missing_bytes
 
-        arr = np.frombuffer(buffer,dtype=np.uint32)
-        print(self._vec_ntohl(arr))
+    #     arr = np.frombuffer(buffer,dtype=np.uint32)
+    #     print(self._vec_ntohl(arr))
     def convertNtohl(self,x):
         return socket.ntohl(int(x))
 
