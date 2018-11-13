@@ -6,10 +6,40 @@ from .spidrdevice import SpidrDevice
 from .spidrdefs import SpidrRegs,SpidrShutterMode
 import threading
 class SPIDRController(list):
+    """Object that interfaces over ethernet with the SPIDR board
 
-    def __init__(self,ip_port):
+    This object interfaces with the spidr board through TCP and is used to send commands and receive data.
+    It can be treated as a list of SpidrDevice objects to talk to a specific device
+    
+    Examples
+    --------
+    
+    The class can be used to talk to SPIDR
 
-        self._sock = socket.create_connection(ip_port,source_address=('192.168.1.1',0))
+    >>> spidr = SPIDRController(('192.168.1.10',50000))
+    >>> spidr.fpgaTemperature
+    39.5
+
+    Or access a specific SpidrDevice (e.g. Timepix/Medipix)
+
+    >>> len(spidr)
+    4
+
+    Devices can be accessed as such:
+
+    >>> spidr[0].deviceId
+    7272
+    >>> spidr[1].deviceId
+    24156732
+    
+    
+
+    """
+    def __init__(self,dst_ip_port,src_ip_port=('192.168.1.1',0)):
+
+
+
+        self._sock = socket.create_connection(dst_ip_port,source_address=src_ip_port)
         self._request_lock = threading.Lock()
         self._req_buffer = np.ndarray(shape=(512,),dtype=np.uint32)
         self._reply_buffer = bytearray(4096)
