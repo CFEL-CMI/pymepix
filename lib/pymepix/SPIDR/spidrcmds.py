@@ -1,5 +1,9 @@
+"""This module contains a list of all (found) commands for the SPIDR board"""
+
+
 
 class SpidrCmds(object):
+    """A class that packages all the commands under a single name"""
     CMD_NOP                =0x000
 
     #General: module

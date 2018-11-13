@@ -1,3 +1,4 @@
+"""Module that contains constants that can be passed into spidr"""
 from enum import Enum
 
 class SpidrReadoutSpeed(Enum):
