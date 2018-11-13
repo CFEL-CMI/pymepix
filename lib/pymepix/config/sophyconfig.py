@@ -59,6 +59,7 @@ class SophyConfig(TimepixConfig):
         root = et.fromstring(xmlstring)
         dac_setting = root.findall(".//entry[@class='sophy.medipix.SPMPXDACCollection']")
         dac_setting = dac_setting[0][0]
+
         for element in dac_setting.findall(".//element[@class='java.util.Map.Entry']"):
             key=element.find('key')
             
@@ -66,15 +67,16 @@ class SophyConfig(TimepixConfig):
             data = entry.find('data')
             dac_key = key.items()[-1][-1]
             dac_value = int(data.items()[-1][-1])
+
             self._dac_values[dac_key]= dac_value
-    
+
 
     def dacCodes(self):
         dac_codes = []
         for key,value in self._dac_values.items():
             code = self._dac_codes[key]
             dac_codes.append((code,value))
-    
+        return dac_codes
 
 
     def parsePixelConfig(self,zip_file,file_names):
@@ -88,7 +90,7 @@ class SophyConfig(TimepixConfig):
     
     def maskPixels(self):
         """Returns mask pixels"""
-        return self._mask
+        return self._mask//256
     
     def testPixels(self):
         """Returns test pixels"""
@@ -96,7 +98,7 @@ class SophyConfig(TimepixConfig):
     
     def thresholdPixels(self):
         """Returns threshold pixels"""
-        return self._thresh
+        return self._thresh*16//4096
 
 
 
@@ -104,11 +106,19 @@ def main():
     import matplotlib.pyplot as plt
     spx = SophyConfig('/Users/alrefaie/Documents/repos/libtimepix/lib/pymepix/config/W0028_H06_50V.spx')
     print(spx.dacCodes())
-    plt.matshow(spx.maskPixels())
-    plt.show()
-    plt.matshow(spx.thresholdPixels())
-    plt.show()  
+    # plt.matshow(spx.maskPixels()[::-1,:])
+    # plt.show()
+    # plt.matshow(spx.thresholdPixels()[::-1,:])
+    # plt.show()  
+    print(spx.maskPixels().max())
+    thresh = spx.thresholdPixels()
+    print('MAX',np.max(thresh))
+    print('MEAN',np.mean(thresh))
+    print('STDDEV',np.std(thresh))
 
+    
+    # plt.hist(thresh.flatten(),bins=16,range=[0,15])
+    # plt.show()
 
 if __name__=="__main__":
     main()
