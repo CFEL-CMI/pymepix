@@ -13,6 +13,7 @@ from .packetprocessor import PacketProcessor
 from .filestorage import FileStorage
 from .processing.centroiding import TimepixCentroid
 import os
+from config.sophyconfig import SophyConfig
 class TimePixAcq(object):
 
 
@@ -121,6 +122,16 @@ class TimePixAcq(object):
         #Enable FPGA decoding of counters
         self._spidr.enableDecoders(True)
         self._spidr.resetTimers()
+
+
+    def configure(self,config):
+        self._device = 
+
+    def loadSophyConfig(self,filename):
+        spx = SophyConfig(filename)
+
+
+
 
 
     def pauseTimer(self):
