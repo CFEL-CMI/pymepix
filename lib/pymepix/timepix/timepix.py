@@ -1,0 +1,2 @@
+class Timepix(object):
+    pass
