@@ -31,6 +31,17 @@ class SpidrDevice(object):
 
     @property
     def deviceId(self):
+        """Returns unique device Id
+
+        Parameters
+        ----------
+        spidr_ctrl: :class:`SpidrController`
+            SPIDR controller object the device belongs to
+        device_num:
+            Device index from SPIDR (Starts from 1)
+
+
+        """        
         return self._ctrl.requestGetInt(SpidrCmds.CMD_GET_DEVICEID,self._dev_num)
 
 
