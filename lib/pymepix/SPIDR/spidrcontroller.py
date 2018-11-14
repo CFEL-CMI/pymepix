@@ -837,6 +837,7 @@ class SPIDRController(list):
     
     @property
     def shutterCounter(self):
+
         return self.requestGetInt(SpidrCmds.CMD_GET_SHUTTERCNTR,0)
 
     def restartTimers(self):
@@ -907,7 +908,33 @@ class SPIDRController(list):
         self.requestSetInts(SpidrCmds.CMD_SET_SPIDRREG,0,[addr,value])
 
 
-    def request(self,cmd,dev_nr,message_length,expected_bytes):
+    def request(self,cmd,dev_nr,message_length,expected_bytes=0):
+        """Sends a command and (may) receive a reply
+
+        Parameters
+        -----------
+        cmd: int
+            Command to send, :class:`SpidrCmds` contains members that can be used 
+        dev_nr: int
+            Device to send the request to. 0 is SPIDR and device number n is n+1
+        message_length: int
+            Length of the message in bytes
+        expected_bytes: int
+            Length of expected reply from request (if any) (Default: 0)
+        
+
+        Returns
+        -----------
+        :obj:`numpy.array` of :obj:`int` or :obj:`None`:
+            Returns a numpy array of ints if reply expected, otherwise None
+
+
+        Raises
+        ----------
+        :class:`PymePixException`
+            Communication error
+
+        """
         with self._request_lock:
             self._req_buffer[0] = socket.htonl(cmd)
             self._req_buffer[1] = socket.htonl(message_length)
@@ -1024,7 +1051,7 @@ class SPIDRController(list):
 
 
 def main():
-    #import cv2
+    import cv2
     import matplotlib.pyplot as plt
     spidr = SPIDRController(('192.168.1.10',50000))
     print('Local temp: {} C'.format(spidr.localTemperature))
@@ -1040,8 +1067,9 @@ def main():
     print ('Pressure: ',spidr.pressure, 'mbar')
     print ('Humidity: ',spidr.humidity,'%')
     print ('Temperature: ',spidr.localTemperature,' C')
-    spidr.resetDevices()
-    spidr.reinitDevices()
+    print('Device and Ports', spidr.DeviceAndPorts)
+    # spidr.resetDevices()
+    # spidr.reinitDevices()
     print (spidr[0].ipAddrSrc)
     print (spidr[0].ipAddrDest)
     print (spidr[0].devicePort)
@@ -1054,18 +1082,18 @@ def main():
     # print ('Link COunts : ',spidr.linkCounts)
 
 
-    # image = cv2.imread('images.png', cv2.IMREAD_GRAYSCALE)
-    # res_im = cv2.resize(image,(256,256))
-    # res_im = res_im/256
-    # res_im *= 16
-    thres = np.zeros(shape=(256,256),dtype=np.uint8)
-    thres[::2,::2]=1
-    spidr[0].setPixelMask(thres)
+    image = cv2.imread('/Users/alrefaie/Downloads/Unknown.jpg', cv2.IMREAD_GRAYSCALE)
+    res_im = cv2.resize(image,(256,256))
+    thresh = res_im.astype(float)/255.0
+    thresh *= 16
+    #thres = np.zeros(shape=(256,256),dtype=np.uint8)
+    #thres[::2,::2]=1
+    spidr[0].setPixelThreshold(thresh.astype(np.uint8))
+    
     spidr[0].uploadPixelConfig(True,1)
+    spidr[0].setPixelThreshold(np.zeros(shape=(256,256),dtype=np.uint8))
     spidr[0].getPixelConfig()
     # print(spidr.vddNow)
-    plt.matshow(spidr[0].currentPixelConfig)
-    plt.show()
 
 if __name__=="__main__":
     main()
