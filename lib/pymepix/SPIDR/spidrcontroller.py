@@ -49,7 +49,7 @@ class SPIDRController(Logger):
     def __init__(self,dst_ip_port,src_ip_port=('192.168.1.1',0)):
         Logger.__init__(self,SPIDRController.__name__)
 
-        self.info('Connecting to {}:{}',*dst_ip_port)
+        self.info('Connecting to {}:{}'.format(*dst_ip_port))
 
         self._sock = socket.create_connection(dst_ip_port,source_address=src_ip_port)
         self._request_lock = threading.Lock()
@@ -922,8 +922,8 @@ class SPIDRController(Logger):
 
         Parameters
         -----------
-        cmd: int
-            Command to send, :class:`SpidrCmds` contains members that can be used 
+        cmd: :class:`SpidrCmds`
+            Command to send
         dev_nr: int
             Device to send the request to. 0 is SPIDR and device number n is n+1
         message_length: int
@@ -945,6 +945,7 @@ class SPIDRController(Logger):
 
         """
         with self._request_lock:
+            self.debug('Command: {}, Device Id: {} Message Length: {} Expected Reply: {}'.format(SpidrCmds(cmd).name,dev_nr,message_length,expected_bytes))
             self._req_buffer[0] = socket.htonl(cmd)
             self._req_buffer[1] = socket.htonl(message_length)
             self._req_buffer[2] = 0
@@ -1060,6 +1061,8 @@ class SPIDRController(Logger):
 
 
 def main():
+    import logging
+    logging.basicConfig(level=logging.INFO)
 
     spidr = SPIDRController(('192.168.1.10',50000))
     print('Local temp: {} C'.format(spidr.localTemperature))
