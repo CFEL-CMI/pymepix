@@ -1,15 +1,5 @@
-pymepix.timepix package
-=======================
-
-Submodules
-----------
-
-.. toctree::
-
-   pymepix.timepix.timepix
-
-Module contents
----------------
+pymepix.timepix module
+======================
 
 .. automodule:: pymepix.timepix
     :members:

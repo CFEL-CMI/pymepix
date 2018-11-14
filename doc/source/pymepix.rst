@@ -7,7 +7,17 @@ Subpackages
 .. toctree::
 
     pymepix.SPIDR
-    pymepix.timepix
+    pymepix.config
+    pymepix.core
+    pymepix.processing
+
+Submodules
+----------
+
+.. toctree::
+
+   pymepix.timepix
+   pymepix.timepixdevice
 
 Module contents
 ---------------
