@@ -2,7 +2,8 @@ import weakref
 from .spidrcmds import SpidrCmds
 import numpy as np
 from .spidrdefs import SpidrRegs
-class SpidrDevice(object):
+from pymepix.core.log import Logger
+class SpidrDevice(Logger):
     """Object that interfaces with a specific device (Timepix/Medipix) connect to SPIDR
 
     This object handles communication and management of a specific device. There is no need
@@ -20,8 +21,12 @@ class SpidrDevice(object):
     """
     
     def __init__(self,spidr_ctrl,device_num):
+        Logger.__init__(self,SpidrDevice.__name__)
         self._ctrl = weakref.proxy(spidr_ctrl)
         self._dev_num = device_num
+
+        self.info('Device {} created',self._dev_num)
+
         self._pixel_config = [np.ndarray(shape=(256,256),dtype=np.uint8)]*4
         self._selected_config = self._pixel_config[0]
         #self._cptr = self.columnTestPulseRegister
