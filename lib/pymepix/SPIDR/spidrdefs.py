@@ -1,5 +1,5 @@
 """Module that contains constants that can be passed into spidr"""
-from enum import Enum
+from enum import Enum,IntEnum
 
 class SpidrReadoutSpeed(Enum):
     HighSpeed = 0x89ABCDEF #High speed magic number
@@ -7,7 +7,7 @@ class SpidrReadoutSpeed(Enum):
     Default = 0 #Use default readout speed
 
 
-class SpidrRegs(object):
+class SpidrRegs(IntEnum):
     SPIDR_CPU2TPX_WR_I           =0x01C8
     SPIDR_SHUTTERTRIG_CTRL_I     =0x0290
     SPIDR_SHUTTERTRIG_CNT_I      =0x0294
