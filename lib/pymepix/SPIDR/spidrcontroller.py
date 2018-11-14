@@ -6,8 +6,9 @@ from .error import PymePixException
 from .spidrcmds import SpidrCmds
 from .spidrdevice import SpidrDevice
 from .spidrdefs import SpidrRegs,SpidrShutterMode
+from pymepix.core.log import Logger
 import threading
-class SPIDRController(list):
+class SPIDRController(Logger):
     """Object that interfaces over ethernet with the SPIDR board
 
     This object interfaces with the spidr board through TCP and is used to send commands and receive data.
@@ -46,7 +47,9 @@ class SPIDRController(list):
 
     """
     def __init__(self,dst_ip_port,src_ip_port=('192.168.1.1',0)):
+        Logger.__init__(self,SPIDRController.__name__)
 
+        self.info('Connecting to {}:{}',*dst_ip_port)
 
         self._sock = socket.create_connection(dst_ip_port,source_address=src_ip_port)
         self._request_lock = threading.Lock()
@@ -58,15 +61,21 @@ class SPIDRController(list):
         self._vec_ntohl = np.vectorize(self.convertNtohl)
 
         self._pixel_config = np.ndarray(shape=(256,256),dtype=np.uint8)
-
+        self._devices = []
         self._initDevices()
         
+        
+
+    def __getitem__(self, key):
+        return self._devices[key]
+
+
     def _initDevices(self):
         
         count = self.deviceCount
 
         for x in range(count):
-            self.append(SpidrDevice(self,x))
+            self._devices.append(SpidrDevice(self,x))
         
     def resetModule(self,readout_speed):
         """Resets the SPIDR board and sets a new readout speed
@@ -1051,8 +1060,7 @@ class SPIDRController(list):
 
 
 def main():
-    import cv2
-    import matplotlib.pyplot as plt
+
     spidr = SPIDRController(('192.168.1.10',50000))
     print('Local temp: {} C'.format(spidr.localTemperature))
 
@@ -1067,9 +1075,8 @@ def main():
     print ('Pressure: ',spidr.pressure, 'mbar')
     print ('Humidity: ',spidr.humidity,'%')
     print ('Temperature: ',spidr.localTemperature,' C')
-    print('Device and Ports', spidr.DeviceAndPorts)
-    # spidr.resetDevices()
-    # spidr.reinitDevices()
+    spidr.resetDevices()
+    spidr.reinitDevices()
     print (spidr[0].ipAddrSrc)
     print (spidr[0].ipAddrDest)
     print (spidr[0].devicePort)
@@ -1077,23 +1084,7 @@ def main():
     print (spidr[0].headerFilter)
     print(spidr[0].TpPeriodPhase)
     print(spidr.ShutterTriggerFreq)
-    spidr.ShutterTriggerFreq = 2000000
-    print(spidr.ShutterTriggerFreq)
-    # print ('Link COunts : ',spidr.linkCounts)
 
-
-    image = cv2.imread('/Users/alrefaie/Downloads/Unknown.jpg', cv2.IMREAD_GRAYSCALE)
-    res_im = cv2.resize(image,(256,256))
-    thresh = res_im.astype(float)/255.0
-    thresh *= 16
-    #thres = np.zeros(shape=(256,256),dtype=np.uint8)
-    #thres[::2,::2]=1
-    spidr[0].setPixelThreshold(thresh.astype(np.uint8))
-    
-    spidr[0].uploadPixelConfig(True,1)
-    spidr[0].setPixelThreshold(np.zeros(shape=(256,256),dtype=np.uint8))
-    spidr[0].getPixelConfig()
-    # print(spidr.vddNow)
 
 if __name__=="__main__":
     main()
