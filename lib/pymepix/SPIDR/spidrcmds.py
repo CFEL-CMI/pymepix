@@ -1,8 +1,8 @@
 """This module contains a list of all (found) commands for the SPIDR board"""
+from enum import IntEnum
 
 
-
-class SpidrCmds(object):
+class SpidrCmds(IntEnum):
     """A class that packages all the commands under a single name"""
     CMD_NOP                =0x000
 
