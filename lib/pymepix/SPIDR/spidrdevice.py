@@ -3,11 +3,27 @@ from .spidrcmds import SpidrCmds
 import numpy as np
 from .spidrdefs import SpidrRegs
 class SpidrDevice(object):
+    """Object that interfaces with a specific device (Timepix/Medipix) connect to SPIDR
 
+    This object handles communication and management of a specific device. There is no need
+    to create this object directly as :class:`SpidrController` automatically creates it for you
+    and is accessed by its [] getter methods
+
+    Parameters
+    ----------
+    spidr_ctrl: :class:`SpidrController`
+        SPIDR controller object the device belongs to
+    device_num:
+        Device index from SPIDR (Starts from 1)
+
+
+    """
+    
     def __init__(self,spidr_ctrl,device_num):
         self._ctrl = weakref.proxy(spidr_ctrl)
         self._dev_num = device_num
         self._pixel_config = [np.ndarray(shape=(256,256),dtype=np.uint8)]*4
+        self._selected_config = self._pixel_config[0]
         #self._cptr = self.columnTestPulseRegister
         self.resetPixelConfig(all_pixels=True)
 
