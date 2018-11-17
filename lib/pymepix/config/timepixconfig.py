@@ -8,7 +8,9 @@ class TimepixConfig(object):
         pass
         
 
-        
+    def biasVoltage(self):
+        """Returns bias Voltage"""
+        pass
     
     def dacCodes(self):
         """ Returns an iterator with format daccode,value"""

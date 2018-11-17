@@ -78,6 +78,10 @@ class SophyConfig(TimepixConfig):
             dac_codes.append((code,value))
         return dac_codes
 
+    def biasVoltage(self):
+        pass
+
+
 
     def parsePixelConfig(self,zip_file,file_names):
         #First is mask
