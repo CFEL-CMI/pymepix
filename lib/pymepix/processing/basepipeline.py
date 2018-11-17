@@ -1,3 +1,5 @@
+"""Base implementation of objects relating to the processing pipeline"""
+
 from pymepix.core.log import ProcessLogger
 import multiprocessing
 from multiprocessing import Queue
@@ -30,8 +32,8 @@ class BasePipelineObject(multiprocessing.Process,ProcessLogger):
 
     def __init__(self,name,input_queue=None,create_output=True,num_outputs=1,shared_output=None):
         ProcessLogger.__init__(self,name)
-
-        self._input_queue = input_queue
+        multiprocessing.Process.__init__(self)
+        self.input_queue = input_queue
 
 
         self.output_queue =[]
@@ -57,11 +59,54 @@ class BasePipelineObject(multiprocessing.Process,ProcessLogger):
 
     
     def pushOutput(self,data_type,data):
+        """Pushes results to output queue (if available)
         
+
+        Parameters
+        -----------
+        data_type : int
+            Identifier for data type (see :obj:`MeesageType` for types)
+        data : any
+            Results from processing (must be picklable)
+
+        """
+
         for x in self.output_queue:
             x.put( ( data_type,data))
 
     
+    def process(self,data_type=None,data=None):
+        """Main processing function, override this do perform work
+
+        To perform work within the pipeline, a class must override this function.
+        General guidelines include, check for correct data type, and must return
+        None for both if no output is given.
+
+        Returns
+        ---------
+        A datatype identifier for the next in
+
+
+        """
+
+        return None,None
+
+    def run(self):
+
+        while True:
+
+            if self.input_queue is not None:
+                data_type,data = self.input_queue.get()
+
+                output_type,result = self.process(data_type,data)
+
+            else:
+                output_type,result = self.process()
+
+            if output_type is not None and result is not None:
+                self.pushOutput(output_type,result)
+
+            
 
 
 
