@@ -1,4 +1,4 @@
-from SPIDR.spidrdevice import SpidrDevice
+from .SPIDR.spidrdevice import SpidrDevice
 
 class TimepixDevice(object):
     
