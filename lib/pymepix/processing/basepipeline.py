@@ -3,7 +3,7 @@
 from pymepix.core.log import ProcessLogger
 import multiprocessing
 from multiprocessing import Queue
-
+import traceback
 class BasePipelineObject(multiprocessing.Process,ProcessLogger):
     """Base class for integration in a processing pipeline
     
@@ -26,7 +26,14 @@ class BasePipelineObject(multiprocessing.Process,ProcessLogger):
     @classmethod
     def hasOutput(cls):
         """Defines whether this class can output results or not,
-        e.g. Centroiding can output results but file writing classes do not"""
+        e.g. Centroiding can output results but file writing classes do not
+        
+        Returns
+        ---------
+        bool
+            Whether results are generated
+        
+        """
         return True
 
 
@@ -91,20 +98,28 @@ class BasePipelineObject(multiprocessing.Process,ProcessLogger):
 
         return None,None
 
+    def preRun(self):
+        """Function called before main processing loop"""
+        pass
+
     def run(self):
-
+        self.preRun()
         while True:
+            try:
+                if self.input_queue is not None:
+                    data_type,data = self.input_queue.get()
 
-            if self.input_queue is not None:
-                data_type,data = self.input_queue.get()
+                    output_type,result = self.process(data_type,data)
 
-                output_type,result = self.process(data_type,data)
+                else:
+                    output_type,result = self.process()
 
-            else:
-                output_type,result = self.process()
-
-            if output_type is not None and result is not None:
-                self.pushOutput(output_type,result)
+                if output_type is not None and result is not None:
+                    self.pushOutput(output_type,result)
+            except Exception as e:
+                self.error('Exception occured!!!')
+                self.error(e,exc_info=True)
+                break
 
             
 
