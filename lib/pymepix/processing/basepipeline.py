@@ -4,6 +4,8 @@ from pymepix.core.log import ProcessLogger
 import multiprocessing
 from multiprocessing import Queue
 import traceback
+from multiprocessing.sharedctypes import Value
+import time
 class BasePipelineObject(multiprocessing.Process,ProcessLogger):
     """Base class for integration in a processing pipeline
     
@@ -49,8 +51,13 @@ class BasePipelineObject(multiprocessing.Process,ProcessLogger):
             for x in range(num_outputs):
                 self.output_queue.append(Queue())
         elif shared_output is not None:
-            self.output_queue.append(shared_output)
+            if type(shared_output) is list:
+                self.output_queue.extend(shared_output)
+            else:
+                self.output_queue.append(shared_output)
         
+        self._enable = Value('I',1)
+      
     
     @property
     def outputQueues(self):
@@ -64,6 +71,25 @@ class BasePipelineObject(multiprocessing.Process,ProcessLogger):
         """
         return self.output_queue
 
+
+    @property
+    def enable(self):
+        """Enables processing 
+        
+        Determines wheter the class will perform processing. If there are objects ahead of it then they will
+        stop recieving data
+        if an input queue is required then it will get from the queue before checking processing
+        This is done to prevent the qwueue from growing when a process behind it is still working
+        
+
+
+        """
+        return bool(self._enable.value)
+
+    @enable.setter
+    def enable(self,value):
+        self.debug('Setting enabled flag to {}'.format(value))
+        self._enable.value = int(value)
     
     def pushOutput(self,data_type,data):
         """Pushes results to output queue (if available)
@@ -89,13 +115,11 @@ class BasePipelineObject(multiprocessing.Process,ProcessLogger):
         General guidelines include, check for correct data type, and must return
         None for both if no output is given.
 
-        Returns
-        ---------
-        A datatype identifier for the next in
 
 
         """
-
+        self.debug('I AM PROCESSING')
+        time.sleep(0.1)
         return None,None
 
     def preRun(self):
@@ -105,16 +129,25 @@ class BasePipelineObject(multiprocessing.Process,ProcessLogger):
     def run(self):
         self.preRun()
         while True:
+            enabled = self.enable
             try:
                 if self.input_queue is not None:
-                    data_type,data = self.input_queue.get()
-
-                    output_type,result = self.process(data_type,data)
+                    value = self.input_queue.get()
+                    
+                    if value is None:
+                        #Put it back in the queue and leave
+                        self.input_queue.put(None)
+                        break
+                    data_type,data = value
+                    
+                    if enabled:
+                        output_type,result = self.process(data_type,data)
 
                 else:
-                    output_type,result = self.process()
+                    if enabled:
+                        output_type,result = self.process()
 
-                if output_type is not None and result is not None:
+                if output_type is not None and result is not None and enabled:
                     self.pushOutput(output_type,result)
             except Exception as e:
                 self.error('Exception occured!!!')
@@ -124,4 +157,22 @@ class BasePipelineObject(multiprocessing.Process,ProcessLogger):
             
 
 
+def main():
+    import logging
+    import time
+    #Create the logger
+    logging.basicConfig(level=logging.DEBUG,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
+    proc = BasePipelineObject('Base')
+    proc.start()
+    time.sleep(2.0)
+
+    proc.enable = False
+    logging.info('DISABLED')
+    time.sleep(2.0)
+    proc.terminate()
+    proc.join()
+
+
+if __name__ == "__main__":
+    main()
