@@ -12,7 +12,10 @@ class MessageType(IntEnum):
     """Event Data"""
     CentroidData = 3
     """Centroided Data"""
-
+    OpenFileCommand = 4
+    """Open File message"""
+    CloseFileCommand = 5
+    """Close File Message"""
 
 
 
