@@ -23,8 +23,9 @@ class PacketProcessor(BasePipelineObject):
 
     """
 
-    def __init__(self, input_queue,handle_events=False, position_offset=(0,0), orientation=PixelOrientation.Up,create_output=True, num_outputs=1):
-        BasePipelineObject.__init__(self,'PacketProcesser',input_queue=input_queue,create_output=create_output,num_outputs=num_outputs)
+    def __init__(self,input_queue=None,create_output=True,num_outputs=1,shared_output=None,
+                    handle_events=False, position_offset=(0,0), orientation=PixelOrientation.Up):
+        BasePipelineObject.__init__(self,PacketProcessor.__name__,input_queue=input_queue,create_output=create_output,num_outputs=num_outputs)
 
         self.clearBuffers()
         self._orientation = orientation
@@ -180,9 +181,6 @@ class PacketProcessor(BasePipelineObject):
             return 255-col,255-row
         elif self._orientation is PixelOrientation.Right:
             return 255-row,col            
-
-
-
 
     def process_pixels(self,pixdata,longtime):
 
