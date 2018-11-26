@@ -32,7 +32,7 @@ class UdpSampler(BasePipelineObject):
         """Establishes a UDP connection to spidr"""
         self._sock = socket.socket(socket.AF_INET, # Internet
                             socket.SOCK_DGRAM) # UDP
-
+        self._sock.settimeout(1.0)
         self.info('Establishing connection to : {}'.format(address))
         self._sock.bind(address)
     
@@ -43,8 +43,12 @@ class UdpSampler(BasePipelineObject):
     def process(self,data_type=None,data=None):
 
         start = time.time()
-        raw_packet = self._sock.recv(16384) # buffer size is 1024 bytes
-
+        #self.debug('Reading')
+        try:
+            raw_packet = self._sock.recv(16384) # buffer size is 1024 bytes
+        except socket.timeout:
+            return None,None
+        #self.debug('Read {}'.format(raw_packet))
         if self._packet_buffer is None:
             self._packet_buffer = raw_packet
         else:
