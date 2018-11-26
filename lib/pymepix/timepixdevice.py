@@ -17,6 +17,7 @@ class TimepixDevice(Logger):
 
 
     def update_timer(self):
+        """Heartbeat thread"""
         self.info('Heartbeat thread starting')
         while self._run_timer:
             self._timer_lsb,self._timer_msb = self._device.timer
@@ -55,6 +56,7 @@ class TimepixDevice(Logger):
         self._timer_thread.daemon = True
         self._timer_thread.start()
 
+        self._acq_running = False
 
     def loadSophyConfig(self,sophyFile):
         """Loads dac settings and pixel setting from a sophy (.spx) file
@@ -81,6 +83,35 @@ class TimepixDevice(Logger):
 
         #print(self.thresholdMask)
 
+    def setupDevice(self):
+        """Sets up valid paramters for acquisition
+
+        This will be manual when other acqusiiton parameters are working
+
+        """
+        self.debug('Setting up acqusition')
+        self.polarity = Polarity.Positive
+        self.debug('Polarity set to {}'.format(Polarity(self.polarity)))
+        self.operationMode = OperationMode.ToAandToT
+        self.debug('OperationMode set to {}'.format(OperationMode(self.operationMode)))
+        self.grayCounter = GrayCounter.Enable
+        self.debug('GrayCounter set to {}'.format(GrayCounter(self.grayCounter)))
+        self.superPixel = SuperPixel.Enable
+        self.debug('SuperPixel set to {}'.format(SuperPixel(self.superPixel)))
+        pll_cfg = 0x01E | 0x100
+        self._device.pllConfig = pll_cfg
+        #self._device.setTpPeriodPhase(10,0)
+        #self._device.tpNumber = 1
+        # self._device.columnTestPulseRegister
+    @property
+    def acquisition(self):
+        return self._acquisition_pipeline
+    
+    @acquisition.setter
+    def acquisition(self,value):
+        self._acquisition_pipeline = value
+
+
     def devIdToString(self):
         """Converts device ID into readable string
 
@@ -99,6 +130,7 @@ class TimepixDevice(Logger):
 
 
     def setEthernetFilter(self,eth_filter):
+        """Sets the packet filter, usually set to 0xFFFF to all all packets"""
         eth_mask, cpu_mask = self._device.headerFilter
         eth_mask = eth_filter
         self._device.setHeaderFilter(eth_mask,cpu_mask)
@@ -106,11 +138,26 @@ class TimepixDevice(Logger):
         self.info('Dev: {} eth_mask :{:8X} cpu_mask: {:8X}'.format(self._device.deviceId,eth_mask,cpu_mask))
 
     def resetPixels(self):
+        """Clears pixel configuration"""
         self._device.resetPixels()
 
 
     @property
     def thresholdMask(self):
+        """Threshold mask set for timepix device
+
+        Parameters
+        ----------
+        value : :obj:`numpy.array` of :obj:`int`
+            256x256 uint8 threshold mask to set locally
+            
+
+        Returns
+        -----------
+        :obj:`numpy.array` of :obj:`int` or :obj:`None`:
+            Locally stored threshold mask matrix
+
+        """
         #self._device.getPixelConfig()
         pixel_config = self._device.currentPixelConfig
         return (pixel_config >> 1) &0x1E
@@ -121,6 +168,21 @@ class TimepixDevice(Logger):
     
     @property
     def pixelMask(self):
+        """Pixel mask set for timepix device
+
+        Parameters
+        ----------
+        value : :obj:`numpy.array` of :obj:`int`
+            256x256 uint8 threshold mask to set locally
+            
+
+        Returns
+        -----------
+        :obj:`numpy.array` of :obj:`int` or :obj:`None`:
+            Locally stored pixel mask matrix
+        
+
+        """
         #self._device.getPixelConfig()
         pixel_config = self._device.currentPixelConfig
         return pixel_config&0x1
@@ -130,6 +192,7 @@ class TimepixDevice(Logger):
         self._device.setPixelMask(mask.astype(np.uint8))
 
     def uploadPixels(self):
+        """Uploads local pixel configuration to timepix"""
         try:
             self._device.uploadPixelConfig()
         except PymePixException as e:
@@ -139,7 +202,24 @@ class TimepixDevice(Logger):
                 raise
         
     def refreshPixels(self):
+        """Loads timepix pixel configuration to local array"""
         self._device.getPixelConfig()
+
+
+    def start(self):
+        self.stop()
+        self.info('Beginning acquisition')
+        if self._acquisition_pipeline is not None:
+            self._acquisition_pipeline.start()
+            self._acq_running = True
+
+    def stop(self):
+        
+        if self._acq_running:
+            self.info('Stopping acquisition')
+            if self._acquisition_pipeline is not None:
+                self._acquisition_pipeline.stop()
+            self._acq_running = False
 
     #-----General Configuration-------
     @property
@@ -433,14 +513,42 @@ class TimepixDevice(Logger):
 def main():
     import logging
     from .SPIDR.spidrcontroller import SPIDRController
-    logging.basicConfig(level=logging.DEBUG)
+    from .SPIDR.spidrdefs import SpidrShutterMode
+    from multiprocessing import Queue
+    logging.basicConfig(level=logging.INFO)
+    end_queue = Queue()
+    def get_queue_thread(queue):
+        while True:
+            value = queue.get()
+            print(value)
+            if value is None:
+                break
+    t = threading.Thread(target=get_queue_thread,args=(end_queue,))
+    t.daemon = True
+    t.start()
+
 
     spidr = SPIDRController(('192.168.1.10',50000))
 
-    timepix = TimepixDevice(spidr[0],None)
+    timepix = TimepixDevice(spidr[0],end_queue)
     timepix.loadSophyConfig('/Users/alrefaie/Documents/repos/libtimepix/config/eq-norm-50V.spx')
-    print(timepix.devIdToString())
+    
+    #spidr.shutterTriggerMode = SpidrShutterMode.Auto
+    spidr.disableExternalRefClock()
+    TdcEnable = 0x0000
+    spidr.setSpidrReg(0x2B8,TdcEnable)
+    spidr.enableDecoders(True)
+    spidr.resetTimers()
+    spidr.restartTimers()
 
+    spidr.datadrivenReadout()
+    timepix.setupDevice()
 
+    spidr.openShutter()
+    timepix.start()
+    time.sleep(4.0)
+    timepix.stop()
+    logging.info('DONE')
+    spidr.closeShutter()
 if __name__=="__main__":
     main()
