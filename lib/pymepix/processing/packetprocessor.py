@@ -23,9 +23,9 @@ class PacketProcessor(BasePipelineObject):
 
     """
 
-    def __init__(self,input_queue=None,create_output=True,num_outputs=1,shared_output=None,
-                    handle_events=False, position_offset=(0,0), orientation=PixelOrientation.Up):
-        BasePipelineObject.__init__(self,PacketProcessor.__name__,input_queue=input_queue,create_output=create_output,num_outputs=num_outputs)
+    def __init__(self,
+                    handle_events=False, position_offset=(0,0), orientation=PixelOrientation.Up,input_queue=None,create_output=True,num_outputs=1,shared_output=None):
+        BasePipelineObject.__init__(self,PacketProcessor.__name__,input_queue=input_queue,create_output=create_output,num_outputs=num_outputs,shared_output=shared_output)
 
         self.clearBuffers()
         self._orientation = orientation
@@ -90,6 +90,7 @@ class PacketProcessor(BasePipelineObject):
             if self._x is not None:
                 pixel_data = self.getBuffers()
                 self.clearBuffers()
+                #self.debug('Putting pixel, {}'.format(pixel_data))
                 return MessageType.PixelData,pixel_data
             else:
                 return None,None
