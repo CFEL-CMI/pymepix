@@ -25,7 +25,7 @@ class SpidrDevice(Logger):
         self._ctrl = weakref.proxy(spidr_ctrl)
         self._dev_num = device_num
 
-        self.info('Device {} created',self._dev_num)
+        self.info('Device {} created'.format(self._dev_num))
 
         self._pixel_config = [np.ndarray(shape=(256,256),dtype=np.uint8)]*4
         self._selected_config = self._pixel_config[0]
