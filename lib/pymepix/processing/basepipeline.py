@@ -46,16 +46,18 @@ class BasePipelineObject(multiprocessing.Process,ProcessLogger):
 
 
         self.output_queue =[]
-        if create_output:
-                
-            for x in range(num_outputs):
-                self.output_queue.append(Queue())
-        elif shared_output is not None:
+
+        if shared_output is not None:
+            self.debug('Queue is shared')
             if type(shared_output) is list:
+                self.debug('Queue {} is a list',)
                 self.output_queue.extend(shared_output)
             else:
                 self.output_queue.append(shared_output)
-        
+        elif create_output:
+            self.debug('Creating Queue')
+            for x in range(num_outputs):
+                self.output_queue.append(Queue())        
         self._enable = Value('I',1)
       
     
@@ -103,7 +105,7 @@ class BasePipelineObject(multiprocessing.Process,ProcessLogger):
             Results from processing (must be picklable)
 
         """
-
+        #self.debug('Pushing output {} {} to {}'.format(data_type,data,self.output_queue))
         for x in self.output_queue:
             x.put( ( data_type,data))
 
@@ -132,21 +134,24 @@ class BasePipelineObject(multiprocessing.Process,ProcessLogger):
             enabled = self.enable
             try:
                 if self.input_queue is not None:
+                    self.debug('Getting value from input queue')
                     value = self.input_queue.get()
                     
                     if value is None:
+                        self.debug('Value is None')
                         #Put it back in the queue and leave
                         self.input_queue.put(None)
                         break
                     data_type,data = value
-                    
+
                     if enabled:
                         output_type,result = self.process(data_type,data)
-
                 else:
                     if enabled:
                         output_type,result = self.process()
-
+                    else:
+                        self.debug('I AM LEAVING')
+                        break
                 if output_type is not None and result is not None and enabled:
                     self.pushOutput(output_type,result)
             except Exception as e:
@@ -154,7 +159,7 @@ class BasePipelineObject(multiprocessing.Process,ProcessLogger):
                 self.error(e,exc_info=True)
                 break
 
-            
+        self.info('Job complete')
 
 
 def main():
