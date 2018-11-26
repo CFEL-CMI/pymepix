@@ -1,14 +1,31 @@
 import numpy as np
 from .SPIDR.spidrdevice import SpidrDevice
+from .SPIDR.error import PymePixException
 from.timepixdef import *
 from .config.sophyconfig import SophyConfig
 from .core.log import Logger
+from .processing.acquisition import PixelPipeline
+from multiprocessing.sharedctypes import Value
+import time
+import threading
 class TimepixDevice(Logger):
     """ Provides high level control of a timepix/medipix object
 
 
 
     """
+
+
+    def update_timer(self):
+        self.info('Heartbeat thread starting')
+        while self._run_timer:
+            self._timer_lsb,self._timer_msb = self._device.timer
+            self._timer = (self._timer_msb & 0xFFFFFFFF)<<32 |(self._timer_lsb & 0xFFFFFFFF)
+            self._longtime.value = self._timer               
+            time.sleep(1.0)
+            while self._pause_timer and self._run_timer:
+                time.sleep(1.0)
+                continue
 
 
     def __init__(self,spidr_device,data_queue):
@@ -19,21 +36,110 @@ class TimepixDevice(Logger):
         self._udp_address = (self._device.ipAddrDest,self._device.serverPort)
         self.info('UDP Address is {}:{}'.format(*self._udp_address))
         self._pixel_offset_coords = (0,0)
+        self._device.reset()
+        self._device.reinitDevice()
+
+        self._longtime = Value('I',0)
+
+        self._acquisition_pipeline=PixelPipeline(self._data_queue,self._udp_address,self._longtime)
+
+        self._event_callback=None
+
+        self._run_timer = True
+        self._pause_timer = False
+
+        self.setEthernetFilter(0xFFFF)
+
+        #Start the timer thread
+        self._timer_thread = threading.Thread(target=self.update_timer)
+        self._timer_thread.daemon = True
+        self._timer_thread.start()
 
 
     def loadSophyConfig(self,sophyFile):
+        """Loads dac settings and pixel setting from a sophy (.spx) file
+
+        Parameters
+        -------------
+        sophyFile: str
+            filename to SoPhy spx file
+        
+        """
+        
         sophyconfig = SophyConfig(sophyFile)
+        
         for code,value in sophyconfig.dacCodes():
+            self.debug('Setting DAC {},{}'.format(code,value))
             self._device.setDac(code,value)
-            
-    
+            #time.sleep(0.5)
+        
+        self.thresholdMask = sophyconfig.thresholdPixels()
+        
+        self.pixelMask = sophyconfig.maskPixels()
+        
+        self.uploadPixels()
+
+        #print(self.thresholdMask)
+
     def devIdToString(self):
+        """Converts device ID into readable string
+
+        Returns
+        --------
+        str
+            Device string identifier
+        
+        """
         devId = self._device.deviceId
         waferno = (devId >> 8) & 0xFFF
         id_y = (devId >> 4) & 0xF
         id_x = (devId >> 0) & 0xF
         return "W{:04d}_{}{:02d}".format(waferno,chr(ord('A')+id_x-1),id_y)
 
+
+
+    def setEthernetFilter(self,eth_filter):
+        eth_mask, cpu_mask = self._device.headerFilter
+        eth_mask = eth_filter
+        self._device.setHeaderFilter(eth_mask,cpu_mask)
+        eth_mask, cpu_mask = self._device.headerFilter
+        self.info('Dev: {} eth_mask :{:8X} cpu_mask: {:8X}'.format(self._device.deviceId,eth_mask,cpu_mask))
+
+    def resetPixels(self):
+        self._device.resetPixels()
+
+
+    @property
+    def thresholdMask(self):
+        #self._device.getPixelConfig()
+        pixel_config = self._device.currentPixelConfig
+        return (pixel_config >> 1) &0x1E
+    
+    @thresholdMask.setter
+    def thresholdMask(self,threshold):
+        self._device.setPixelThreshold(threshold.astype(np.uint8))
+    
+    @property
+    def pixelMask(self):
+        #self._device.getPixelConfig()
+        pixel_config = self._device.currentPixelConfig
+        return pixel_config&0x1
+
+    @pixelMask.setter
+    def pixelMask(self,mask):
+        self._device.setPixelMask(mask.astype(np.uint8))
+
+    def uploadPixels(self):
+        try:
+            self._device.uploadPixelConfig()
+        except PymePixException as e:
+            if 'ERR_UNEXP' in e.message:
+                pass
+            else:
+                raise
+        
+    def refreshPixels(self):
+        self._device.getPixelConfig()
 
     #-----General Configuration-------
     @property
@@ -115,27 +221,6 @@ class TimepixDevice(Logger):
     def timeOfArrivalClock(self,value):
         gen_config = self._device.genConfig 
         self._device.genConfig = (gen_config & ~TimeofArrivalClock.Mask) | (value) 
-
-    #------------Timepix pixel configuration-------------------
-    @property
-    def thresholdMask(self):
-        #self._device.getPixelConfig()
-        pixel_config = self._device.currentPixelConfig
-        return (pixel_config >> 1) &0x1E
-    
-    @thresholdMask.setter
-    def thresholdMask(self,threshold):
-        self._device.setPixelThreshold(threshold.astype(np.uint8))
-    
-    @property
-    def pixelMask(self):
-        #self._device.getPixelConfig()
-        pixel_config = self._device.currentPixelConfig
-        return pixel_config&0x1
-
-    @pixelMask.setter
-    def pixelMask(self,mask):
-        self._device.setPixelMask(mask.astype(np.uint8))
 
 
     @property
@@ -348,11 +433,12 @@ class TimepixDevice(Logger):
 def main():
     import logging
     from .SPIDR.spidrcontroller import SPIDRController
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
 
     spidr = SPIDRController(('192.168.1.10',50000))
 
     timepix = TimepixDevice(spidr[0],None)
+    timepix.loadSophyConfig('/Users/alrefaie/Documents/repos/libtimepix/config/eq-norm-50V.spx')
     print(timepix.devIdToString())
 
 
