@@ -1,4 +1,4 @@
-from .basepipeline import AcquisitionPipeline
+from .baseacquisition import AcquisitionPipeline
 from .packetprocessor import PacketProcessor
 from .udpsampler import UdpSampler
 
