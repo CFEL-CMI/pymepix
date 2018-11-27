@@ -78,11 +78,21 @@ class BasePipelineObject(multiprocessing.Process,ProcessLogger):
     def enable(self):
         """Enables processing 
         
-        Determines wheter the class will perform processing. If there are objects ahead of it then they will
-        stop recieving data
+        Determines wheter the class will perform processing, this has the result of signalling the process to terminate. 
+        If there are objects ahead of it then they will stop recieving data
         if an input queue is required then it will get from the queue before checking processing
         This is done to prevent the qwueue from growing when a process behind it is still working
         
+        Parameters
+        -----------
+        value : bool
+            Enable value
+        
+
+        Returns
+        -----------
+        bool:
+            Whether the process is enabled or not
 
 
         """
@@ -107,7 +117,8 @@ class BasePipelineObject(multiprocessing.Process,ProcessLogger):
         """
         #self.debug('Pushing output {} {} to {}'.format(data_type,data,self.output_queue))
         for x in self.output_queue:
-            x.put( ( data_type,data))
+            if x is not None:
+                x.put( ( data_type,data))
 
     
     def process(self,data_type=None,data=None):
@@ -125,7 +136,7 @@ class BasePipelineObject(multiprocessing.Process,ProcessLogger):
         return None,None
 
     def preRun(self):
-        """Function called before main processing loop"""
+        """Function called before main processing loop, override to """
         pass
 
     def run(self):

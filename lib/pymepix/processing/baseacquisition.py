@@ -1,8 +1,23 @@
+"""Module deals with managing processing objects to form a data pipeline"""
+
 from pymepix.core.log import Logger
 from multiprocessing import Queue
 
 class AcquisitionStage(Logger):
-    """Defines a single acquisition stage"""
+    """Defines a single acquisition stage
+    
+    Usually not created directly. Instead created by :class:`AcquisitionPipeline`
+    Represent a single pipeline stage and handles management of queues and message passing
+    as well as creation and destruction of processing objects.
+
+    Processes are not created until build() is called and do not run until start() is called
+
+    Parameters
+    ------------
+    stage: int
+        Initial position in the pipeline, lower stages are executed first
+    
+    """
 
     def __init__(self,stage):
         Logger.__init__(self,'AcqStage-{}'.format(stage))
@@ -10,7 +25,7 @@ class AcquisitionStage(Logger):
 
         self._pipeline_objects = []
         self._pipeline_klass = None
-        self._num_processes  = 0
+        self._num_processes  = 1
         self._running = False
         self._input_queue = None
         self._output_queue = None
@@ -19,24 +34,60 @@ class AcquisitionStage(Logger):
         self._kwargs = {}
     @property
     def stage(self):
+        """Current position in the pipeline"""
         return self._stage_number
     @stage.setter
     def stage(self,value):
         self._stage_number = value
+
+    @property
+    def numProcess(self):
+        """Number of processes to spawn when built
+        
+        Parameters
+        ----------
+        value: int
+            Number of processes to spawn when acquisition starts
+        
+        Returns
+        ----------
+        int:
+            Number of processes
+        
+        """
+
+        return self._num_processes
+    
+    @numProcess.setter
+    def numProcess(self,value):
+        self._num_processes = max(1,value)
+
+    
     def configureStage(self,pipeline_klass,*args,**kwargs):
-        if 'num_processes' in kwargs:
-            num_processes = kwargs.pop('num_processes')
-         
-        else:
-            num_processes = 1
+        """Configures the stage with a particular processing class
+
+        Parameters
+        -----------
+        pipeline_klass: :class:`BasePipeline`
+            A pipeline class object
+
+        *args:
+            positional arguments to pass into the class init
+
+        **kwargs:
+            keyward arguments to pass into the class init
+        
+
+        """
 
         self.debug('Assigning stage {} to klass {} with {} processes'.format(self.stage,pipeline_klass,num_processes))
         self._pipeline_klass = pipeline_klass
         
-        self._num_processes = num_processes
 
         self._args =args
         self._kwargs = kwargs
+
+
 
     def build(self,input_queue=None,output_queue=None,file_writer=None):
         self._input_queue = input_queue
@@ -90,7 +141,7 @@ class AcquisitionStage(Logger):
 
 
 class AcquisitionPipeline(Logger):
-    """Class that manages all pipeline objects"""
+    """Class that manages varius stages"""
 
     def __init__(self,name,data_queue):
         Logger.__init__(self,name+' AcqPipeline')
@@ -109,7 +160,7 @@ class AcquisitionPipeline(Logger):
         self._stages.append(stage)
         self._stages = sorted(self._stages,key=lambda x: x.stage)
     def start(self):
-
+        """Starts all stages"""
         #Sort them by stage number
         
         self.info('Starting acquisition')
@@ -143,6 +194,7 @@ class AcquisitionPipeline(Logger):
 
                 
     def stop(self):
+        """Stops all stages"""
         self.info('Stopping acquisition')
         self.debug(self._stages)
         if self._running is True:
