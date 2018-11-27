@@ -20,13 +20,14 @@ class TimepixDevice(Logger):
         """Heartbeat thread"""
         self.info('Heartbeat thread starting')
         while self._run_timer:
+            while self._pause_timer and self._run_timer:
+                time.sleep(1.0)
+                continue
             self._timer_lsb,self._timer_msb = self._device.timer
             self._timer = (self._timer_msb & 0xFFFFFFFF)<<32 |(self._timer_lsb & 0xFFFFFFFF)
             self._longtime.value = self._timer               
             time.sleep(1.0)
-            while self._pause_timer and self._run_timer:
-                time.sleep(1.0)
-                continue
+
 
 
     def __init__(self,spidr_device,data_queue):
@@ -55,7 +56,7 @@ class TimepixDevice(Logger):
         self._timer_thread = threading.Thread(target=self.update_timer)
         self._timer_thread.daemon = True
         self._timer_thread.start()
-
+        self.pauseHeartbeat()
         self._acq_running = False
 
     def loadSophyConfig(self,sophyFile):
@@ -111,6 +112,10 @@ class TimepixDevice(Logger):
     def acquisition(self,value):
         self._acquisition_pipeline = value
 
+    def pauseHeartbeat(self):
+        self._pause_timer = True
+    def resumeHeartbeat(self):
+        self._pause_timer = False
 
     def devIdToString(self):
         """Converts device ID into readable string
@@ -212,6 +217,7 @@ class TimepixDevice(Logger):
     def start(self):
         self.stop()
         self.info('Beginning acquisition')
+        self.resumeHeartbeat()
         if self._acquisition_pipeline is not None:
             self._acquisition_pipeline.start()
             self._acq_running = True
@@ -222,6 +228,7 @@ class TimepixDevice(Logger):
             self.info('Stopping acquisition')
             if self._acquisition_pipeline is not None:
                 self._acquisition_pipeline.stop()
+            self.pauseHeartbeat()
             self._acq_running = False
 
     #-----General Configuration-------
