@@ -1,1 +1,2 @@
-from pymepix.core.log import Logger, ProcessLogger
+from pymepix.pymepix import Pymepix
+from pymepix.timepixdef import *
