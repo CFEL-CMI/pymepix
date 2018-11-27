@@ -22,7 +22,8 @@ class BasePipelineObject(multiprocessing.Process,ProcessLogger):
     shared_output: :obj:`multiprocessing.Queue`, optional
         Data queue to pass results into, useful when multiple processes can put data into the same
         queue (such as results from centroiding). Ignored if create_output is True (Default: None)
-
+    propogate_input: bool
+        Whether the input data should be propgated further down the chain
     """
 
     @classmethod
@@ -39,14 +40,14 @@ class BasePipelineObject(multiprocessing.Process,ProcessLogger):
         return True
 
 
-    def __init__(self,name,input_queue=None,create_output=True,num_outputs=1,shared_output=None):
+    def __init__(self,name,input_queue=None,create_output=True,num_outputs=1,shared_output=None,propogate_input=True):
         ProcessLogger.__init__(self,name)
         multiprocessing.Process.__init__(self)
         self.input_queue = input_queue
 
 
         self.output_queue =[]
-
+        self._propgate_input = propogate_input
         if shared_output is not None:
             self.debug('Queue is shared')
             if type(shared_output) is list:
@@ -157,6 +158,8 @@ class BasePipelineObject(multiprocessing.Process,ProcessLogger):
 
                     if enabled:
                         output_type,result = self.process(data_type,data)
+                        if self._propgate_input:
+                            self.pushOutput(*value)
                 else:
                     if enabled:
                         output_type,result = self.process()
