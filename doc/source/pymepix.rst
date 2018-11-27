@@ -16,7 +16,8 @@ Submodules
 
 .. toctree::
 
-   pymepix.timepix
+   pymepix.pymepix
+   pymepix.timepixdef
    pymepix.timepixdevice
 
 Module contents

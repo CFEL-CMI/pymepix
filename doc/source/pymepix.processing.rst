@@ -6,7 +6,12 @@ Submodules
 
 .. toctree::
 
+   pymepix.processing.acquisition
+   pymepix.processing.baseacquisition
+   pymepix.processing.basepipeline
    pymepix.processing.datatypes
+   pymepix.processing.packetprocessor
+   pymepix.processing.udpsampler
 
 Module contents
 ---------------

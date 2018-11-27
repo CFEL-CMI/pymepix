@@ -1,7 +1,7 @@
-pymepix.timepix module
+pymepix.pymepix module
 ======================
 
-.. automodule:: pymepix.timepix
+.. automodule:: pymepix.pymepix
     :members:
     :undoc-members:
     :show-inheritance:
