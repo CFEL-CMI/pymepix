@@ -84,10 +84,15 @@ class AcquisitionStage(Logger):
         self._pipeline_klass = pipeline_klass
         
 
+        self.setArgs(*args,**kwargs)
+    
+    def setArgs(self,*args,**kwargs):
         self._args =args
         self._kwargs = kwargs
-    
 
+    @property
+    def processes(self):
+        return self._pipeline_objects
 
     def build(self,input_queue=None,output_queue=None,file_writer=None):
         self._input_queue = input_queue
@@ -123,9 +128,9 @@ class AcquisitionStage(Logger):
             self._input_queue.put(None)     
             for idx,p in enumerate(self._pipeline_objects):
                 p.enable = False
-                self.debug('Waiting for process {}'.format(idx))
+                self.info('Waiting for process {}'.format(idx))
                 p.join()
-                self.debug('Process stop complete')
+                self.info('Process stop complete')
             if self._input_queue.get() is not None:
                 self.error('Queue should only contain None!!')
                 raise Exception('Queue contains more data')
@@ -134,7 +139,9 @@ class AcquisitionStage(Logger):
             for p in self._pipeline_objects:
                 p.enable=False
                 self.info('Joining thread {}'.format(p))
-                p.join()
+                p.join(1.0)
+                p.terminate()
+                self.info('Join complete')
         self.info('Stop complete')
         self._pipeline_objects = []
         
@@ -205,6 +212,9 @@ class AcquisitionPipeline(Logger):
             s.start()
         self._running = True
 
+    @property
+    def isRunning(self):
+        return self._running
                 
     def stop(self):
         """Stops all stages"""
