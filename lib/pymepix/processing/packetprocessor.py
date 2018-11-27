@@ -25,7 +25,7 @@ class PacketProcessor(BasePipelineObject):
     """
 
     def __init__(self,
-                    handle_events=False, position_offset=(0,0), orientation=PixelOrientation.Up,input_queue=None,create_output=True,num_outputs=1,shared_output=None):
+                    handle_events=False,event_window=(0.0,10000.0), position_offset=(0,0), orientation=PixelOrientation.Up,input_queue=None,create_output=True,num_outputs=1,shared_output=None):
         BasePipelineObject.__init__(self,PacketProcessor.__name__,input_queue=input_queue,create_output=create_output,num_outputs=num_outputs,shared_output=shared_output)
 
         self.clearBuffers()
@@ -36,9 +36,10 @@ class PacketProcessor(BasePipelineObject):
         self._trigger_counter = 0        
 
         self._handle_events= False
-
-        self._min_event_window = Value('d',0)
-        self._max_event_window = Value('d',100000)
+        min_window=event_window[0]
+        max_window=event_window[1]
+        self._min_event_window = Value('d',min_window)
+        self._max_event_window = Value('d',max_window)
 
     def updateBuffers(self,val_filter):
         self._x = self._x[val_filter]
