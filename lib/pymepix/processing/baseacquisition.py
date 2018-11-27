@@ -80,13 +80,13 @@ class AcquisitionStage(Logger):
 
         """
 
-        self.debug('Assigning stage {} to klass {} with {} processes'.format(self.stage,pipeline_klass,num_processes))
+        self.debug('Assigning stage {} to klass {}'.format(self.stage,pipeline_klass))
         self._pipeline_klass = pipeline_klass
         
 
         self._args =args
         self._kwargs = kwargs
-
+    
 
 
     def build(self,input_queue=None,output_queue=None,file_writer=None):
@@ -159,6 +159,19 @@ class AcquisitionPipeline(Logger):
         stage.configureStage(pipeline_klass,*args,**kwargs)
         self._stages.append(stage)
         self._stages = sorted(self._stages,key=lambda x: x.stage)
+
+    def getStage(self,stage_number):
+        for x in self._stages:
+            if x.stage == stage_number:
+                return x
+        
+        return None
+
+
+    @property
+    def stages(self):
+        return self._stages
+    
     def start(self):
         """Starts all stages"""
         #Sort them by stage number
