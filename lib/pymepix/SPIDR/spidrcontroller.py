@@ -5,7 +5,7 @@ import numpy as np
 from .error import PymePixException
 from .spidrcmds import SpidrCmds
 from .spidrdevice import SpidrDevice
-from .spidrdefs import SpidrRegs,SpidrShutterMode
+from .spidrdefs import SpidrRegs,SpidrShutterMode,SpidrReadoutSpeed
 from pymepix.core.log import Logger
 import threading
 class SPIDRController(Logger):
@@ -61,6 +61,7 @@ class SPIDRController(Logger):
         self._vec_ntohl = np.vectorize(self.convertNtohl)
 
         self._pixel_config = np.ndarray(shape=(256,256),dtype=np.uint8)
+        self.resetModule(SpidrReadoutSpeed.Default)
         self._devices = []
         self._initDevices()
         
@@ -69,6 +70,8 @@ class SPIDRController(Logger):
     def __getitem__(self, key):
         return self._devices[key]
 
+    def __len__(self):
+        return len(self._devices)
 
     def _initDevices(self):
         
@@ -644,7 +647,8 @@ class SPIDRController(Logger):
         if volts < 12: volts = 12
         if volts > 104: volts = 104
         
-        dac_value = ((volts-12)*4095)/(104-12)
+        dac_value = int(((volts-12)*4095)/(104-12))
+        self.info('Setting bias Voltage to {} V (Dac value {})'.format(volts,dac_value))
         self.requestSetInt(SpidrCmds.CMD_SET_BIAS_ADJUST,0,dac_value)
 
 
@@ -950,7 +954,7 @@ class SPIDRController(Logger):
             self._req_buffer[1] = socket.htonl(message_length)
             self._req_buffer[2] = 0
             self._req_buffer[3] = socket.htonl(dev_nr)
-
+            self.debug('Request Buffer: {}'.format(self._req_buffer[0:message_length]))
             self._sock.send(self._req_buffer.tobytes()[0:message_length])
 
             if cmd & SpidrCmds.CMD_NOREPLY: return
@@ -965,6 +969,7 @@ class SPIDRController(Logger):
 
 
             _replyMsg = np.frombuffer(self._reply_buffer,dtype=np.uint32)
+            self.debug('reply message: {}'.format(_replyMsg))
             error = socket.ntohl(int(_replyMsg[2]))
             if error != 0:
                 raise PymePixException(error)
