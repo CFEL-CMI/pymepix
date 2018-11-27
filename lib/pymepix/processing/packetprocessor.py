@@ -4,6 +4,7 @@ from .datatypes import MessageType
 import time
 import numpy as np
 from enum import IntEnum
+from multiprocessing.sharedctypes import Value
 class PixelOrientation(IntEnum):
     """Defines how row and col are intepreted in the output"""
     Up=0
@@ -36,7 +37,8 @@ class PacketProcessor(BasePipelineObject):
 
         self._handle_events= False
 
-
+        self._min_event_window = Value('d',0)
+        self._max_event_window = Value('d',100000)
 
     def updateBuffers(self,val_filter):
         self._x = self._x[val_filter]
@@ -56,6 +58,28 @@ class PacketProcessor(BasePipelineObject):
         self._tot = None
         self._toa = None
         self._triggers = None
+
+
+    @property
+    def minWindow(self):
+        return self._min_event_window.value
+    
+    @minWindow.setter
+    def minWindow(self,value):
+        self._min_event_window.value = value
+
+    @property
+    def maxWindow(self):
+        return self._max_event_window.value
+    
+    @maxWindow.setter
+    def maxWindow(self,value):
+        self._max_event_window.value = value
+
+
+    @property
+    def _eventWindow(self):
+        return self._min_event_window.value,self._max_event_window.value
 
 
 
@@ -116,6 +140,10 @@ class PacketProcessor(BasePipelineObject):
         if start.size ==0:
             return None
 
+
+        min_window,max_window = self._eventWindow
+
+
         trigger_counter= np.arange(self._trigger_counter,self._trigger_counter+start.size,dtype=np.int)
 
         self._trigger_counter = trigger_counter[-1]+1
@@ -139,7 +167,10 @@ class PacketProcessor(BasePipelineObject):
         tof = toa-event_triggers[event_mapping]
         event_number = trigger_counter[event_mapping]
 
-        return event_number,x,y,tof,tot
+        exp_filter = (tof>= min_window) & (tof<=max_window)
+
+
+        return event_number[exp_filter],x[exp_filter],y[exp_filter],tof[exp_filter],tot[exp_filter]
 
 
 
