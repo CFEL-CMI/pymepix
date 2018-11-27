@@ -127,6 +127,9 @@ class TimepixDevice(Logger):
         id_x = (devId >> 0) & 0xF
         return "W{:04d}_{}{:02d}".format(waferno,chr(ord('A')+id_x-1),id_y)
 
+    @property
+    def deviceName(self):
+        return self.devIdToString()
 
 
     def setEthernetFilter(self,eth_filter):
