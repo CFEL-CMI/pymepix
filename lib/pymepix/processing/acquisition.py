@@ -13,9 +13,9 @@ class PixelPipeline(AcquisitionPipeline):
 
         self._use_events = False
 
-        self.addStage(0,UdpSampler,address,longtime,num_processes=1)
-        self.addStage(2,PacketProcessor,num_processes=1)
-
+        self.addStage(0,UdpSampler,address,longtime)
+        
+        self.addStage(2,PacketProcessor,handle_events=False)
 
 
 
