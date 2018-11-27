@@ -180,7 +180,7 @@ def main():
     pymepix[0].loadSophyConfig('/Users/alrefaie/Documents/repos/libtimepix/config/eq-norm-50V.spx')
     pymepix.biasVoltage = 50
     pymepix.startAcq()
-    time.sleep(5.0)
+    time.sleep(2.0)
     pymepix.stopAcq()
 
     while True:
@@ -189,8 +189,16 @@ def main():
         except PollBufferEmpty:
             print('EMPTY')
             break
+
+    pymepix.startAcq()
+    time.sleep(5.0)
+    pymepix.stopAcq()
+    while True:
+        try:
+            print(pymepix.poll())
+        except PollBufferEmpty:
+            print('EMPTY')
+            break
     print('Done')
-
-
 if __name__=="__main__":
     main()
