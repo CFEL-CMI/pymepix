@@ -10,11 +10,20 @@ Getting started
 Installing
 ----------
 
-Installing with pip (platform-independent)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Installing from git source directly (platform-independent)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Taurus can be installed using pip. The following command will automatically
-download and install the latest release of Taurus (see pip --help for options)::
+You can clone pymepix from our main git repository::
 
-       pip install taurus
+    git clone https://<desy-username>@stash.desy.de/scm/cmi/libtimepix.git
+
+Then, just do::
+
+       python setup.py install
+
+
+Dependencies
+------------
+
+The majority of pymepix only depends on numpy. To use centroiding, the sklearn package is required
 
