@@ -23,9 +23,11 @@ class TimepixDevice(Logger):
             while self._pause_timer and self._run_timer:
                 time.sleep(1.0)
                 continue
+
             self._timer_lsb,self._timer_msb = self._device.timer
             self._timer = (self._timer_msb & 0xFFFFFFFF)<<32 |(self._timer_lsb & 0xFFFFFFFF)
             self._longtime.value = self._timer               
+            self.debug('Reading heartbeat LSB: {} MSB: {} TIMER: {} '.format(self._timer_lsb,self._timer_msb,self._timer))
             time.sleep(1.0)
 
 
@@ -43,7 +45,7 @@ class TimepixDevice(Logger):
 
         self._longtime = Value('I',0)
 
-        self._acquisition_pipeline=PixelPipeline(self._data_queue,self._udp_address,self._longtime)
+        self.setupAcquisition(PixelPipeline)
 
         self._event_callback=None
 
@@ -58,6 +60,12 @@ class TimepixDevice(Logger):
         self._timer_thread.start()
         self.pauseHeartbeat()
         self._acq_running = False
+
+
+    def setupAcquisition(self,acquisition_klass,*args,**kwargs):
+        self.info('Setting up acquisition class')
+        self._acquisition_pipeline=acquisition_klass(self._data_queue,self._udp_address,self._longtime,*args,**kwargs)
+
 
     def loadSophyConfig(self,sophyFile):
         """Loads dac settings and pixel setting from a sophy (.spx) file
@@ -107,10 +115,6 @@ class TimepixDevice(Logger):
     @property
     def acquisition(self):
         return self._acquisition_pipeline
-    
-    @acquisition.setter
-    def acquisition(self,value):
-        self._acquisition_pipeline = value
 
     def pauseHeartbeat(self):
         self._pause_timer = True
