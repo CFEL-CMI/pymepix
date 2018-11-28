@@ -104,6 +104,7 @@ class AcquisitionStage(Logger):
         else:
             self.debug('Recieved the queue {}'.format(output_queue))
         self.debug('Building stage {} '.format(self._stage_number))
+        self.info('Creating {} processes'.format(self._num_processes))
         for n in range(self._num_processes):
             
             p = self._pipeline_klass(*self._args,**self._kwargs,input_queue=self._input_queue,shared_output=self._output_queue)
@@ -129,7 +130,8 @@ class AcquisitionStage(Logger):
             for idx,p in enumerate(self._pipeline_objects):
                 p.enable = False
                 self.info('Waiting for process {}'.format(idx))
-                p.join()
+                p.join(1.0)
+                p.terminate()
                 self.info('Process stop complete')
             if self._input_queue.get() is not None:
                 self.error('Queue should only contain None!!')
