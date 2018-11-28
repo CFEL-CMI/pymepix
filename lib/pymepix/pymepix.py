@@ -1,3 +1,5 @@
+"""Main module for pymepix"""
+
 import numpy as np
 from .SPIDR.spidrcontroller import SPIDRController
 from.SPIDR.spidrdefs import SpidrReadoutSpeed
@@ -12,7 +14,12 @@ class PollBufferEmpty(Exception):
     pass
 
 class Pymepix(Logger):
+    """This is the main class to work with timepix
+    
+    TODO: More docstrings here
 
+    
+    """
 
     def data_thread(self):
         self.info('Starting data thread')
@@ -176,15 +183,22 @@ def main():
     import logging
     from .processing.datatypes import MessageType
     from .processing import CentroidPipeline
+
     logging.basicConfig(level=logging.INFO,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
     pymepix = Pymepix(('192.168.1.10',50000))
     num_devices = len(pymepix)
+
     pymepix[0].loadSophyConfig('/Users/alrefaie/Documents/repos/libtimepix/config/eq-norm-50V.spx')
+
     for p in pymepix:
         p.setupAcquisition(CentroidPipeline)
         p.acquisition.enableEvents = False
         p.acquisition.numBlobProcesses = 10
+
+    
     pymepix.biasVoltage = 50
+
     pymepix.startAcq()
     time.sleep(2.0)
     pymepix.stopAcq()
