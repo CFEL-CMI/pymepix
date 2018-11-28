@@ -174,10 +174,16 @@ class Pymepix(Logger):
 
 def main():
     import logging
-    logging.basicConfig(level=logging.INFO)
+    from .processing.datatypes import MessageType
+    from .processing import CentroidPipeline
+    logging.basicConfig(level=logging.INFO,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     pymepix = Pymepix(('192.168.1.10',50000))
     num_devices = len(pymepix)
     pymepix[0].loadSophyConfig('/Users/alrefaie/Documents/repos/libtimepix/config/eq-norm-50V.spx')
+    for p in pymepix:
+        p.setupAcquisition(CentroidPipeline)
+        p.acquisition.enableEvents = False
+        p.acquisition.numBlobProcesses = 10
     pymepix.biasVoltage = 50
     pymepix.startAcq()
     time.sleep(2.0)
@@ -185,7 +191,19 @@ def main():
 
     while True:
         try:
-            print(pymepix.poll())
+            value = pymepix.poll()
+            data_type,data = value
+            #print(value)
+            if data_type == MessageType.RawData:
+                header = ((data[0] & 0xF000000000000000) >> 60) & 0xF
+                filt = (header == 0x6)
+                subheader = ((data[0][filt] & 0x0F00000000000000) >> 56) & 0xF
+                
+
+                print('SUBHEADERS {}'.format(subheader))
+
+            
+
         except PollBufferEmpty:
             print('EMPTY')
             break
@@ -195,7 +213,13 @@ def main():
     pymepix.stopAcq()
     while True:
         try:
-            print(pymepix.poll())
+            #print(pymepix.poll())
+            value = pymepix.poll()
+            data_type,data = value
+            print(value)
+            if data_type == MessageType.RawData:
+                subheader = ((data[0] & 0x0F00000000000000) >> 56) & 0xF
+                print('SUBHEADERS ',subheader)
         except PollBufferEmpty:
             print('EMPTY')
             break
