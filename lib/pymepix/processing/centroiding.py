@@ -13,14 +13,58 @@ class TOFCentroiding(BasePipelineObject):
 
     """
 
-    def __init__(self,input_queue=None,create_output=True,num_outputs=1,shared_output=None):
+    def __init__(self,skip_data=1,tot_filter=0,input_queue=None,create_output=True,num_outputs=1,shared_output=None):
         BasePipelineObject.__init__(self,TOFCentroiding.__name__,input_queue=input_queue,create_output=create_output,num_outputs=num_outputs,shared_output=shared_output)
 
         self._centroid_count = 0
         self._search_time = 0.0
         self._blob_time = 0.0
+        self._skip_data = Value('I',skip_data)
+        self._tot_threshold = Value('I',0)
+        self._num_centroids = 0
 
-    def process(self,shot,x,y,tof,tot):
+    @property
+    def centroidSkip(self):
+        return self._skip_data.value
+    
+    @centroidSkip.setter
+    def centroidSkip(self,value):
+        value = max(1,value)
+        self._skip_data.value = value
+
+    @property
+    def totThreshold(self):
+        return self._tot_threshold.value
+    
+    @totThreshold.setter
+    def totThreshold(self,value):
+        value = max(0,value)
+        self._tot_threshold.value = value
+
+
+    def process(self,data_type,data):
+        if data_type != MessageType.EventData:
+            return None,None
+
+        self._num_centroids +=1
+
+        if self._num_centroids % 1000:
+            self.debug('Search time: {}'.format(self._search_time))
+            self.debug('Blob time: {} '.format(self._blob_time))
+
+        if self._num_centroids % self.centroidSkip == 0:
+            return None,None
+
+        shot,x,y,tof,tot = data
+        
+        tot_filter = (tot > self.totThreshold)
+        #Filter out pixels
+        shot = shot[tot_filter]
+        x = x[tot_filter]
+        y = y[tot_filter]
+        tof = tof[tot_filter]
+        tot = tot[tot_filter]
+
         start = time.time()
         labels = self.find_cluster(shot,x,y,tof,tot,epsilon=2,min_samples=5)
         self._search_time += time.time() - start
