@@ -173,7 +173,9 @@ class CentroidPipeline(PixelPipeline):
     def numBlobProcesses(self):
         """Number of python processes to spawn for centroiding
 
-        Setting this will spawn the appropriate number of processes to perform centroiding
+        Setting this will spawn the appropriate number of processes to perform centroiding.
+        Changes take effect on next acquisition.
+        
 
         """
         return self.getStage(4).numProcess
