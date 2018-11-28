@@ -1,3 +1,5 @@
+"""Module that contains predefined acquisition pipelines for the user to use"""
+
 from .baseacquisition import AcquisitionPipeline
 from .packetprocessor import PacketProcessor
 from .centroiding import TOFCentroiding
@@ -5,7 +7,15 @@ from .udpsampler import UdpSampler
 
 
 class PixelPipeline(AcquisitionPipeline):
-    """ An acquisition pipeline that includes the udpsampler and pixel processor """
+    """ An acquisition pipeline that includes the udpsampler and pixel processor 
+    
+        A pipeline that will read from a UDP address and decode the pixels a useable form.
+        This class can be used as a base for all acqusition pipelines.
+
+
+
+    
+    """
 
 
 
@@ -24,6 +34,22 @@ class PixelPipeline(AcquisitionPipeline):
 
     @property
     def enableEvents(self):
+        """This either enables or disables TOF (Time of Flight) calculation
+
+        Enabling this will ask the packet processor to process both triggers and pixels
+        and compute time of flight rather than time of arrival. Changes take effect on the next
+        acquisition
+
+        Parameters
+        ------------
+        value : bool 
+
+
+        Returns     
+        ------------
+        bool  
+        
+        """
         return self._use_events
 
     
@@ -34,6 +60,29 @@ class PixelPipeline(AcquisitionPipeline):
 
     @property
     def eventWindow(self):
+        """In TOF mode (useEvents is true) the time window in seconds to output further down the pipeline
+
+        When in TOF mode, sets up the packet processor to only output events within a certain time window relative
+        to a trigger. Changes happen immediately.
+        For example to only consider events within a time window between 3 us and 8 us after the trigger do
+
+        >>> pixelpipeline.eventWindow = (3E-6,8E-6)
+
+
+        
+        Parameters
+        ------------
+        value: :obj:`tuple` of 2 :obj:`float`
+            A tuple of two floats that represents the (min,max) time of flight window in seconds
+            This is useful to filter out a particular region
+        
+
+        Returns
+        ----------
+        :obj:`tuple` of 2 floats
+            Currently set event window
+        
+        """
         return self._event_window
     
     @eventWindow.setter
@@ -49,6 +98,13 @@ class PixelPipeline(AcquisitionPipeline):
 
 
 class CentroidPipeline(PixelPipeline):
+    """A Pixel pipeline that includes centroiding
+
+    Same as the pixel pipeline but also includes centroid processing, note that this can be extremely slow
+    when dealing with a huge number of objects
+    
+    
+    """
 
     def __init__(self,data_queue,address,longtime):
         PixelPipeline.__init__(self,data_queue,address,longtime,use_event=True,name='Centroid') 
@@ -65,6 +121,14 @@ class CentroidPipeline(PixelPipeline):
 
     @property
     def centroidSkip(self):
+        """Perform centroiding on every nth packet
+        
+        Parameters
+        -----------
+        value: int
+            
+        
+        """
         return self._skip_centroid
     
     @centroidSkip.setter
@@ -78,6 +142,21 @@ class CentroidPipeline(PixelPipeline):
     
     @property
     def totThreshold(self):
+        """Determines which time over threhsold values to filter before centroiding
+
+        This is useful in reducing the computational time in centroiding and can filter out
+        noise. Changes take effect immediately
+
+        Parameters
+        -----------
+        value: int
+
+
+        Returns
+        -----------
+        int
+
+        """
         return self._tot_threshold
     
     @totThreshold.setter
@@ -92,6 +171,11 @@ class CentroidPipeline(PixelPipeline):
 
     @property
     def numBlobProcesses(self):
+        """Number of python processes to spawn for centroiding
+
+        Setting this will spawn the appropriate number of processes to perform centroiding
+
+        """
         return self.getStage(4).numProcess
 
     @numBlobProcesses.setter
