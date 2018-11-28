@@ -114,6 +114,16 @@ class TimepixDevice(Logger):
         # self._device.columnTestPulseRegister
     @property
     def acquisition(self):
+        """Returns the acquisition object
+
+        Can be used to set parameters in the acqusition directly for example,
+        to setup TOF calculation when using a :class:`PixelPipeline`
+
+        >>> tpx.acqusition.enableEvents
+        False
+        >>> tpx.acquistion.enableEvents = True
+
+        """
         return self._acquisition_pipeline
 
     def pauseHeartbeat(self):
