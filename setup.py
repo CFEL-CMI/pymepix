@@ -38,7 +38,7 @@ install_requires = [
 
 
 
-console_scripts = [
+console_scripts = ['pymepix-acq=pymepix.pymepix:main'
 ]
 
 
