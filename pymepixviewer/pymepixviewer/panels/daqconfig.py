@@ -1,4 +1,3 @@
-import pymepix
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore, QtGui
 from .ui.daqconfigui import Ui_Form
@@ -38,22 +37,22 @@ class DaqConfigPanel(QtGui.QWidget,Ui_Form):
     startAcquisition = QtCore.pyqtSignal(str,str,bool,bool,float,int)
     stopAcquisition = QtCore.pyqtSignal()
 
-    resetPlots = QtCore.pyqtSignal()
-    updateRateChange = QtCore.pyqtSignal(float)
-    eventCountChange = QtCore.pyqtSignal(int)
+    # resetPlots = QtCore.pyqtSignal()
+    # updateRateChange = QtCore.pyqtSignal(float)
+    # eventCountChange = QtCore.pyqtSignal(int)
 
 
-    def run_acquisition(self,path_name,prefix,raw_checked,blob_checked,exposure,startindex):
+    # def run_acquisition(self,path_name,prefix,raw_checked,blob_checked,exposure,startindex):
 
-        self.startAcquisition.emit(path_name,prefix,raw_checked,blob_checked,exposure,startindex)
-        self.text_status.setText('Acquiring.....')        
-        print('STARTING')
-        if self.acq_time.text() != "":
-            time_val = int(self.acq_time.text())
-            if time_val != -1:
-                time.sleep(time_val)
-        print('ENDING')
-        self.endAcquisition()
+    #     self.startAcquisition.emit(path_name,prefix,raw_checked,blob_checked,exposure,startindex)
+    #     self.text_status.setText('Acquiring.....')        
+    #     print('STARTING')
+    #     if self.acq_time.text() != "":
+    #         time_val = int(self.acq_time.text())
+    #         if time_val != -1:
+    #             time.sleep(time_val)
+    #     print('ENDING')
+    #     self.endAcquisition()
 
 
     def __init__(self,parent=None):
@@ -63,16 +62,16 @@ class DaqConfigPanel(QtGui.QWidget,Ui_Form):
         self.setupUi(self)  
 
         self.setupLines()
-        self.connectSignals()
+        # self.connectSignals()
 
-        self._acq_thread = None
+        # self._acq_thread = None
 
-        self._repeating_thread = None
+        # self._repeating_thread = None
 
 
     def setupLines(self):
         self.event_count.setValidator(QtGui.QIntValidator(self))
-        self.exposure_time.setValidator(QtGui.QDoubleValidator(self))
+        #self.exposure_time.setValidator(QtGui.QDoubleValidator(self))
         self.acq_time.setValidator(QtGui.QDoubleValidator(self))
 
     def connectSignals(self):
@@ -104,32 +103,32 @@ class DaqConfigPanel(QtGui.QWidget,Ui_Form):
     def startAcqClicked(self):
 
         print(self.path_name.text(),self.file_prefix.text())
-        exposure = 10000.0
-        if self.exposure_time.text() != "":
-            exposure = float(self.exposure_time.text())*1e-6
+    #     exposure = 10000.0
+    #     if self.exposure_time.text() != "":
+    #         exposure = float(self.exposure_time.text())*1e-6
 
 
-        raw_checked = bool(self.raw_enable.isChecked())
-        blob_checked = bool(self.blob_enable.isChecked())
+    #     raw_checked = bool(self.raw_enable.isChecked())
+    #     blob_checked = bool(self.blob_enable.isChecked())
 
-        start_index = int(self.startindex.text())
+    #     start_index = int(self.startindex.text())
 
-        if self._repeating_thread is not None:
-            self._repeating_thread.cancel()
-            self._repeating_thread = None
-        repeats = int(self.repeat_value.text())
-        self._repeating_thread = RepeatFunction(repeats,self.run_acquisition,(self.path_name.text(),self.file_prefix.text(),raw_checked,blob_checked,exposure,start_index,))
-        self._repeating_thread.start()
+    #     if self._repeating_thread is not None:
+    #         self._repeating_thread.cancel()
+    #         self._repeating_thread = None
+    #     repeats = int(self.repeat_value.text())
+    #     self._repeating_thread = RepeatFunction(repeats,self.run_acquisition,(self.path_name.text(),self.file_prefix.text(),raw_checked,blob_checked,exposure,start_index,))
+    #     self._repeating_thread.start()
 
-        # self.startAcquisition.emit(self.path_name.text(),self.file_prefix.text(),raw_checked,blob_checked,exposure)
-        # self.text_status.setText('Acquiring.....')
+    #     # self.startAcquisition.emit(self.path_name.text(),self.file_prefix.text(),raw_checked,blob_checked,exposure)
+    #     # self.text_status.setText('Acquiring.....')
 
-        # if self.acq_time.text() != "":
-        #     time_val = int(self.acq_time.text())
-        #     if time_val != -1:
-        #         seconds_to_stop = float(self.acq_time.text())
-        #         timer = threading.Timer(seconds_to_stop,lambda: self.end_acq.click())
-        #         timer.start()        
+    #     # if self.acq_time.text() != "":
+    #     #     time_val = int(self.acq_time.text())
+    #     #     if time_val != -1:
+    #     #         seconds_to_stop = float(self.acq_time.text())
+    #     #         timer = threading.Timer(seconds_to_stop,lambda: self.end_acq.click())
+    #     #         timer.start()        
 
     def endAcquisition(self):
         self.stopAcquisition.emit()
@@ -137,9 +136,9 @@ class DaqConfigPanel(QtGui.QWidget,Ui_Form):
 
     def endAcqClicked(self):
         self.endAcquisition()
-        if self._repeating_thread is not None:
-            self._repeating_thread.cancel()
-            self._repeating_thread = None
+    #     if self._repeating_thread is not None:
+    #         self._repeating_thread.cancel()
+    #         self._repeating_thread = None
 def main():
     import sys
     app = QtGui.QApplication([])

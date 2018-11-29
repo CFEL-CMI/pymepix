@@ -1,13 +1,16 @@
 import pymepix
+from pymepix.processing import MessageType
 import pyqtgraph as pg
 import numpy as np
 import time
 from pyqtgraph.Qt import QtCore, QtGui
-from panels.timeofflight import TimeOfFlightPanel
-from panels.daqconfig import DaqConfigPanel
-from panels.blobview import BlobView
+from .panels.timeofflight import TimeOfFlightPanel
+from .panels.daqconfig import DaqConfigPanel
+from .panels.blobview import BlobView
+from .ui.mainui import Ui_MainWindow
 
-class PymepixDAQ(QtGui.QMainWindow):
+
+class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
 
     displayNow = QtCore.pyqtSignal()
     newEvent = QtCore.pyqtSignal(object)
@@ -16,43 +19,45 @@ class PymepixDAQ(QtGui.QMainWindow):
 
     def __init__(self,parent=None):
         super(PymepixDAQ, self).__init__(parent)
-        self.setupWindow() 
+        self.setupUi(self)
+        # self.setupWindow() 
 
-        self._view_widgets= {}
+        # self._view_widgets= {}
 
-        self._event_max = -1
-        self._current_event_count = 0
-        self._display_rate = 1/5
+        # self._event_max = -1
+        # self._current_event_count = 0
+        # self._display_rate = 1/5
 
-        self._last_update = 0
-
-        self.connectSignals()
+        # self._last_update = 0
         self.startupTimepix()
+        self.connectSignals()
+        # 
     def startupTimepix(self):
 
-        self._timepix = pymepix.TimePixAcq(('192.168.1.10',50000))
+        self._timepix = pymepix.Pymepix(('192.168.1.10',50000))
 
-        self._timepix.attachEventCallback(self.onEvent)
+        # self._timepix.
 
-        self._timepix.startAcquisition()        
+        # self._timepix.startAcq()        
 
     def connectSignals(self):
-        self._config_panel.updateRateChange.connect(self.onDisplayUpdate)
-        self._config_panel.eventCountChange.connect(self.onEventCountUpdate)
+        self.actionSophy_spx.triggered.connect(self.getfile)
+        # self._config_panel.updateRateChange.connect(self.onDisplayUpdate)
+        # self._config_panel.eventCountChange.connect(self.onEventCountUpdate)
 
-        self.displayNow.connect(self._tof_panel.displayTof)
-        self.newEvent.connect(self._tof_panel.onEvent)
-        self.clearNow.connect(self._tof_panel.clearTof)
-        self._tof_panel.roiUpdate.connect(self.onRoiChange)
-        self._tof_panel.displayRoi.connect(self.addViewWidget)
+        # self.displayNow.connect(self._tof_panel.displayTof)
+        # self.newEvent.connect(self._tof_panel.onEvent)
+        # self.clearNow.connect(self._tof_panel.clearTof)
+        # self._tof_panel.roiUpdate.connect(self.onRoiChange)
+        # self._tof_panel.displayRoi.connect(self.addViewWidget)
 
-        self.displayNow.connect(self._overview_panel.plotData)
-        self.newEvent.connect(self._overview_panel.onNewEvent)
-        self.clearNow.connect(self._overview_panel.clearData)
-        self._config_panel.startAcquisition.connect(self.startAcquisition)
-        self._config_panel.stopAcquisition.connect(self.stopAcquisition)
+        # self.displayNow.connect(self._overview_panel.plotData)
+        # self.newEvent.connect(self._overview_panel.onNewEvent)
+        # self.clearNow.connect(self._overview_panel.clearData)
+        # self._config_panel.startAcquisition.connect(self.startAcquisition)
+        # self._config_panel.stopAcquisition.connect(self.stopAcquisition)
 
-        self._config_panel.resetPlots.connect(self.clearNow.emit)
+        # self._config_panel.resetPlots.connect(self.clearNow.emit)
 
     def onDisplayUpdate(self,value):
         self._display_rate = value
@@ -61,7 +66,7 @@ class PymepixDAQ(QtGui.QMainWindow):
         self._current_event_count = 0
 
     
-    def onEvent(self,event):
+    def onData(self,data_type,event):
         
         if self._event_max != -1 and self._current_event_count > self._event_max:
             self.clearNow.emit()
@@ -112,8 +117,11 @@ class PymepixDAQ(QtGui.QMainWindow):
             self.clearNow.connect(blob_view.clearData)
             self.addDockWidget(QtCore.Qt.RightDockWidgetArea,dock_view)
 
-
-    
+    def getfile(self):
+        fname = QtGui.QFileDialog.getOpenFileName(self, 'Open file', 
+            '/home',"SoPhy File (*.spx)")
+        print(fname)
+        self._timepix[0].loadSophyConfig(fname[0])
     def onRoiChange(self,name,start,end):
         print('ROICHANGE',name,start,end)
         if name in self._view_widgets:
@@ -147,11 +155,12 @@ class PymepixDAQ(QtGui.QMainWindow):
 
 def main():
     import sys
+    import logging
+    logging.basicConfig(level=logging.INFO,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     app = QtGui.QApplication([])
     config = PymepixDAQ()
     config.show()
 
     app.exec_()
-    config.cleanupTpx()
 if __name__=="__main__":
     main()

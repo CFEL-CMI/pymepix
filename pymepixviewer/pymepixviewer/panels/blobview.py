@@ -1,4 +1,4 @@
-import pymepix
+
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore, QtGui
 from .ui.blobviewui import Ui_Form
@@ -7,7 +7,7 @@ import numpy as np
 
 class BlobView(QtGui.QWidget,Ui_Form):
 
-    def __init__(self,parent=None,start=None,end=None):
+    def __init__(self,parent=None,start=None,end=None,use_event=False):
         super(BlobView, self).__init__(parent)
 
         # Set up the user interface from Designer.
@@ -38,6 +38,13 @@ class BlobView(QtGui.QWidget,Ui_Form):
         self.histo_binning.valueChanged[int].connect(self.onHistBinChange)
 
         self._histogram = None
+
+        self._use_event=False
+
+    def modeChange(self,mode):
+        self._use_event = mode
+        self.clearData()
+
     def getFilter(self,tof):
         
 
@@ -128,12 +135,15 @@ class BlobView(QtGui.QWidget,Ui_Form):
             self.updateHistogram(x,y)
 
 
-    def onNewEvent(self,event):
-        x,y,tof,tot,cluster_shot,cluster_x,cluster_y,cluster_area,cluster_integral,cluster_eig,cluster_vect,cluster_tof = event
+    def onCentroid(self,event):
+        cluster_shot,cluster_x,cluster_y,cluster_area,cluster_integral,cluster_eig,cluster_vect,cluster_tof = event
+        self.updateBlobData(cluster_shot,cluster_x,cluster_y,cluster_tof )
+    
+    def onEvent(self,event):
+        counter,x,y,tof,tot = event
         if not self._histogram_mode:
             self.updateMatrix(x,y,tof,tot)
-        self.updateBlobData(cluster_shot,cluster_x,cluster_y,cluster_tof )
-        
+
     
     def updateTrend(self,trigger,avg_blobs):
         last_trigger = self._blob_trend_trigger[-1]
