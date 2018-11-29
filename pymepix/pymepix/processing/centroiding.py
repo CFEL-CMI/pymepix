@@ -163,5 +163,5 @@ class TOFCentroiding(BasePipelineObject):
             cluster_shot[valid_objects] = obj_shot[0]
             valid_objects+=1
         return cluster_shot[:valid_objects],cluster_x[:valid_objects], \
-                cluster_y[:valid_objects],cluster_tof[:valid_objects],cluster_area[:valid_objects], \
-                cluster_integral[:valid_objects],cluster_eig[:valid_objects]
+                cluster_y[:valid_objects],cluster_area[:valid_objects], \
+                cluster_integral[:valid_objects],cluster_eig[:valid_objects],cluster_eig[:valid_objects,:],cluster_tof[:valid_objects]
