@@ -2,6 +2,8 @@
 *.pyc
 lib/pymepix/.DS_Store
 build/*
+pymepix/build*
+pymepix/doc/build*
 .DS_Store
 lib/pymepix.egg-info/*
 *.egg
