@@ -288,7 +288,7 @@ def main():
 
     #Switch to TOF mode if set
     if args.decode and args.tof:
-        pymepix[0].acquistion.enableEvents = True
+        pymepix[0].acquisition.enableEvents = True
     
 
     #Set the bias voltage
