@@ -1,3 +1,0 @@
-[console_scripts]
-pymepix-acq = pymepix.pymepix:main
-
