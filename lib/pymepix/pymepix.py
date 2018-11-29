@@ -14,10 +14,34 @@ class PollBufferEmpty(Exception):
     pass
 
 class Pymepix(Logger):
-    """This is the main class to work with timepix
-    
-    TODO: More docstrings here
+    """High level class to work with timepix and perform acquistion
 
+    This class performs connection to SPIDR, initilization of timepix and handling of acquisition.
+    Each individual timepix device can be accessed using the square bracket operator.
+
+
+    Parameters
+    ----------
+    spidr_address : :obj:`tuple` of :obj:`str` and :obj:`int`
+        socket style tuple of SPIDR ip address and port
+    src_ip_port : :obj:`tuple` of :obj:`str` and :obj:`int`, optional
+        socket style tuple of the IP address and port of the interface that is connecting to SPIDR
+
+    Examples
+    --------
+    
+    Connect to
+
+    >>> spidr = SPIDRController(('192.168.1.10',50000))
+    >>> spidr.fpgaTemperature
+    39.5
+
+    Or access a specific :class:`SpidrDevice` (e.g. Timepix/Medipix)
+
+    >>> spidr[0].deviceId
+    7272
+    >>> spidr[1].deviceId
+    2147483648
     
     """
 
@@ -49,9 +73,12 @@ class Pymepix(Logger):
         self._data_thread.daemon = True
         self._data_thread.start()
 
+        self._running =False
+
 
     @property
     def biasVoltage(self):
+        """Bias voltage in volts"""
         return self._bias_voltage
     
     @biasVoltage.setter
@@ -61,6 +88,19 @@ class Pymepix(Logger):
     
 
     def poll(self,block=False):
+        """If polling is used, returns data stored in data buffer.
+
+
+        the buffer is in the form of a ring and will overwrite older
+        values if it becomes full
+
+
+        Returns
+        --------
+        :obj:`MessageType` , data
+
+
+        """
         if block:
             while True:
                 try:
@@ -77,6 +117,11 @@ class Pymepix(Logger):
 
     @property
     def pollBufferLength(self):
+        """ Get/Set polling buffer length
+        
+        Clears buffer on set
+
+        """
         return self._poll_buffer.maxlen
 
     @pollBufferLength.setter
@@ -86,6 +131,11 @@ class Pymepix(Logger):
 
     @property
     def dataCallback(self):
+        """Function to call when data is recieved from a timepix device
+
+        This has the effect of disabling polling. 
+
+        """
         return self._event_callback
 
     @dataCallback.setter
@@ -95,6 +145,13 @@ class Pymepix(Logger):
         self._poll_buffer.clear()
 
     def enablePolling(self,maxlen=100):
+        """Enables polling mode
+
+        This clears any user defined callbacks and the polling buffer
+
+        """
+
+
         self.info('Enabling polling')
 
         self.pollBufferLength = maxlen
@@ -131,6 +188,11 @@ class Pymepix(Logger):
 
 
     def startAcq(self):
+        """Starts acquisition"""
+
+        if self._running==True:
+            self.stopAcq()
+
         self.info('Starting acquisition')
         self._prepare()
         self._spidr.resetTimers()
@@ -145,7 +207,14 @@ class Pymepix(Logger):
             self.info('Starting {}'.format(t.deviceName))
             t.start()
 
+        self._running = True
+
     def stopAcq(self):
+        """Stops acquisition"""
+
+
+        if self._running == False:
+            return
         self.info('Stopping acquisition')
         trig_mode = 0
         trig_length_us = 10000
@@ -159,7 +228,11 @@ class Pymepix(Logger):
         for t in self._timepix_devices:
             self.debug('Stopping {}'.format(t.deviceName))
             t.stop()       
+        self._running = False
 
+    @property
+    def isAcquiring(self):
+        return self._running
 
     @property
     def numDevices(self):
@@ -178,65 +251,91 @@ class Pymepix(Logger):
 
 
 
+  
 
 def main():
     import logging
     from .processing.datatypes import MessageType
     from .processing import CentroidPipeline
+    from .util.storage import open_output_file,store_raw,store_toa,store_tof
+    import argparse
+    import time
 
     logging.basicConfig(level=logging.INFO,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-    pymepix = Pymepix(('192.168.1.10',50000))
-    num_devices = len(pymepix)
 
-    pymepix[0].loadSophyConfig('/Users/alrefaie/Documents/repos/libtimepix/config/eq-norm-50V.spx')
+    parser = argparse.ArgumentParser(description='Timepix acquisition script')
+    parser.add_argument("-i", "--ip",dest='ip',type=str, default='192.168.1.10',help="IP address of Timepix")
+    parser.add_argument("-p", "--port",dest='port',type=int,default=50000, help="TCP port to use for the connection")
+    parser.add_argument("-s", "--spx",dest='spx',type=str,help="Sophy config file to load")
+    parser.add_argument("-v","--bias",dest='bias',type=float,default=50,help="Bias voltage in Volts")
+    parser.add_argument("-t","--time",dest='time',type=float,help="Acquisition time in seconds",required=True)
+    parser.add_argument("-o","--output",dest='output',type=str,help="output filename prefix",required=True)
+    parser.add_argument("-d", "--decode",dest='decode',type=bool,help="Store decoded values instead",default=False)
+    parser.add_argument("-T", "--tof",dest='tof',type=bool,help="Compute TOF if decode is enabled",default=False)
 
-    for p in pymepix:
-        p.setupAcquisition(CentroidPipeline)
-        p.acquisition.enableEvents = False
-        p.acquisition.numBlobProcesses = 10
+    args=parser.parse_args()
+
+    #Connect to SPIDR
+    pymepix = Pymepix((args.ip,args.port))
+    #If there are no valid timepix detected then quit()
+    if len(pymepix) == 0:
+        logging.error('-------ERROR: SPIDR FOUND BUT NO VALID TIMEPIX DEVICE DETECTED ---------- ')
+        quit()
+    if args.spx:
+        logging.info('Opening Sophy file {}'.format(args.spx))
+        pymepix[0].loadSophyConfig(args.spx)
+
+    #Switch to TOF mode if set
+    if args.decode and args.tof:
+        pymepix[0].acquistion.enableEvents = True
+    
+
+    #Set the bias voltage
+    pymepix.biasVoltage = args.bias
 
     
-    pymepix.biasVoltage = 50
 
+    
+    ext = 'raw'
+    if args.decode:
+        logging.info('Decoding data enabled')
+        if args.tof:
+            logging.info('Tof calculation enabled')
+            ext = 'tof'
+        else:
+            ext = 'toa'
+    else:
+        logging.info('No decoding selected')
+
+
+    output_file = open_output_file(args.output,ext)
+
+    total_time = args.time
+
+    start_time = time.time()
+
+    logging.info('------Starting acquisition---------')
+    #Start acquisition
     pymepix.startAcq()
-    time.sleep(2.0)
-    pymepix.stopAcq()
-
-    while True:
+    while time.time()-start_time < total_time:
         try:
-            value = pymepix.poll()
-            data_type,data = value
-            #print(value)
-            if data_type == MessageType.RawData:
-                header = ((data[0] & 0xF000000000000000) >> 60) & 0xF
-                filt = (header == 0x6)
-                subheader = ((data[0][filt] & 0x0F00000000000000) >> 56) & 0xF
-                
-
-                print('SUBHEADERS {}'.format(subheader))
-
+            data_type,data = pymepix.poll()
+        except PollBufferEmpty:
+            continue
+        logging.debug('Datatype: {} Data:{}'.format(data_type,data))
+        if data_type is MessageType.RawData:
+            if not args.decode:
+                store_raw(output_file,data)
+        elif data_type is MessageType.PixelData:
+            if args.decode and not args.tof:
+                store_toa(output_file,data)
+        elif data_type is MessageType.PixelData:
+            if args.decode and args.tof:
+                store_tof(output_file,data)
             
+    
 
-        except PollBufferEmpty:
-            print('EMPTY')
-            break
-
-    pymepix.startAcq()
-    time.sleep(5.0)
     pymepix.stopAcq()
-    while True:
-        try:
-            #print(pymepix.poll())
-            value = pymepix.poll()
-            data_type,data = value
-            print(value)
-            if data_type == MessageType.RawData:
-                subheader = ((data[0] & 0x0F00000000000000) >> 56) & 0xF
-                print('SUBHEADERS ',subheader)
-        except PollBufferEmpty:
-            print('EMPTY')
-            break
-    print('Done')
 if __name__=="__main__":
     main()
