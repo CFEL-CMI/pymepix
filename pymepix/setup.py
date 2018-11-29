@@ -13,37 +13,21 @@ from distutils import log
 
 
 
+packages = find_packages(exclude=('tests', 'doc'))
 
-package_dir = {"": "lib"}
-
-packages = find_packages(where="lib")
-
-provides = [
-    'pymepix',
-]
+provides = ['pymepix',]
 
 
+requires = []
 
-
-requires = [
-    
-
-]
-
-install_requires = [
-    
-
-    
-]
+install_requires = []
 
 
 
-console_scripts = ['pymepix-acq=pymepix.pymepix:main'
-]
+console_scripts = ['pymepix-acq=pymepix.pymepix:main']
 
 
-entry_points = {'console_scripts': console_scripts,
-                }
+entry_points = {'console_scripts': console_scripts,}
 
 
 classifiers = [
@@ -72,8 +56,6 @@ setup(name='pymepix',
       description='Timepix python library',
       classifiers=classifiers,
       packages=packages,
-      package_dir=package_dir,
- #     scripts=scripts,
       include_package_data=True,
       entry_points=entry_points,
       provides=provides,
