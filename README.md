@@ -40,6 +40,13 @@ Then install
 python setup.py install
 ```
 
+To build documentation do
+
+```
+python setup.py build_sphinx
+```
+
+
 Try importing pymepix:
 ```
 import pymepix

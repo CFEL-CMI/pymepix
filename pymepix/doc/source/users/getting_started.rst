@@ -23,8 +23,11 @@ Move into the pymepix library::
 
 Then, just do::
 
-       python setup.py install
+    python setup.py install
 
+To build documentation do::
+    
+    python setup.py build_sphinx
 
 Dependencies
 ------------
