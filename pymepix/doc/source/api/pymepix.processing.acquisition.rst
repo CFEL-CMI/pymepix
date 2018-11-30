@@ -1,3 +1,5 @@
+.. _acquisition:
+
 pymepix.processing.acquisition module
 =====================================
 

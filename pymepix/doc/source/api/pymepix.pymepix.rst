@@ -1,3 +1,5 @@
+.. _pymepixclass:
+
 pymepix.pymepix module
 ======================
 

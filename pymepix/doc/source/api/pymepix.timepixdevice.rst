@@ -1,3 +1,5 @@
+.. _timepixdevice:
+
 pymepix.timepixdevice module
 ============================
 
