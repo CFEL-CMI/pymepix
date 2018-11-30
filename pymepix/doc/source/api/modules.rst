@@ -1,3 +1,6 @@
+.. currentmodule:: pymepix
+
+
 pymepix
 =======
 

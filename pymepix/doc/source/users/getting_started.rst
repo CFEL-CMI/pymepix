@@ -17,6 +17,10 @@ You can clone pymepix from our main git repository::
 
     git clone https://<desy-username>@stash.desy.de/scm/cmi/libtimepix.git
 
+Move into the pymepix library::
+
+    cd libtimepix/pymepix
+
 Then, just do::
 
        python setup.py install

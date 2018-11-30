@@ -9,6 +9,7 @@ Submodules
    pymepix.processing.acquisition
    pymepix.processing.baseacquisition
    pymepix.processing.basepipeline
+   pymepix.processing.centroiding
    pymepix.processing.datatypes
    pymepix.processing.packetprocessor
    pymepix.processing.udpsampler

@@ -10,6 +10,7 @@ Subpackages
     pymepix.config
     pymepix.core
     pymepix.processing
+    pymepix.util
 
 Submodules
 ----------
