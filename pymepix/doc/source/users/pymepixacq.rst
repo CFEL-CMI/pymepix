@@ -5,7 +5,7 @@ PymepixAcq - Command line
 ===========================
 
 
-Included with pymepix is a command line code to acquire from timepix. It is run using::
+Included with pymepix is a command line code using the pymepix library to acquire from timepix. It is run using::
 
     pymepix-acq --time 10 --output my_file
 
