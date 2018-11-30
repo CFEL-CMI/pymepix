@@ -47,7 +47,7 @@ import pymepix
 
 If there are no errors then it was successful!
 
-##Pymepix Viewer
+## Pymepix Viewer
 
 This is in the process of being ported to the new library and is non functional for now.
 
