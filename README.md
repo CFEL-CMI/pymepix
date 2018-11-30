@@ -4,7 +4,7 @@ This contains two projects. The first is the Pymepix library that is a python mo
 The second is the PymepixViewer which provides a DAQ GUI software using pymepix and pyqtgraph
 
 
-## Pympix
+## Pymepix
 
 Pymepix is a python module that provides high level access to timepix as well as low level access to SPIDR.
 
