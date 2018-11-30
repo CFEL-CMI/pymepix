@@ -44,8 +44,9 @@ class TimepixDevice(Logger):
         self._device.reinitDevice()
 
         self._longtime = Value('I',0)
-
         self.setupAcquisition(PixelPipeline)
+
+        self._initDACS()
 
         self._event_callback=None
 
@@ -66,6 +67,28 @@ class TimepixDevice(Logger):
         self.info('Setting up acquisition class')
         self._acquisition_pipeline=acquisition_klass(self._data_queue,self._udp_address,self._longtime,*args,**kwargs)
 
+
+
+    def _initDACS(self):
+
+        self._device.setDac(1,       128)     # TPX3_IBIAS_PREAMP_ON  [0-255]
+        self._device.setDac(2,         8)    # TPX3_IBIAS_PREAMP_OFF [0-15]
+        self._device.setDac(3,       128)     # TPX3_VPREAMP_NCAS     [0-255]
+        self._device.setDac(4,         5)     # TPX3_IBIAS_IKRUM      [0-255]
+        self._device.setDac(5,       128)     # TPX3_VFBK             [0-255]
+        self._device.setDac(6,       420)     # TPX3_VTHRESH_FINE     [0-512]
+        self._device.setDac(7,         6)     # TPX3_VTHRESH_COARSE   [0-15]
+        self._device.setDac(8,        84)     # TPX3_IBIAS_DISCS1_ON  [0-255]
+        self._device.setDac(9,         8)     # TPX3_IBIAS_DISCS1_OFF [0- 15]
+        self._device.setDac(10,      128)      # TPX3_IBIAS_DISCS2_ON  [0-255]
+        self._device.setDac(11,        8)      # TPX3_IBIAS_DISCS2_OFF [0-15]
+        self._device.setDac(12,      192)# TPX3_IBIAS_PIXELDAC   [0-255]
+        self._device.setDac(13 ,     128) # TPX3_IBIAS_TPBUFIN    [0-255]
+        self._device.setDac(14  ,    128)  # TPX3_IBIAS_TPBUFOUT   [0-255]
+        self._device.setDac(15   ,   128)   # TPX3_VTP_COARSE       [0-255]
+        self._device.setDac(16    ,  256)    # TPX3_VTP_FINE         [0-512]
+        self._device.setDac(17     , 128)     # TPX3_IBIAS_CP_PLL     [0-255]
+        self._device.setDac(18      ,128)      # TPX3_PLL_VCNTRL       [0-255]
 
     def loadSophyConfig(self,sophyFile):
         """Loads dac settings and pixel setting from a sophy (.spx) file
