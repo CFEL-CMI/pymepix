@@ -8,7 +8,6 @@ pymepix/pymepix.egg-info/*
 .DS_Store
 lib/pymepix.egg-info/*
 *.egg
-setup.cfg
 *.dat
 *.tpx3
 *.spx
