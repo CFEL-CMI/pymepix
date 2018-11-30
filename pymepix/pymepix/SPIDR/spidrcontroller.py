@@ -972,7 +972,13 @@ class SPIDRController(Logger):
             self.debug('reply message: {}'.format(_replyMsg))
             error = socket.ntohl(int(_replyMsg[2]))
             if error != 0:
-                raise PymePixException(error)
+                try:
+                    raise PymePixException(error)
+                except PymePixException as e:
+                    if 'ERR_EMPTY' in e.message:
+                        pass
+                    else:
+                        raise
 
 
             reply = socket.ntohl(int(_replyMsg[0]))
