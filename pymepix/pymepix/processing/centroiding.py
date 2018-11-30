@@ -25,6 +25,11 @@ class TOFCentroiding(BasePipelineObject):
 
     @property
     def centroidSkip(self):
+        """Sets whether to process every nth pixel packet. 
+        
+        For example, setting it to 2 means every second packet is processed. 1 means all pixel packets are processed.
+
+        """
         return self._skip_data.value
     
     @centroidSkip.setter
