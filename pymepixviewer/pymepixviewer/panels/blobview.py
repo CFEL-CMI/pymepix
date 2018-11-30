@@ -144,6 +144,9 @@ class BlobView(QtGui.QWidget,Ui_Form):
         if not self._histogram_mode:
             self.updateMatrix(x,y,tof,tot)
 
+    def onToA(self,event):
+        x,y,toa,tot = event
+        self.updateMatrix(x,y,toa,tot)
     
     def updateTrend(self,trigger,avg_blobs):
         last_trigger = self._blob_trend_trigger[-1]
