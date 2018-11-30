@@ -1,2 +1,2 @@
-from pymepix.pymepix import Pymepix
+from pymepix.pymepix import Pymepix,PollBufferEmpty
 from pymepix.timepixdef import *
