@@ -30,18 +30,28 @@ class Pymepix(Logger):
     Examples
     --------
     
-    Connect to
+    Startup device
 
-    >>> spidr = SPIDRController(('192.168.1.10',50000))
-    >>> spidr.fpgaTemperature
-    39.5
+    >>> timepix = Pymepix(('192.168.1.10',50000))
+    
+    Find how many Timepix are connected
 
-    Or access a specific :class:`SpidrDevice` (e.g. Timepix/Medipix)
+    >>> len(timepix)
+    1
 
-    >>> spidr[0].deviceId
-    7272
-    >>> spidr[1].deviceId
-    2147483648
+    Set the Bias voltage
+    >>> timepix.biasVoltage = 50
+
+    Access a specific Timepix device:
+
+    >>> timepix[0].deviceName
+    W0026_K06
+
+    Load a config file into timepix
+
+    >>> timepix[0].loadSophyConfig('W0026_K06_50V.spx')
+    
+
     
     """
 
