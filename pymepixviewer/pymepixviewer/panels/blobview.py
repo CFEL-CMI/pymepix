@@ -2,12 +2,13 @@
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore, QtGui
 from .ui.blobviewui import Ui_Form
+from ..core.datatypes import ViewerMode
 import threading
 import numpy as np
 
 class BlobView(QtGui.QWidget,Ui_Form):
 
-    def __init__(self,parent=None,start=None,end=None,use_event=False):
+    def __init__(self,parent=None,start=None,end=None,current_mode=ViewerMode.TOA):
         super(BlobView, self).__init__(parent)
 
         # Set up the user interface from Designer.
@@ -17,6 +18,9 @@ class BlobView(QtGui.QWidget,Ui_Form):
         self._end_tof = end
 
         self._int_blob_count = 0
+
+
+        self._current_mode = current_mode
 
         self._matrix = np.ndarray(shape=(256,256),dtype=np.float)
         self._matrix[...]=0.0
@@ -39,10 +43,9 @@ class BlobView(QtGui.QWidget,Ui_Form):
 
         self._histogram = None
 
-        self._use_event=False
 
     def modeChange(self,mode):
-        self._use_event = mode
+        self._current_mode = mode
         self.clearData()
 
     def getFilter(self,tof):
@@ -136,17 +139,20 @@ class BlobView(QtGui.QWidget,Ui_Form):
 
 
     def onCentroid(self,event):
-        cluster_shot,cluster_x,cluster_y,cluster_area,cluster_integral,cluster_eig,cluster_vect,cluster_tof = event
-        self.updateBlobData(cluster_shot,cluster_x,cluster_y,cluster_tof )
+        if self._current_mode in (ViewerMode.Centroid,):   
+            cluster_shot,cluster_x,cluster_y,cluster_area,cluster_integral,cluster_eig,cluster_vect,cluster_tof = event
+            self.updateBlobData(cluster_shot,cluster_x,cluster_y,cluster_tof )
     
     def onEvent(self,event):
-        counter,x,y,tof,tot = event
-        if not self._histogram_mode:
-            self.updateMatrix(x,y,tof,tot)
+        if self._current_mode in (ViewerMode.TOF, ViewerMode.Centroid,):    
+            counter,x,y,tof,tot = event
+            if not self._histogram_mode:
+                self.updateMatrix(x,y,tof,tot)
 
     def onToA(self,event):
-        x,y,toa,tot = event
-        self.updateMatrix(x,y,toa,tot)
+        if self._current_mode in (ViewerMode.TOA,):
+            x,y,toa,tot = event
+            self.updateMatrix(x,y,toa,tot)
     
     def updateTrend(self,trigger,avg_blobs):
         last_trigger = self._blob_trend_trigger[-1]
