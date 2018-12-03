@@ -70,14 +70,13 @@ class DaqConfigPanel(QtGui.QWidget,Ui_Form):
 
 
     def setupLines(self):
-        self.event_count.setValidator(QtGui.QIntValidator(self))
-        #self.exposure_time.setValidator(QtGui.QDoubleValidator(self))
-        self.acq_time.setValidator(QtGui.QDoubleValidator(self))
+        pass
+
 
     def connectSignals(self):
-        self.openpath.clicked.connect(self.openPath)
-        self.display_rate.valueChanged.connect(self.displayRateChange)
-        self.event_count.returnPressed.connect(self.eventCountChanged)
+        # self.openpath.clicked.connect(self.openPath)
+        # self.display_rate.valueChanged.connect(self.displayRateChange)
+        #self.event_count.returnPressed.connect(self.eventCountChanged)
 
         self.start_acq.clicked.connect(self.startAcqClicked)
         self.end_acq.clicked.connect(self.endAcqClicked)
