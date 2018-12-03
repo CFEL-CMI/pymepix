@@ -182,7 +182,7 @@ class BlobView(QtGui.QWidget,Ui_Form):
         self._matrix[...]=0.0
         self._int_blob_count = 0
         self._histogram = None
-        self.plotData()
+        #self.plotData()
 
 
 def main():
