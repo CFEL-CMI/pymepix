@@ -132,6 +132,7 @@ class AcquisitionStage(Logger):
                 self.info('Waiting for process {}'.format(idx))
                 p.join(1.0)
                 p.terminate()
+                p.join()
                 self.info('Process stop complete')
             if self._input_queue.get() is not None:
                 self.error('Queue should only contain None!!')
@@ -143,6 +144,7 @@ class AcquisitionStage(Logger):
                 self.info('Joining thread {}'.format(p))
                 p.join(1.0)
                 p.terminate()
+                p.join()
                 self.info('Join complete')
         self.info('Stop complete')
         self._pipeline_objects = []
