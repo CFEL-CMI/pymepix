@@ -29,10 +29,10 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
 
         self._view_widgets= {}
 
-        # self._event_max = -1
-        # self._current_event_count = 0
+        self._event_max = -1
+        self._current_event_count = 0
 
-        self.onModeChange(ViewerMode.TOA)
+        
 
         self._display_rate = 1/5
         self._frame_time = -1.0
@@ -41,6 +41,26 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
         self.startupTimepix()
         self.connectSignals()
         # 
+        self.onModeChange(ViewerMode.TOA)
+
+    def switchToMode(self):
+        self._timepix.stopAcq()
+        if self._current_mode is ViewerMode.TOA:
+            #self._timepix[0].setupAcquisition(pymepix.processing.PixelPipeline)
+            self._timepix[0].acquisition.enableEvents = False
+            logger.info('Switch to TOA mode, {}'.format(self._timepix[0].acquisition.enableEvents))
+        elif self._current_mode is ViewerMode.TOF:
+            #self._timepix[0].setupAcquisition(pymepix.processing.PixelPipeline)
+            self._timepix[0].acquisition.enableEvents = True
+            logger.info('Switch to TOF mode, {}'.format(self._timepix[0].acquisition.enableEvents))
+        elif self._current_mode is ViewerMode.Centroid:
+            #self._timepix[0].setupAcquisition(pymepix.processing.CentroidPipeline)
+            self._timepix[0].acquisition.enableEvents = True
+            logger.info('Switch to Centroid mode, {}'.format(self._timepix[0].acquisition.enableEvents))
+        
+        self._timepix.startAcq()
+
+
     def startupTimepix(self):
 
         self._timepix = pymepix.Pymepix(('192.168.1.10',50000))
@@ -52,7 +72,6 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
         logging.getLogger('pymepix').setLevel(logging.INFO)
 
         self._timepix[0].setupAcquisition(pymepix.processing.CentroidPipeline)
-
         # self._timepix.
         self._timepix.dataCallback = self.onData
         self._timepix[0].thresholdMask = np.zeros(shape=(256,256),dtype=np.uint8)
@@ -64,7 +83,24 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
         self._timepix.stopAcq()
 
 
+    def setEventWindow(self,min_v,max_v):
+        logger.info('Setting Event window {} {}'.format(min_v,max_v))
+        self._timepix[0].acquisition.eventWindow = (min_v,max_v)
 
+
+    def setTotThreshold(self,tot):
+        logger.info('Setting Tot threshold {}'.format(tot))
+        self._timepix[0].acquisition.totThreshold = tot
+
+    def setCentroidSkip(self,skip):
+        logger.info('Setting centroid skip {}'.format(skip))
+        self._timepix[0].acquisition.centroidSkip = skip
+
+    def setBlobProccesses(self,blob):
+        logger.info('Setting number of blob processes {}'.format(blob))
+        self._timepix.stopAcq()
+        self._timepix[0].acquisition.numBlobProcesses = blob
+        self._timepix.startAcq()
 
     def connectSignals(self):
         self.actionSophy_spx.triggered.connect(self.getfile)
@@ -73,21 +109,27 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
         self._config_panel.acqtab.frameTimeChange.connect(self.onFrameTimeUpdate)
         self._config_panel.acqtab.biasVoltageChange.connect(self.onBiasVoltageUpdate)
         self._config_panel.acqtab.modeChange.connect(self.onModeChange)
-        # self.displayNow.connect(self._tof_panel.displayTof)
-        # self.newEvent.connect(self._tof_panel.onEvent)
-        # self.clearNow.connect(self._tof_panel.clearTof)
-        # self._tof_panel.roiUpdate.connect(self.onRoiChange)
-        # self._tof_panel.displayRoi.connect(self.addViewWidget)
+        self.displayNow.connect(self._tof_panel.displayTof)
+        self.onPixelToF.connect(self._tof_panel.onEvent)
+        self.onCentroid.connect(self._tof_panel.onBlob)
+        self.clearNow.connect(self._tof_panel.clearTof)
+        self._tof_panel.roiUpdate.connect(self.onRoiChange)
+        self._tof_panel.displayRoi.connect(self.addViewWidget)
 
         self.displayNow.connect(self._overview_panel.plotData)
         self.onPixelToA.connect(self._overview_panel.onToA)
         self.onPixelToF.connect(self._overview_panel.onEvent)
         self.onCentroid.connect(self._overview_panel.onCentroid)
         self.clearNow.connect(self._overview_panel.clearData)
+        self.modeChange.connect(self._overview_panel.modeChange)
         # self._config_panel.startAcquisition.connect(self.startAcquisition)
         # self._config_panel.stopAcquisition.connect(self.stopAcquisition)
 
-        # self._config_panel.resetPlots.connect(self.clearNow.emit)
+        self._config_panel.acqtab.resetPlots.connect(self.clearNow.emit)
+        self._config_panel.proctab.eventWindowChanged.connect(self.setEventWindow)
+        self._config_panel.proctab.totThresholdChanged.connect(self.setTotThreshold)
+        self._config_panel.proctab.centroidSkipChanged.connect(self.setCentroidSkip)
+        self._config_panel.proctab.blobNumberChanged.connect(self.setBlobProccesses)
 
 
 
@@ -112,9 +154,15 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
         if self._current_mode is ViewerMode.TOA:
             #Hide TOF panel
             self._dock_tof.hide()
+            for k,view in self._view_widgets.items():
+                view.hide()
+
         elif self._current_mode in (ViewerMode.TOF,ViewerMode.Centroid,):
             #Show it
             self._dock_tof.show()
+            for k,view in self._view_widgets.items():
+                view.show()
+        self.switchToMode()
 
         self.modeChange.emit(value)
 
@@ -149,16 +197,21 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
                 self.clearNow.emit()
                 self._current_event_count = 0
 
-            num_events = event_shots.max()-event_shots.min()+1
+            try:
+                num_events = event_shots.max()-event_shots.min()+1
+            except ValueError:
+                logger.warning('Events has no identity {}'.format(event_shots))
+                return
             self._current_event_count+= num_events
-
         
         if data_type is MessageType.PixelData:
             logger.debug('RAW: {}'.format(event))
             self.onPixelToA.emit(event)
         elif data_type is MessageType.EventData:
+            logger.debug('TOF: {}'.format(event))
             self.onPixelToF.emit(event)
         elif data_type is MessageType.CentroidData:
+            logger.info('CENTROID: {}'.format(event))
             self.onCentroid.emit(event)
 
         
@@ -196,8 +249,11 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
             dock_view.setWidget(blob_view)
             self._view_widgets[name] = dock_view
             self.displayNow.connect(blob_view.plotData)
-            self.newEvent.connect(blob_view.onNewEvent)
+            self.onPixelToA.connect(blob_view.onToA)
+            self.onPixelToF.connect(blob_view.onEvent)
+            self.onCentroid.connect(blob_view.onCentroid)
             self.clearNow.connect(blob_view.clearData)
+            self.modeChange.connect(blob_view.modeChange)
             self.addDockWidget(QtCore.Qt.RightDockWidgetArea,dock_view)
 
     def getfile(self):
