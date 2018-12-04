@@ -173,14 +173,14 @@ class TimeOfFlightPanel(QtGui.QWidget,Ui_Form):
 
     def onEvent(self,event):
 
+        if not self._blob_tof_mode:
+            tof = event[3]
+            self._updateTof(tof)
+
+    def onBlob(self,blob):
         if self._blob_tof_mode:
-            tof = event[11]
-        else:
-            tof = event[2]
-
-        self._updateTof(tof)
-
-
+            tof = event[7]
+            self._updateTof(tof)
 
     def setupTofConfig(self):
         self.event_start.setValidator(QtGui.QDoubleValidator(self))
