@@ -145,8 +145,9 @@ class BlobView(QtGui.QWidget,Ui_Form):
     
     def onEvent(self,event):
         if self._current_mode in (ViewerMode.TOF, ViewerMode.Centroid,):    
-            counter,x,y,tof,tot = event
+            
             if not self._histogram_mode:
+                counter,x,y,tof,tot = event
                 self.updateMatrix(x,y,tof,tot)
 
     def onToA(self,event):
