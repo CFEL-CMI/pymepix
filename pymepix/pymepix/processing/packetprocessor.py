@@ -35,7 +35,7 @@ class PacketProcessor(BasePipelineObject):
 
         self._trigger_counter = 0        
 
-        self._handle_events= False
+        self._handle_events= handle_events
         min_window=event_window[0]
         max_window=event_window[1]
         self._min_event_window = Value('d',min_window)
@@ -82,7 +82,8 @@ class PacketProcessor(BasePipelineObject):
     def _eventWindow(self):
         return self._min_event_window.value,self._max_event_window.value
 
-
+    def preRun(self):
+        self.info('Running with triggers? {}'.format(self._handle_events))
 
     def process(self,data_type,data):
         if data_type is not MessageType.RawData:
@@ -170,8 +171,12 @@ class PacketProcessor(BasePipelineObject):
 
         exp_filter = (tof>= min_window) & (tof<=max_window)
 
+        result = event_number[exp_filter],x[exp_filter],y[exp_filter],tof[exp_filter],tot[exp_filter]
 
-        return event_number[exp_filter],x[exp_filter],y[exp_filter],tof[exp_filter],tot[exp_filter]
+        if result[0].size > 0:
+            return result
+        else:
+            return None
 
 
 

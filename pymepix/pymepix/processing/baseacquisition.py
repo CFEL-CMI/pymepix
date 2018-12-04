@@ -98,6 +98,8 @@ class AcquisitionStage(Logger):
         self._input_queue = input_queue
         self._output_queue = output_queue
 
+        self.debug('Building stage with arguments {} {}'.format(self._args,self._kwargs))
+
         if self._output_queue is None:
             self.debug('I am creating the queue')
             self._output_queue = Queue()
