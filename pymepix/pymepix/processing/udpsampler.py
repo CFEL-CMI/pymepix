@@ -46,7 +46,7 @@ class UdpSampler(BasePipelineObject):
         header = ((packet & 0xF000000000000000) >> 60) & 0xF
         subheader = ((packet & 0x0F00000000000000) >> 56) & 0xF
         pix_filter = (header ==0xA) |(header==0xB) 
-        trig_filter =  ((header==0x4)|(header==0x6) & (subheader == 0xF))
+        trig_filter =  ((header==0x4)|(header==0x6)) & (subheader == 0xF)
         tpx_filter = pix_filter | trig_filter
         tpx_packets = packet[tpx_filter]
         return tpx_packets
