@@ -21,7 +21,7 @@ class PixelPipeline(AcquisitionPipeline):
 
     def __init__(self,data_queue,address,longtime,use_event=False,name='Pixel'):
         AcquisitionPipeline.__init__(self,name,data_queue)
-
+        self.info('Initializing Pixel pipeline')
         self._use_events = use_event
         self._event_window = (0,10000)
 
@@ -30,6 +30,7 @@ class PixelPipeline(AcquisitionPipeline):
         self._reconfigureProcessor()
 
     def _reconfigureProcessor(self):
+        self.debug('Configuring packet processor handle_events={} event_window={}'.format(self._use_events,self._event_window))
         self.getStage(2).configureStage(PacketProcessor,handle_events=self._use_events,event_window=self._event_window)
 
     @property
@@ -55,7 +56,9 @@ class PixelPipeline(AcquisitionPipeline):
     
     @enableEvents.setter
     def enableEvents(self,value):
-        self._use_events = True
+        self.info('Setting event to {}'.format(value))
+        self._use_events = value
+        self._reconfigureProcessor()
 
 
     @property
@@ -108,7 +111,7 @@ class CentroidPipeline(PixelPipeline):
 
     def __init__(self,data_queue,address,longtime):
         PixelPipeline.__init__(self,data_queue,address,longtime,use_event=True,name='Centroid') 
-
+        self.info('Initializing Centroid pipeline')
         self._skip_centroid = 1
         self._tot_threshold = 0
     
@@ -183,4 +186,3 @@ class CentroidPipeline(PixelPipeline):
     @numBlobProcesses.setter
     def numBlobProcesses(self,value):
         self.getStage(4).numProcess = max(1,value)
-    
