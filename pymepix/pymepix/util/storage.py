@@ -1,9 +1,8 @@
 """Useful functions to store data"""
 import numpy as np
 
-def open_output_file(filename,ext):
+def open_output_file(filename,ext,index=0):
     import os,logging
-    index = 0     
     file_format = '{}_{:06d}.{}'           
     raw_filename = file_format.format(filename,index,ext)
     while os.path.isfile(raw_filename):
