@@ -95,22 +95,28 @@
          <layout class="QHBoxLayout" name="horizontalLayout_12">
           <item>
            <widget class="QLabel" name="label_14">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
             <property name="text">
              <string>Index</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QLineEdit" name="startindex">
-            <property name="text">
-             <string>0</string>
+           <widget class="QSpinBox" name="startindex">
+            <property name="maximum">
+             <number>99999</number>
             </property>
            </widget>
           </item>
          </layout>
         </item>
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_9">
+         <layout class="QHBoxLayout" name="horizontalLayout">
           <item>
            <widget class="QLabel" name="label_5">
             <property name="text">
@@ -132,6 +138,13 @@
            <widget class="QCheckBox" name="write_pixels">
             <property name="text">
              <string>Pixels</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="write_tof">
+            <property name="text">
+             <string>TOF</string>
             </property>
            </widget>
           </item>
@@ -176,17 +189,19 @@
          <layout class="QHBoxLayout" name="horizontalLayout_11">
           <item>
            <widget class="QLabel" name="label_13">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
             <property name="text">
              <string>No of Files</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QLineEdit" name="repeat_value">
-            <property name="text">
-             <string>1</string>
-            </property>
-           </widget>
+           <widget class="QSpinBox" name="repeat_value"/>
           </item>
          </layout>
         </item>
