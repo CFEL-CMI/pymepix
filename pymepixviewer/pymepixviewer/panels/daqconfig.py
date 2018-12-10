@@ -96,6 +96,11 @@ class DaqConfigPanel(QtGui.QWidget,Ui_Form):
         self._elapsed_time_thread.start(1000)
 
 
+    @property
+    def fileSaver(self):
+        return self._filesaver
+
+
     def connectSignals(self):
         # self.openpath.clicked.connect(self.openPath)
         # self.display_rate.valueChanged.connect(self.displayRateChange)
