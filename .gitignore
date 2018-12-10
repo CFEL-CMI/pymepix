@@ -5,6 +5,9 @@ build/*
 pymepix/build*
 pymepix/doc/build*
 pymepix/doc/.build
+pymepixviewer/build*
+pymepixviewer/doc/build*
+pymepixviewer/doc/.build
 pymepix/pymepix.egg-info/*
 .DS_Store
 lib/pymepix.egg-info/*
