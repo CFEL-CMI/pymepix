@@ -13,37 +13,21 @@ from distutils import log
 
 
 
+packages = find_packages(exclude=('tests', 'doc'))
 
-package_dir = {"": "lib"}
-
-packages = find_packages(where="lib")
-
-provides = [
-    'pymepix',
-]
+provides = ['pymepixviewer',]
 
 
+requires = [ 'pymepix','pyqtgraph']
 
-
-requires = [
-    
-
-]
-
-install_requires = [
-    
-
-    
-]
+install_requires = ['pymepix','pyqtgraph']
 
 
 
-console_scripts = ['pymepix-acq=pymepix.pymepix:main'
-]
+console_scripts = ['pymepixviewer=pymepixviewer.main:main']
 
 
-entry_points = {'console_scripts': console_scripts,
-                }
+entry_points = {'console_scripts': console_scripts,}
 
 
 classifiers = [
@@ -64,16 +48,14 @@ classifiers = [
     'Topic :: Software Development :: Libraries',
 ]
 
-setup(name='pymepix',
+setup(name='pymepixviewer',
       author='CFEL-CMI group, et al (see AUTHORS)',
       author_email='cmidaq@cfel.de',
       maintainer='CFEL-CMI group',
       version='0.5',
-      description='Timepix python library',
+      description='Timepix DAQ GUI',
       classifiers=classifiers,
       packages=packages,
-      package_dir=package_dir,
- #     scripts=scripts,
       include_package_data=True,
       entry_points=entry_points,
       provides=provides,
