@@ -60,24 +60,24 @@ class FileSaver(QtCore.QObject):
     def setIndex(self,index):
         self._index = index
 
-    def processData(self,data):
-        data_type,result = data
 
-        if data_type is MessageType.RawData:
-            if self._raw_file is not None:
-                store_raw(self._raw_file,data)
+    def onRaw(self,data):
+        if self._raw_file is not None:
+            store_raw(self._raw_file,data)
 
-        elif data_type is MessageType.PixelData:
-            if self._toa_file is not None:
-                store_toa(self._toa_file,data)    
+    def onToa(self,data):
+        if self._toa_file is not None:
+            store_toa(self._toa_file,data)  
 
-        elif data_type is MessageType.EventData:
-            if self._tof_file is not None:
-                store_tof(self._tof_file,data)       
-        elif data_type is MessageType.CentroidData:
-            if self._blob_file is not None:
-                store_centroid(self._blob_file,data) 
+    def onTof(self,data):
+        if self._tof_file is not None:
+            store_tof(self._tof_file,data)  
 
+    def onCentroid(self,data):
+        if self._blob_file is not None:
+            store_centroid(self._blob_file,data) 
+
+ 
     def closeFiles(self):
         if self._raw_file is not None:
             logger.info('Closing raw file')

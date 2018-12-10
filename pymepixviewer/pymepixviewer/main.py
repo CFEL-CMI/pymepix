@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
 
     displayNow = QtCore.pyqtSignal()
+    onRaw = QtCore.pyqtSignal(object)
     onPixelToA = QtCore.pyqtSignal(object)
     onPixelToF = QtCore.pyqtSignal(object)
     onCentroid = QtCore.pyqtSignal(object)
@@ -117,6 +118,9 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
         self._tof_panel.displayRoi.connect(self.addViewWidget)
 
         self.displayNow.connect(self._overview_panel.plotData)
+
+
+
         self.onPixelToA.connect(self._overview_panel.onToA)
         self.onPixelToF.connect(self._overview_panel.onEvent)
         self.onCentroid.connect(self._overview_panel.onCentroid)
@@ -131,7 +135,10 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
         self._config_panel.proctab.centroidSkipChanged.connect(self.setCentroidSkip)
         self._config_panel.proctab.blobNumberChanged.connect(self.setBlobProccesses)
 
-
+        self.onRaw.connect(self._config_panel.fileSaver.onRaw)
+        self.onPixelToA.connect(self._config_panel.fileSaver.onToa)
+        self.onPixelToF.connect(self._config_panel.fileSaver.onTof)
+        self.onCentroid.connect(self._config_panel.fileSaver.onCentroid)
 
     def onBiasVoltageUpdate(self,value):
         logger.info('Bias Voltage changed to {} V'.format(value))
@@ -204,7 +211,10 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
                 return
             self._current_event_count+= num_events
         
-        if data_type is MessageType.PixelData:
+
+        if data_type is MessageType.RawData:
+            self.onRaw.emit(event)
+        elif data_type is MessageType.PixelData:
             logger.debug('RAW: {}'.format(event))
             self.onPixelToA.emit(event)
         elif data_type is MessageType.EventData:
@@ -260,10 +270,19 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
         fname = QtGui.QFileDialog.getOpenFileName(self, 'Open file', 
             '/home',"SoPhy File (*.spx)")
         logger.debug(fname)
+        
+        if fname[0]=="":
+            return
+
 
         self._timepix.stopAcq()
 
-        self._timepix[0].loadSophyConfig(fname[0])
+        try:
+            self._timepix[0].loadSophyConfig(fname[0])
+        except FileNotFoundError:
+            QtGui.QMessageBox.warning(None, 'File not found',
+                               'File with name {} not found'.format(fname[0]),
+                               QtGui.QMessageBox.Ok,QtGui.QMessageBox.Ok);            
 
         self._timepix.startAcq()
 
