@@ -56,5 +56,45 @@ If there are no errors then it was successful!
 
 ## Pymepix Viewer
 
-This is in the process of being ported to the new library and is non functional for now.
+Pymepix-viewer is a graphical user interface for data acquisition using the pymepix library. It is still in development so expect some instability and bugs
 
+### Getting Started
+
+
+#### Prerequisites
+
+Pyqtgraph is required (and by extension PyQt), install using:
+
+```
+pip install pyqtgraph
+```
+
+
+#### Installing
+Clone the directory using:
+
+```
+git clone https://<desy-username>@stash.desy.de/scm/cmi/libtimepix.git
+```
+
+move into the pymepixviewer project folder
+
+```
+cd libtimepix/pymepixviewer
+```
+
+Then install
+
+```
+python setup.py install
+```
+
+#### Running
+
+To run, open terminal or command prompt and do:
+
+```
+pymepixviewer
+```
+
+If the prerequisites are satisfied and timepix is connected then a window should pop up!

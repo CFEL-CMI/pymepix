@@ -98,6 +98,8 @@ class AcquisitionStage(Logger):
         self._input_queue = input_queue
         self._output_queue = output_queue
 
+        self.debug('Building stage with arguments {} {}'.format(self._args,self._kwargs))
+
         if self._output_queue is None:
             self.debug('I am creating the queue')
             self._output_queue = Queue()
@@ -132,6 +134,7 @@ class AcquisitionStage(Logger):
                 self.info('Waiting for process {}'.format(idx))
                 p.join(1.0)
                 p.terminate()
+                p.join()
                 self.info('Process stop complete')
             if self._input_queue.get() is not None:
                 self.error('Queue should only contain None!!')
@@ -143,6 +146,7 @@ class AcquisitionStage(Logger):
                 self.info('Joining thread {}'.format(p))
                 p.join(1.0)
                 p.terminate()
+                p.join()
                 self.info('Join complete')
         self.info('Stop complete')
         self._pipeline_objects = []
