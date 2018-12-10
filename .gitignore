@@ -9,6 +9,8 @@ pymepixviewer/build*
 pymepixviewer/doc/build*
 pymepixviewer/doc/.build
 pymepix/pymepix.egg-info/*
+pymepixviewer/pymepix.egg-info/*
+pymepixviewer/pymepixviewer.egg-info/*
 .DS_Store
 lib/pymepix.egg-info/*
 *.egg
