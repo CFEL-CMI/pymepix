@@ -122,9 +122,9 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
 
     def connectSignals(self):
         self.actionSophy_spx.triggered.connect(self.getfile)
-        self._config_panel.acqtab.updateRateChange.connect(self.onDisplayUpdate)
-        self._config_panel.acqtab.eventCountChange.connect(self.onEventCountUpdate)
-        self._config_panel.acqtab.frameTimeChange.connect(self.onFrameTimeUpdate)
+        self._config_panel.viewtab.updateRateChange.connect(self.onDisplayUpdate)
+        self._config_panel.viewtab.eventCountChange.connect(self.onEventCountUpdate)
+        self._config_panel.viewtab.frameTimeChange.connect(self.onFrameTimeUpdate)
         self._config_panel.acqtab.biasVoltageChange.connect(self.onBiasVoltageUpdate)
 
         self._config_panel.acqtab.fine_threshold.valueChanged.connect(self.setFineThreshold)
@@ -132,7 +132,7 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
 
         self.fineThresholdUpdate.connect(self._config_panel.acqtab.fine_threshold.setValue)
         self.coarseThresholdUpdate.connect(self._config_panel.acqtab.coarse_threshold.setValue)
-        self._config_panel.acqtab.modeChange.connect(self.onModeChange)
+        self._config_panel.viewtab.modeChange.connect(self.onModeChange)
         self.displayNow.connect(self._tof_panel.displayTof)
         self.onPixelToF.connect(self._tof_panel.onEvent)
         self.onCentroid.connect(self._tof_panel.onBlob)
@@ -155,7 +155,7 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
         # self._config_panel.startAcquisition.connect(self.startAcquisition)
         # self._config_panel.stopAcquisition.connect(self.stopAcquisition)
 
-        self._config_panel.acqtab.resetPlots.connect(self.clearNow.emit)
+        self._config_panel.viewtab.resetPlots.connect(self.clearNow.emit)
         self._config_panel.proctab.eventWindowChanged.connect(self.setEventWindow)
         self._config_panel.proctab.totThresholdChanged.connect(self.setTotThreshold)
         self._config_panel.proctab.centroidSkipChanged.connect(self.setCentroidSkip)
