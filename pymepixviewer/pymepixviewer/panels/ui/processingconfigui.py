@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'pymepixviewer/panels/ui/processingconfig.ui'
+# Form implementation generated from reading ui file 'processingconfig.ui'
 #
 # Created by: PyQt5 UI code generator 5.9.2
 #
@@ -14,8 +14,8 @@ class Ui_Form(object):
         Form.resize(506, 223)
         self.verticalLayout = QtWidgets.QVBoxLayout(Form)
         self.verticalLayout.setObjectName("verticalLayout")
-        self.horizontalLayout = QtWidgets.QHBoxLayout()
-        self.horizontalLayout.setObjectName("horizontalLayout")
+        self.verticalLayout_4 = QtWidgets.QVBoxLayout()
+        self.verticalLayout_4.setObjectName("verticalLayout_4")
         self.groupBox_3 = QtWidgets.QGroupBox(Form)
         self.groupBox_3.setObjectName("groupBox_3")
         self.verticalLayout_2 = QtWidgets.QVBoxLayout(self.groupBox_3)
@@ -45,7 +45,7 @@ class Ui_Form(object):
         self.label_10.setObjectName("label_10")
         self.horizontalLayout_4.addWidget(self.label_10)
         self.verticalLayout_2.addLayout(self.horizontalLayout_4)
-        self.horizontalLayout.addWidget(self.groupBox_3)
+        self.verticalLayout_4.addWidget(self.groupBox_3)
         self.groupBox_4 = QtWidgets.QGroupBox(Form)
         self.groupBox_4.setObjectName("groupBox_4")
         self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.groupBox_4)
@@ -81,8 +81,8 @@ class Ui_Form(object):
         self.blob_num.setObjectName("blob_num")
         self.horizontalLayout_6.addWidget(self.blob_num)
         self.verticalLayout_3.addLayout(self.horizontalLayout_6)
-        self.horizontalLayout.addWidget(self.groupBox_4)
-        self.verticalLayout.addLayout(self.horizontalLayout)
+        self.verticalLayout_4.addWidget(self.groupBox_4)
+        self.verticalLayout.addLayout(self.verticalLayout_4)
         spacerItem = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         self.verticalLayout.addItem(spacerItem)
 

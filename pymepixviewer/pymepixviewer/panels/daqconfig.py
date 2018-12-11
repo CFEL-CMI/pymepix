@@ -108,7 +108,7 @@ class DaqConfigPanel(QtGui.QWidget,Ui_Form):
 
         self.start_acq.clicked.connect(self.startAcqClicked)
         self.end_acq.clicked.connect(self.endAcqClicked)
-        self.acqtab.reset_plots.clicked.connect(self.resetPlots.emit)
+        self.viewtab.reset_plots.clicked.connect(self.resetPlots.emit)
 
     def openPath(self):
         directory = QtGui.QFileDialog.getExistingDirectory(self, "Open Directory",

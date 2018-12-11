@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>666</width>
-    <height>388</height>
+    <width>288</width>
+    <height>691</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,7 +15,7 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_3">
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_10">
+    <layout class="QVBoxLayout" name="verticalLayout_4">
      <item>
       <widget class="QGroupBox" name="groupBox_3">
        <property name="title">
@@ -47,6 +47,60 @@
             </property>
             <property name="value">
              <number>50</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_18">
+          <item>
+           <widget class="QLabel" name="label_19">
+            <property name="text">
+             <string>Fine Threshold</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QDoubleSpinBox" name="fine_threshold">
+            <property name="prefix">
+             <string/>
+            </property>
+            <property name="suffix">
+             <string>mV</string>
+            </property>
+            <property name="maximum">
+             <double>255.000000000000000</double>
+            </property>
+            <property name="singleStep">
+             <double>0.500000000000000</double>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_19">
+          <item>
+           <widget class="QLabel" name="label_20">
+            <property name="text">
+             <string>Coarse Threshold</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QDoubleSpinBox" name="coarse_threshold">
+            <property name="prefix">
+             <string/>
+            </property>
+            <property name="suffix">
+             <string>V</string>
+            </property>
+            <property name="maximum">
+             <double>1.190000000000000</double>
+            </property>
+            <property name="singleStep">
+             <double>0.080000000000000</double>
             </property>
            </widget>
           </item>
@@ -201,235 +255,37 @@
            </widget>
           </item>
           <item>
-           <widget class="QSpinBox" name="repeat_value"/>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <spacer name="verticalSpacer_2">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-       </layout>
-      </widget>
-     </item>
-     <item>
-      <widget class="QGroupBox" name="groupBox">
-       <property name="title">
-        <string>Viewer Config</string>
-       </property>
-       <layout class="QVBoxLayout" name="verticalLayout">
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_17">
-          <item>
-           <widget class="QLabel" name="label_18">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="text">
-             <string>Mode:</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QComboBox" name="mode_box">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>16777215</width>
-              <height>16777215</height>
-             </size>
-            </property>
-            <property name="iconSize">
-             <size>
-              <width>16</width>
-              <height>16</height>
-             </size>
-            </property>
-            <item>
-             <property name="text">
-              <string>Time of Arrival Only</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Time of Flight Only</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Centroid</string>
-             </property>
-            </item>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_2">
-          <item>
-           <widget class="QLabel" name="label">
-            <property name="text">
-             <string>Display Update (Hz)</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="label_2">
-            <property name="text">
-             <string>5</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QSlider" name="display_rate">
+           <widget class="QSpinBox" name="repeat_value">
             <property name="minimum">
-             <number>5</number>
+             <number>1</number>
             </property>
             <property name="maximum">
-             <number>30</number>
+             <number>99999</number>
             </property>
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="invertedAppearance">
-             <bool>false</bool>
-            </property>
-            <property name="tickPosition">
-             <enum>QSlider::TicksBothSides</enum>
-            </property>
-            <property name="tickInterval">
-             <number>5</number>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="label_3">
-            <property name="text">
-             <string>30</string>
+            <property name="value">
+             <number>1</number>
             </property>
            </widget>
           </item>
          </layout>
-        </item>
-        <item>
-         <widget class="QWidget" name="framelayout" native="true">
-          <layout class="QHBoxLayout" name="frametimelayout">
-           <item>
-            <widget class="QLabel" name="label_16">
-             <property name="text">
-              <string>Frame time</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLineEdit" name="frame_time">
-             <property name="inputMask">
-              <string/>
-             </property>
-             <property name="text">
-              <string>-1</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QComboBox" name="time_multi">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>70</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="iconSize">
-              <size>
-               <width>16</width>
-               <height>16</height>
-              </size>
-             </property>
-             <item>
-              <property name="text">
-               <string>s</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>ms</string>
-              </property>
-             </item>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item>
-         <widget class="QWidget" name="eventwidget" native="true">
-          <layout class="QHBoxLayout" name="eventlayout">
-           <item>
-            <widget class="QLabel" name="label_4">
-             <property name="text">
-              <string>Event Count:</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLineEdit" name="event_count">
-             <property name="inputMask">
-              <string/>
-             </property>
-             <property name="text">
-              <string>-1</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="reset_plots">
-          <property name="text">
-           <string>Reset Plots</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <spacer name="verticalSpacer">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
-          </property>
-         </spacer>
         </item>
        </layout>
       </widget>
      </item>
     </layout>
+   </item>
+   <item>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
    </item>
   </layout>
  </widget>

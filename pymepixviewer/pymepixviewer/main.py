@@ -23,6 +23,9 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
     clearNow = QtCore.pyqtSignal()
     modeChange = QtCore.pyqtSignal(object)
 
+    fineThresholdUpdate = QtCore.pyqtSignal(float)
+    coarseThresholdUpdate = QtCore.pyqtSignal(float)
+
     def __init__(self,parent=None):
         super(PymepixDAQ, self).__init__(parent)
         self.setupUi(self)
@@ -34,13 +37,15 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
         self._current_event_count = 0
 
         
+        self.setCentralWidget(None)
 
         self._display_rate = 1/5
         self._frame_time = -1.0
         self._last_frame = 0.0
         self._last_update = 0
-        self.startupTimepix()
         self.connectSignals()
+        self.startupTimepix()
+        
         # 
         self.onModeChange(ViewerMode.TOA)
 
@@ -78,10 +83,22 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
         self._timepix[0].thresholdMask = np.zeros(shape=(256,256),dtype=np.uint8)
         self._timepix[0].pixelMask = np.zeros(shape=(256,256),dtype=np.uint8)
         self._timepix[0].uploadPixels()
+
+        logger.info('Fine: {} Coarse: {}'.format(self._timepix[0].Vthreshold_fine,self._timepix[0].Vthreshold_coarse))
+
+        self.coarseThresholdUpdate.emit(self._timepix[0].Vthreshold_coarse)
+        self.fineThresholdUpdate.emit(self._timepix[0].Vthreshold_fine)
         self._timepix.startAcq()        
 
     def closeTimepix(self):
         self._timepix.stopAcq()
+
+
+    def setFineThreshold(self,value):
+        self._timepix[0].Vthreshold_fine = value
+
+    def setCoarseThreshold(self,value):
+        self._timepix[0].Vthreshold_coarse = value
 
 
     def setEventWindow(self,min_v,max_v):
@@ -105,11 +122,17 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
 
     def connectSignals(self):
         self.actionSophy_spx.triggered.connect(self.getfile)
-        self._config_panel.acqtab.updateRateChange.connect(self.onDisplayUpdate)
-        self._config_panel.acqtab.eventCountChange.connect(self.onEventCountUpdate)
-        self._config_panel.acqtab.frameTimeChange.connect(self.onFrameTimeUpdate)
+        self._config_panel.viewtab.updateRateChange.connect(self.onDisplayUpdate)
+        self._config_panel.viewtab.eventCountChange.connect(self.onEventCountUpdate)
+        self._config_panel.viewtab.frameTimeChange.connect(self.onFrameTimeUpdate)
         self._config_panel.acqtab.biasVoltageChange.connect(self.onBiasVoltageUpdate)
-        self._config_panel.acqtab.modeChange.connect(self.onModeChange)
+
+        self._config_panel.acqtab.fine_threshold.valueChanged.connect(self.setFineThreshold)
+        self._config_panel.acqtab.coarse_threshold.valueChanged.connect(self.setCoarseThreshold)
+
+        self.fineThresholdUpdate.connect(self._config_panel.acqtab.fine_threshold.setValue)
+        self.coarseThresholdUpdate.connect(self._config_panel.acqtab.coarse_threshold.setValue)
+        self._config_panel.viewtab.modeChange.connect(self.onModeChange)
         self.displayNow.connect(self._tof_panel.displayTof)
         self.onPixelToF.connect(self._tof_panel.onEvent)
         self.onCentroid.connect(self._tof_panel.onBlob)
@@ -126,10 +149,13 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
         self.onCentroid.connect(self._overview_panel.onCentroid)
         self.clearNow.connect(self._overview_panel.clearData)
         self.modeChange.connect(self._overview_panel.modeChange)
+
+
+
         # self._config_panel.startAcquisition.connect(self.startAcquisition)
         # self._config_panel.stopAcquisition.connect(self.stopAcquisition)
 
-        self._config_panel.acqtab.resetPlots.connect(self.clearNow.emit)
+        self._config_panel.viewtab.resetPlots.connect(self.clearNow.emit)
         self._config_panel.proctab.eventWindowChanged.connect(self.setEventWindow)
         self._config_panel.proctab.totThresholdChanged.connect(self.setTotThreshold)
         self._config_panel.proctab.centroidSkipChanged.connect(self.setCentroidSkip)
@@ -283,6 +309,10 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
             QtGui.QMessageBox.warning(None, 'File not found',
                                'File with name {} not found'.format(fname[0]),
                                QtGui.QMessageBox.Ok,QtGui.QMessageBox.Ok);            
+
+        self.coarseThresholdUpdate.emit(self._timepix[0].Vthreshold_coarse)
+        self.fineThresholdUpdate.emit(self._timepix[0].Vthreshold_fine)
+
 
         self._timepix.startAcq()
 
