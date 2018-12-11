@@ -58,6 +58,8 @@ class UdpSampler(BasePipelineObject):
             raw_packet = self._sock.recv(16384) # buffer size is 1024 bytes
         except socket.timeout:
             return None,None
+        except socket.error:
+            return None,None
         #self.debug('Read {}'.format(raw_packet))
         if self._packet_buffer is None:
             self._packet_buffer = raw_packet
