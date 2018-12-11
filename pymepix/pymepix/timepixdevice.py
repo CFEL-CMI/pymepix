@@ -112,7 +112,7 @@ class TimepixDevice(Logger):
         self.pixelMask = sophyconfig.maskPixels()
         
         self.uploadPixels()
-
+        self.refreshPixels()
         #print(self.thresholdMask)
 
     def setupDevice(self):
