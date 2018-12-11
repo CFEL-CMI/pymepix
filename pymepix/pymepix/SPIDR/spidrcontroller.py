@@ -61,7 +61,7 @@ class SPIDRController(Logger):
         self._vec_ntohl = np.vectorize(self.convertNtohl)
 
         self._pixel_config = np.ndarray(shape=(256,256),dtype=np.uint8)
-        self.resetModule(SpidrReadoutSpeed.Default)
+        #self.resetModule(SpidrReadoutSpeed.Default)
         self._devices = []
         self._initDevices()
         
