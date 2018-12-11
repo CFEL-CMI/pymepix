@@ -94,7 +94,7 @@ class SophyConfig(TimepixConfig):
     
     def maskPixels(self):
         """Returns mask pixels"""
-        return self._mask//256
+        return 1-(self._mask//256)
     
     def testPixels(self):
         """Returns test pixels"""
