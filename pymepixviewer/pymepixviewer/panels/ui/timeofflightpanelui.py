@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'timeofflightpanel.ui'
+# Form implementation generated from reading ui file 'pymepixviewer\panels\ui\timeofflightpanel.ui'
 #
 # Created by: PyQt5 UI code generator 5.9.2
 #
@@ -11,7 +11,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_Form(object):
     def setupUi(self, Form):
         Form.setObjectName("Form")
-        Form.resize(749, 695)
+        Form.resize(749, 301)
         self.verticalLayout_5 = QtWidgets.QVBoxLayout(Form)
         self.verticalLayout_5.setObjectName("verticalLayout_5")
         self.groupBox_3 = QtWidgets.QGroupBox(Form)
@@ -41,6 +41,7 @@ class Ui_Form(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.roi_list.sizePolicy().hasHeightForWidth())
         self.roi_list.setSizePolicy(sizePolicy)
+        self.roi_list.setMaximumSize(QtCore.QSize(299, 88))
         self.roi_list.setObjectName("roi_list")
         self.verticalLayout.addWidget(self.roi_list)
         self.verticalLayout_2.addWidget(self.groupBox)

@@ -24,6 +24,11 @@
        <string>Acquisition</string>
       </attribute>
      </widget>
+     <widget class="ViewerConfig" name="viewtab">
+      <attribute name="title">
+       <string>Viewer</string>
+      </attribute>
+     </widget>
      <widget class="ProcessingConfig" name="proctab">
       <attribute name="title">
        <string>Processing</string>
@@ -154,6 +159,12 @@
    <class>ProcessingConfig</class>
    <extends>QWidget</extends>
    <header>pymepixviewer.panels.processingconfig</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ViewerConfig</class>
+   <extends>QWidget</extends>
+   <header>pymepixviewer.panels.viewerconfig</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

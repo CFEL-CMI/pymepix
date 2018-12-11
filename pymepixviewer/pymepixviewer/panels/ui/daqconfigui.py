@@ -19,6 +19,9 @@ class Ui_Form(object):
         self.acqtab = AcquisitionConfig()
         self.acqtab.setObjectName("acqtab")
         self.tabWidget.addTab(self.acqtab, "")
+        self.viewtab = ViewerConfig()
+        self.viewtab.setObjectName("viewtab")
+        self.tabWidget.addTab(self.viewtab, "")
         self.proctab = ProcessingConfig()
         self.proctab.setObjectName("proctab")
         self.tabWidget.addTab(self.proctab, "")
@@ -95,6 +98,7 @@ class Ui_Form(object):
         _translate = QtCore.QCoreApplication.translate
         Form.setWindowTitle(_translate("Form", "Form"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.acqtab), _translate("Form", "Acquisition"))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.viewtab), _translate("Form", "Viewer"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.proctab), _translate("Form", "Processing"))
         self.label.setText(_translate("Form", "Acq Time:"))
         self.start_acq.setText(_translate("Form", "Start Acquisition"))
@@ -104,3 +108,4 @@ class Ui_Form(object):
 
 from pymepixviewer.panels.acqconfig import AcquisitionConfig
 from pymepixviewer.panels.processingconfig import ProcessingConfig
+from pymepixviewer.panels.viewerconfig import ViewerConfig
