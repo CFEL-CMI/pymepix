@@ -103,7 +103,7 @@ class TimepixDevice(Logger):
         sophyconfig = SophyConfig(sophyFile)
         
         for code,value in sophyconfig.dacCodes():
-            self.debug('Setting DAC {},{}'.format(code,value))
+            self.info('Setting DAC {},{}'.format(code,value))
             self._device.setDac(code,value)
             #time.sleep(0.5)
         
