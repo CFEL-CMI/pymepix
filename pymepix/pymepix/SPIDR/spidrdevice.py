@@ -240,24 +240,24 @@ class SpidrDevice(Logger):
     def setSinglePixelThreshold(self,x,y,threshold):
 
         threshold &= 0xF
-        self._selected_config[x,y] =~0x1E
+        self._selected_config[x,y] =~0x01E
         self._selected_config[x,y] |= threshold<<1
     
     def setPixelThreshold(self,threshold):
 
         threshold &=0xF
-        self._selected_config[:,:] &=np.uint8(~0x1E)
-        print (threshold.shape)
-        self._selected_config[:,:] |= threshold<<np.uint8(1)
+        self._selected_config[:,:] &=np.uint8(~0x01E)
+        self._selected_config[:,:] |= (threshold<<np.uint8(4)) & np.uint8(0x01E)
 
     def setSinglePixelMask(self,x,y,mask):
 
         self._selected_config[x,y] &= np.uint8(~1)
-        self._selected_config[x,y] += mask & np.uint8(1)
+        self._selected_config[x,y] |= mask & np.uint8(1)
     
     def setPixelMask(self,mask):
+        mask &=1
         self._selected_config[...] &= np.uint8(~1)
-        self._selected_config[...] += mask & np.uint8(1)
+        self._selected_config[...] |= (mask & np.uint8(1))
 
     
     def setSinglePixelTestBit(self,x,y,val):
