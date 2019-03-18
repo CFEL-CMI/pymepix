@@ -183,7 +183,7 @@ class PacketProcessor(BasePipelineObject):
     def correct_global_time(self,arr,ltime):
         pixelbits = ( arr >> 28 ) & 0x3
         ltimebits = ( ltime >> 28 ) & 0x3
-        diff = ltimebits - pixelbits
+        diff = (ltimebits - pixelbits).astype(np.int64)
         neg = (diff == 1) | (diff == -3)
         pos = (diff == -1) | (diff == 3)
         zero = (diff == 0) | (diff == 2)
