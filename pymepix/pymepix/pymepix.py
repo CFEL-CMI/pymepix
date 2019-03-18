@@ -3,7 +3,7 @@
 import numpy as np
 from .SPIDR.spidrcontroller import SPIDRController
 from.SPIDR.spidrdefs import SpidrReadoutSpeed
-from pymepix.core.log import Logger
+from .core.log import Logger
 from .timepixdevice import TimepixDevice
 from multiprocessing import Queue
 from collections import deque

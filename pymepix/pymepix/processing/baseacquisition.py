@@ -94,6 +94,10 @@ class AcquisitionStage(Logger):
     def processes(self):
         return self._pipeline_objects
 
+
+    def create_pipeline(self,*args,**kwargs):
+        return self._pipeline_klass(*args,input_queue=self._input_queue,shared_output=self._output_queue,**kwargs)
+
     def build(self,input_queue=None,output_queue=None,file_writer=None):
         self._input_queue = input_queue
         self._output_queue = output_queue
@@ -109,7 +113,7 @@ class AcquisitionStage(Logger):
         self.info('Creating {} processes'.format(self._num_processes))
         for n in range(self._num_processes):
             
-            p = self._pipeline_klass(*self._args,**self._kwargs,input_queue=self._input_queue,shared_output=self._output_queue)
+            p = self.create_pipeline(*self._args,**self._kwargs)
             p.daemon=True
             self._pipeline_objects.append(p)
             if self._output_queue is None:
