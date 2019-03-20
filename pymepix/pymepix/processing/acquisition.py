@@ -120,6 +120,7 @@ class CentroidPipeline(PixelPipeline):
         self._reconfigureCentroid()
 
     def _reconfigureCentroid(self):
+        self._reconfigureProcessor()
         p = self.getStage(4).configureStage(TOFCentroiding,skip_data=self._skip_centroid,tot_filter=self._tot_threshold)
 
     @property
@@ -186,3 +187,31 @@ class CentroidPipeline(PixelPipeline):
     @numBlobProcesses.setter
     def numBlobProcesses(self,value):
         self.getStage(4).numProcess = max(1,value)
+
+
+    @property
+    def enableEvents(self):
+        """This either enables or disables TOF (Time of Flight) calculation
+
+        Enabling this will ask the packet processor to process both triggers and pixels
+        and compute time of flight rather than time of arrival. Changes take effect on the next
+        acquisition
+
+        Parameters
+        ------------
+        value : bool 
+
+
+        Returns     
+        ------------
+        bool  
+        
+        """
+        return self._use_events
+
+    
+    @enableEvents.setter
+    def enableEvents(self,value):
+        self.info('Setting event to {}'.format(value))
+        self._use_events = value
+        self._reconfigureCentroid()

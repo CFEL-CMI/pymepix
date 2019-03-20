@@ -6,7 +6,8 @@ from multiprocessing import Queue
 import traceback
 from multiprocessing.sharedctypes import Value
 import time
-class BasePipelineObject(multiprocessing.Process,ProcessLogger):
+import logging
+class BasePipelineObject(multiprocessing.Process):
     """Base class for integration in a processing pipeline
     
     Parameters
@@ -41,22 +42,23 @@ class BasePipelineObject(multiprocessing.Process,ProcessLogger):
 
 
     def __init__(self,name,input_queue=None,create_output=True,num_outputs=1,shared_output=None,propogate_input=True):
-        ProcessLogger.__init__(self,name)
+        #ProcessLogger.__init__(self,name)
         multiprocessing.Process.__init__(self)
+        #self._logger = logging.getLogger('pymepix')
         self.input_queue = input_queue
-
+        self._name = name
 
         self.output_queue =[]
         self._propgate_input = propogate_input
         if shared_output is not None:
-            self.debug('Queue is shared')
+            #self.debug('Queue is shared')
             if type(shared_output) is list:
-                self.debug('Queue {} is a list',)
+                #self.debug('Queue {} is a list',)
                 self.output_queue.extend(shared_output)
             else:
                 self.output_queue.append(shared_output)
         elif create_output:
-            self.debug('Creating Queue')
+            #self.debug('Creating Queue')
             for x in range(num_outputs):
                 self.output_queue.append(Queue())        
         self._enable = Value('I',1)
@@ -141,6 +143,7 @@ class BasePipelineObject(multiprocessing.Process,ProcessLogger):
         pass
 
     def run(self):
+        
         self.preRun()
         while True:
             enabled = self.enable
@@ -175,6 +178,22 @@ class BasePipelineObject(multiprocessing.Process,ProcessLogger):
 
         self.info('Job complete')
 
+
+
+        
+
+    def info(self,message,*args, **kwargs):
+        pass
+    def warning(self,message,*args, **kwargs):
+        pass
+    def debug(self,message,*args, **kwargs):
+        pass
+    
+    def error(self,message,*args, **kwargs):
+        pass
+    
+    def critical(self,message,*args, **kwargs):
+        pass
 
 def main():
     import logging

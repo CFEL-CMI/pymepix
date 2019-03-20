@@ -16,30 +16,35 @@ class UdpSampler(BasePipelineObject):
     def __init__(self,address,longtime,chunk_size=1000,flush_timeout=0.3,input_queue=None,create_output=True,num_outputs=1,shared_output=None):
         BasePipelineObject.__init__(self,'UdpSampler',input_queue=None,create_output=True,num_outputs=1,shared_output=shared_output)
 
-        try:
-            self.createConnection(address)
-            self._chunk_size = chunk_size*8192
-            self._flush_timeout = flush_timeout
-            self._packets_collected = 0
-            self._packet_buffer = None
-            self._total_time = 0.0
-            self._longtime = longtime
-        except Exception as e:
-            self.error('Exception occured in init!!!')
-            self.error(e,exc_info=True)
-            raise       
+        self.address = address
+        self.chunk_size = chunk_size
+        self.flush_timeout = flush_timeout 
+        self._longtime = longtime
+
+    
     def createConnection(self,address):
         """Establishes a UDP connection to spidr"""
         self._sock = socket.socket(socket.AF_INET, # Internet
                             socket.SOCK_DGRAM) # UDP
         self._sock.settimeout(1.0)
-        self.info('Establishing connection to : {}'.format(address))
-        self._sock.bind(address)
+        self.info('Establishing connection to : {}'.format(self.address))
+        self._sock.bind(self.address)
     
 
     def preRun(self):
         self._last_update = time.time()
-
+        try:
+            self.createConnection(self.address)
+            self._chunk_size = self.chunk_size*8192
+            self._flush_timeout = self.flush_timeout
+            self._packets_collected = 0
+            self._packet_buffer = None
+            self._total_time = 0.0
+            
+        except Exception as e:
+            self.error('Exception occured in init!!!')
+            self.error(e,exc_info=True)
+            raise   
 
     def get_useful_packets(self,packet):
         #Get the header
