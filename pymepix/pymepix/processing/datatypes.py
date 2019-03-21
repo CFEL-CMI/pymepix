@@ -8,6 +8,8 @@ class MessageType(IntEnum):
     """Raw UDP packets"""
     PixelData = 1
     """Decoded Pixel/Trigger Data"""
+    TriggerData = 8
+    """Decoded Triggers"""
     EventData = 2
     """Event Data"""
     CentroidData = 3

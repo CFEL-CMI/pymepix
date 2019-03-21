@@ -247,7 +247,7 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
             logger.debug('TOF: {}'.format(event))
             self.onPixelToF.emit(event)
         elif data_type is MessageType.CentroidData:
-            logger.info('CENTROID: {}'.format(event))
+            logger.debug('CENTROID: {}'.format(event))
             self.onCentroid.emit(event)
 
         

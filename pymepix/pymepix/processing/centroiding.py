@@ -48,17 +48,20 @@ class TOFCentroiding(BasePipelineObject):
 
 
     def process(self,data_type,data):
+
+        #print('CENTROID DATA',data)
+
         if data_type != MessageType.EventData:
             return None,None
 
         self._num_centroids +=1
 
-        if self._num_centroids % 1000:
-            self.debug('Search time: {}'.format(self._search_time))
-            self.debug('Blob time: {} '.format(self._blob_time))
+        # if self._num_centroids % 1000:
+        #     self.debug('Search time: {}'.format(self._search_time))
+        #     self.debug('Blob time: {} '.format(self._blob_time))
 
-        if self._num_centroids % self.centroidSkip == 0:
-            return None,None
+        # if self._num_centroids % self.centroidSkip == 0:
+        #     return None,None
 
         shot,x,y,tof,tot = data
         
@@ -71,16 +74,21 @@ class TOFCentroiding(BasePipelineObject):
         tot = tot[tot_filter]
 
         start = time.time()
-        labels = self.find_cluster(shot,x,y,tof,tot,epsilon=2,min_samples=5)
+        labels = self.find_cluster(shot,x,y,tof,tot,epsilon=2,min_samples=3)
         self._search_time += time.time() - start
         label_filter = labels!=0
+
+        
         if labels is None:
             return None,None
+        
+        #print(labels[label_filter ].size)
         if labels[label_filter ].size ==0:
             return None,None
         else:
             start = time.time()
             props = self.cluster_properties(shot[label_filter ],x[label_filter ],y[label_filter ],tof[label_filter ],tot[label_filter ],labels[label_filter ])
+            #print(props)
             self._blob_time += time.time() - start
             return MessageType.CentroidData,props
 
@@ -107,17 +115,17 @@ class TOFCentroiding(BasePipelineObject):
 
     #     return x_bar,y_bar,area,total,evals,evecs.flatten()
 
-    def find_cluster(self,shot,x,y,tof,tot,epsilon=3,min_samples=10,tof_epsilon=None):
+    def find_cluster(self,shot,x,y,tof,tot,epsilon=2,min_samples=2,tof_epsilon=None):
         from sklearn.cluster import DBSCAN
         
         if shot.size == 0:
             return None
         #print(shot.size)
-        tof_eps = 500*1E-9
+        tof_eps = 81920*(25./4096)*1E-9
 
 
         tof_scale = epsilon/tof_eps
-        X = np.vstack((shot*epsilon*1000,x,y,tof*tof_scale)).transpose()
+        X = np.vstack((shot*epsilon*1000,x,y)).transpose()
         dist= DBSCAN(eps=epsilon, min_samples=min_samples,metric='euclidean',n_jobs=1).fit(X)
         labels = dist.labels_ + 1
         return labels
