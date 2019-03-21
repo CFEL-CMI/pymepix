@@ -245,9 +245,9 @@ class SpidrDevice(Logger):
     
     def setPixelThreshold(self,threshold):
 
-        threshold &=0xF
+        threshold &=15
         self._selected_config[:,:] &=np.uint8(~0x01E)
-        self._selected_config[:,:] |= (threshold<<np.uint8(4)) & np.uint8(0x01E)
+        self._selected_config[:,:] |= (threshold<<np.uint8(1)) & np.uint8(0x01E)
 
     def setSinglePixelMask(self,x,y,mask):
 
@@ -298,7 +298,7 @@ class SpidrDevice(Logger):
             
             start_col = x
             end_col = x + columns_per_packet
-            matrix_packet = np.packbits(np.unpackbits(self._selected_config[start_col:end_col,:].flatten()).reshape(-1,8)[:,2:8].reshape(-1))
+            matrix_packet = np.packbits(np.unpackbits(self._selected_config[:,start_col:end_col].flatten()).reshape(-1,8)[:,2:8].reshape(-1))
             #@print (matrix_packet.shape,matrix_packet.dtype)
             #print ('Sending packet with columns {}-{}'.format(start_col,end_col))
             self._ctrl.requestSetIntBytes(SpidrCmds.CMD_SET_PIXCONF,self._dev_num,x,matrix_packet)
