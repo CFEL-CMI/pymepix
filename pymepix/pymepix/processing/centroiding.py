@@ -88,32 +88,32 @@ class TOFCentroiding(BasePipelineObject):
 
 
 
-    def moments_com(self,X,Y,tot):
+    # def moments_com(self,X,Y,tot):
 
-        total = tot.sum()
-        x_bar = (X*tot).sum()/total
-        y_bar = (Y*tot).sum()/total
-        area = tot.size
-        x_cm = X - x_bar
-        y_cm = Y - y_bar
-        coords = np.vstack([x_cm, y_cm])
+    #     total = tot.sum()
+    #     x_bar = (X*tot).sum()/total
+    #     y_bar = (Y*tot).sum()/total
+    #     area = tot.size
+    #     x_cm = X - x_bar
+    #     y_cm = Y - y_bar
+    #     coords = np.vstack([x_cm, y_cm])
         
-        cov = np.cov(coords)
-        try:
+    #     cov = np.cov(coords)
+    #     try:
 
-            evals, evecs = np.linalg.eig(cov)
-        except:
-            return None
+    #         evals, evecs = np.linalg.eig(cov)
+    #     except:
+    #         return None
 
-        return x_bar,y_bar,area,total,evals,evecs.flatten()
+    #     return x_bar,y_bar,area,total,evals,evecs.flatten()
 
-    def find_cluster(self,shot,x,y,tof,tot,epsilon=2,min_samples=2,tof_epsilon=None):
+    def find_cluster(self,shot,x,y,tof,tot,epsilon=3,min_samples=10,tof_epsilon=None):
         from sklearn.cluster import DBSCAN
         
         if shot.size == 0:
             return None
         #print(shot.size)
-        tof_eps = 81920*(25./4096)*1E-9/5.0
+        tof_eps = 500*1E-9
 
 
         tof_scale = epsilon/tof_eps
@@ -123,50 +123,68 @@ class TOFCentroiding(BasePipelineObject):
         return labels
 
     def cluster_properties(self,shot,x,y,tof,tot,labels):
-        label_iter = np.unique(labels)
-        total_objects = label_iter.size
+        import scipy.ndimage as nd
 
-        valid_objects = 0
-        #Prepare our output
-        cluster_shot = np.ndarray(shape=(total_objects,),dtype=np.int)
-        cluster_x = np.ndarray(shape=(total_objects,),dtype=np.float64)
-        cluster_y = np.ndarray(shape=(total_objects,),dtype=np.float64)
-        cluster_eig = np.ndarray(shape=(total_objects,2,),dtype=np.float64)
-        cluster_area = np.ndarray(shape=(total_objects,),dtype=np.float64)
-        cluster_integral = np.ndarray(shape=(total_objects,),dtype=np.float64)
-        cluster_tof = np.ndarray(shape=(total_objects,),dtype=np.float64)
+        label_index = np.unique(labels)
+        tot_max = np.array(nd.maximum_position(tot,labels=labels,index=label_index)).flatten()
+        #tof_min = np.array(nd.minimum_position(tof,labels=labels,index=label_index)).flatten()
+        #print(tot_max)
+        tot_sum = nd.sum(tot,labels=labels,index=label_index)
+        cluster_x = np.array(nd.sum(x*tot,labels=labels,index=label_index)/tot_sum).flatten()
+        cluster_y = np.array(nd.sum(y*tot,labels=labels,index=label_index)/tot_sum).flatten()
+        cluster_tof = np.array(nd.sum(tof*tot,labels=labels,index=label_index)/tot_sum).flatten()
+        cluster_tot = tot[tot_max]
+        #cluster_tof = tof[tot_max]
+        cluster_shot = shot[tot_max]
+
+
+        return cluster_shot,cluster_x,cluster_y,cluster_tof,cluster_tot
+
+    # def cluster_properties(self,shot,x,y,tof,tot,labels):
+    #     label_iter = np.unique(labels)
+    #     total_objects = label_iter.size
+
+    #     valid_objects = 0
+    #     #Prepare our output
+    #     cluster_shot = np.ndarray(shape=(total_objects,),dtype=np.int)
+    #     cluster_x = np.ndarray(shape=(total_objects,),dtype=np.float64)
+    #     cluster_y = np.ndarray(shape=(total_objects,),dtype=np.float64)
+    #     cluster_eig = np.ndarray(shape=(total_objects,2,),dtype=np.float64)
+    #     cluster_area = np.ndarray(shape=(total_objects,),dtype=np.float64)
+    #     cluster_integral = np.ndarray(shape=(total_objects,),dtype=np.float64)
+    #     cluster_tof = np.ndarray(shape=(total_objects,),dtype=np.float64)
         
 
-        for idx in range(total_objects):
+    #     for idx in range(total_objects):
 
 
-            obj_slice = (labels == label_iter[idx])
-            obj_shot = shot[obj_slice]
-            #print(obj_shot.size)
-            obj_x = x[obj_slice]
-            obj_y = y[obj_slice]
+    #         obj_slice = (labels == label_iter[idx])
+    #         obj_shot = shot[obj_slice]
+    #         #print(obj_shot.size)
+    #         obj_x = x[obj_slice]
+    #         obj_y = y[obj_slice]
 
-            obj_tot = tot[obj_slice]
-            max_tot = np.argmax(obj_tot)
+    #         obj_tot = tot[obj_slice]
+    #         max_tot = np.argmax(obj_tot)
 
-            moments = self.moments_com(obj_x,obj_y,obj_tot)
-            if moments is None:
-                continue    
-
-
-            x_bar,y_bar,area,integral,evals,evecs = moments
-            obj_tof = tof[obj_slice]
-            max_tot = np.argmax(obj_tot)
+    #         moments = self.moments_com(obj_x,obj_y,obj_tot)
+    #         if moments is None:
+    #             continue    
 
 
-            cluster_tof[valid_objects] = obj_tof[max_tot]
-            cluster_x[valid_objects] = x_bar
-            cluster_y[valid_objects] = y_bar
-            cluster_area[valid_objects] = area
-            cluster_integral[valid_objects] = integral
-            cluster_eig[valid_objects]=evals
-            cluster_shot[valid_objects] = obj_shot[0]
-            valid_objects+=1
-        return cluster_shot[:valid_objects],cluster_x[:valid_objects], \
-                cluster_y[:valid_objects],cluster_area[:valid_objects], \
-                cluster_integral[:valid_objects],cluster_eig[:valid_objects],cluster_eig[:valid_objects,:],cluster_tof[:valid_objects]
+    #         x_bar,y_bar,area,integral,evals,evecs = moments
+    #         obj_tof = tof[obj_slice]
+    #         max_tot = np.argmax(obj_tot)
+
+
+    #         cluster_tof[valid_objects] = obj_tof[max_tot]
+    #         cluster_x[valid_objects] = x_bar
+    #         cluster_y[valid_objects] = y_bar
+    #         cluster_area[valid_objects] = area
+    #         cluster_integral[valid_objects] = integral
+    #         cluster_eig[valid_objects]=evals
+    #         cluster_shot[valid_objects] = obj_shot[0]
+    #         valid_objects+=1
+    #     return cluster_shot[:valid_objects],cluster_x[:valid_objects], \
+    #             cluster_y[:valid_objects],cluster_area[:valid_objects], \
+    #             cluster_integral[:valid_objects],cluster_eig[:valid_objects],cluster_eig[:valid_objects,:],cluster_tof[:valid_objects]
