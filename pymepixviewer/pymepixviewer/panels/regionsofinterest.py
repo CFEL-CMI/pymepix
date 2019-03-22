@@ -168,14 +168,13 @@ class RoiModel(QtCore.QAbstractItemModel):
             return
 
         self.layoutAboutToBeChanged.emit()
-        roi = self.rootItem.removeChild(idx)
-        roi._parent=None
+        self._old_roi = self.rootItem.removeChild(idx)
         self.layoutChanged.emit()
         #print('REMOVING:',roi)
-        roi.roiUpdated.disconnect(self.onRoiUpdate)
+        self._old_roi.roiUpdated.disconnect(self.onRoiUpdate)
         
         
-        p#rint(self.rootItem)
+        #rint(self.rootItem)
         return roi
 
 
