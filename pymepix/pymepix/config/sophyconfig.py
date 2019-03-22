@@ -91,6 +91,7 @@ class SophyConfig(TimepixConfig):
         self._test = np.frombuffer(buffer[27:],dtype=np.uint16).reshape(256,256)
         buffer = zip_file.read(file_names[2])
         self._thresh = np.frombuffer(buffer[27:],dtype=np.uint16).reshape(256,256)
+
     
     def maskPixels(self):
         """Returns mask pixels"""
@@ -102,13 +103,13 @@ class SophyConfig(TimepixConfig):
     
     def thresholdPixels(self):
         """Returns threshold pixels"""
-        return self._thresh*16//4096
+        return self._thresh >> 8
 
 
 
 def main():
     import matplotlib.pyplot as plt
-    spx = SophyConfig('/Users/alrefaie/Documents/repos/libtimepix/lib/pymepix/config/W0028_H06_50V.spx')
+    spx = SophyConfig('E:/W0028_H06/settings/W0028_H06_50V.spx')
     print(spx.dacCodes())
     # plt.matshow(spx.maskPixels()[::-1,:])
     # plt.show()
@@ -119,6 +120,8 @@ def main():
     print('MAX',np.max(thresh))
     print('MEAN',np.mean(thresh))
     print('STDDEV',np.std(thresh))
+    plt.imshow(spx.maskPixels())
+    plt.show()
 
     
     # plt.hist(thresh.flatten(),bins=16,range=[0,15])

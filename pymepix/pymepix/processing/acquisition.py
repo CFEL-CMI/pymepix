@@ -114,6 +114,8 @@ class CentroidPipeline(PixelPipeline):
         self.info('Initializing Centroid pipeline')
         self._skip_centroid = 1
         self._tot_threshold = 0
+        self._samples = 3
+        self._epsilon = 3.0
     
         self.addStage(4,TOFCentroiding)
 
@@ -121,7 +123,7 @@ class CentroidPipeline(PixelPipeline):
 
     def _reconfigureCentroid(self):
         self._reconfigureProcessor()
-        p = self.getStage(4).configureStage(TOFCentroiding,skip_data=self._skip_centroid,tot_filter=self._tot_threshold)
+        p = self.getStage(4).configureStage(TOFCentroiding,skip_data=self._skip_centroid,tot_filter=self._tot_threshold,epsilon=self._epsilon,samples=self._samples)
 
     @property
     def centroidSkip(self):
@@ -137,13 +139,59 @@ class CentroidPipeline(PixelPipeline):
     
     @centroidSkip.setter
     def centroidSkip(self,value):
+        self.info('Setting Centroid skip to {}'.format(value))
         self._skip_centroid = value
         self._reconfigureCentroid()
         if self.isRunning:
             skip = self._skip_centroid
             for p in self.getStage(4).processes:
                 p.centroidSkip = skip
+
+    @property
+    def epsilon(self):
+        """Perform centroiding on every nth packet
+        
+        Parameters
+        -----------
+        value: int
+            
+        
+        """
+        return self._epsilon
     
+    @epsilon.setter
+    def epsilon(self,value):
+        self._epsilon = value
+        self._reconfigureCentroid()
+        self.info('Setting epsilon skip to {}'.format(value))
+        if self.isRunning:
+            skip = self._epsilon
+            for p in self.getStage(4).processes:
+                p.epsilon = skip
+
+    @property
+    def samples(self):
+        """Perform centroiding on every nth packet
+        
+        Parameters
+        -----------
+        value: int
+            
+        
+        """
+        return self._samples
+    
+    @samples.setter
+    def samples(self,value):
+        self._samples = value
+        self._reconfigureCentroid()
+        if self.isRunning:
+            skip = self._samples
+            for p in self.getStage(4).processes:
+                p.samples = skip
+
+
+
     @property
     def totThreshold(self):
         """Determines which time over threhsold values to filter before centroiding

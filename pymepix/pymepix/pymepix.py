@@ -211,7 +211,7 @@ class Pymepix(Logger):
         for t in self._timepix_devices:
             self.info('Setting up {}'.format(t.deviceName))
             t.setupDevice()
-
+        self._spidr.restartTimers()
         self._spidr.openShutter()
         for t in self._timepix_devices:
             self.info('Starting {}'.format(t.deviceName))
