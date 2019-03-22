@@ -5,7 +5,7 @@ from .ui.blobviewui import Ui_Form
 from ..core.datatypes import ViewerMode
 import threading
 import numpy as np
-
+from collections import deque
 class BlobView(QtGui.QWidget,Ui_Form):
 
     def __init__(self,parent=None,start=None,end=None,current_mode=ViewerMode.TOA):
@@ -25,10 +25,11 @@ class BlobView(QtGui.QWidget,Ui_Form):
         self._matrix = np.ndarray(shape=(256,256),dtype=np.float)
         self._matrix[...]=0.0
 
-        self._blob_trend = np.ndarray(shape=(400,),dtype=np.float)
-        self._blob_trend[...]=0.0
-        self._blob_trend_trigger = np.ndarray(shape=(400,),dtype=np.int)
-        self._blob_trend_trigger[...]=0
+        self._blob_trend = deque(maxlen=100)#np.ndarray(shape=(400,),dtype=np.float)
+        #self._blob_trend[...]=0.0
+        #self._blob_trend_trigger = np.ndarray(shape=(400,),dtype=np.int)
+        #self._blob_trend_trigger[...]=0
+        self._blob_trend_trigger = deque(maxlen=100)
         self._blob_trend_data = pg.PlotDataItem()
         self.blob_trend.addItem(self._blob_trend_data)
         self.blob_trend.setLabel('left',text='Blob Count')
@@ -156,15 +157,14 @@ class BlobView(QtGui.QWidget,Ui_Form):
             self.updateMatrix(x,y,toa,tot)
     
     def updateTrend(self,trigger,avg_blobs):
-        last_trigger = self._blob_trend_trigger[-1]
-        if trigger < last_trigger or (trigger-last_trigger)>10000:
-            self._blob_trend[...]=0.0
-            self._blob_trend_trigger[:] = trigger
-        self._blob_trend = np.roll(self._blob_trend,-1)
-        self._blob_trend_trigger = np.roll(self._blob_trend_trigger,-1)
-        self._blob_trend[-1] = avg_blobs
-        self._blob_trend_trigger[-1]= trigger
-        self._blob_trend_data.setData(x=self._blob_trend_trigger,y=self._blob_trend)
+
+        self._blob_trend.append(avg_blobs)
+        self._blob_trend_trigger.append(trigger)
+        #self._blob_trend_trigger[-1]= trigger
+        try:
+            self._blob_trend_data.setData(x=np.array(self._blob_trend_trigger),y=np.array(self._blob_trend))
+        except:
+            pass
 
 
 
