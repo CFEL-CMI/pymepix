@@ -115,13 +115,7 @@ class PacketProcessor(BasePipelineObject):
             else:
                 return None,None
         else:
-            if self._x is not None:
-                pixel_data = self.getBuffers()
-                self.clearBuffers()
-                #self.debug('Putting pixel, {}'.format(pixel_data))
-                return MessageType.PixelData,pixel_data
-            else:
-                return None,None
+            return None,None
 
     def filterBadTriggers(self):
         self._triggers = self._triggers[np.argmin(self._triggers):]
@@ -129,10 +123,10 @@ class PacketProcessor(BasePipelineObject):
     def find_events_fast(self):
         if self._triggers is None:
             return None
-        self.filterBadTriggers()
+        #self.filterBadTriggers()
         if self._triggers.size < 5:
             return None
-
+        self.filterBadTriggers()
         if self._toa is None:
             return None
         if self._toa.size == 0:
@@ -165,8 +159,15 @@ class PacketProcessor(BasePipelineObject):
         #print('triggers',start)
         #print('TOA',toa)
         self.updateBuffers(self._toa  >= last_trigger)
-
-        event_mapping = np.digitize(toa,start)-1
+        try:
+            event_mapping = np.digitize(toa,start)-1
+        except Exception as e:
+            self.error('Exception has occured {} due to ',str(e))
+            self.error('Writing output TOA {}'.format(toa))
+            self.error('Writing triggers {}'.format(start))
+            self.error('Flushing triggers!!!')
+            self._triggers = self._triggers[-1:]
+            return None
         event_triggers = self._triggers[:-1:]   
         self._triggers = self._triggers[-1:]
 
@@ -270,21 +271,24 @@ class PacketProcessor(BasePipelineObject):
         #Orient the pixels based on Timepix orientation
         x,y = self.orientPixels(col,row)
 
-        #
+        # #
         x+= self._x_offset 
         y+= self._y_offset
+        
+        self.pushOutput(MessageType.PixelData,(x,y,finalToA,ToT))
 
         #print('PIXEL',finalToA,longtime)
-        if self._x is None:
-            self._x = x
-            self._y = y
-            self._toa = finalToA
-            self._tot = ToT
-        else:
-            self._x = np.append(self._x,x)
-            self._y = np.append(self._y,y)
-            self._toa = np.append(self._toa,finalToA)
-            self._tot = np.append(self._tot,ToT)
+        if self._handle_events:
+            if self._x is None:
+                self._x = x
+                self._y = y
+                self._toa = finalToA
+                self._tot = ToT
+            else:
+                self._x = np.append(self._x,x)
+                self._y = np.append(self._y,y)
+                self._toa = np.append(self._toa,finalToA)
+                self._tot = np.append(self._tot,ToT)
         
 
 
