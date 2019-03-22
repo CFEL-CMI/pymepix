@@ -13,14 +13,16 @@ class TOFCentroiding(BasePipelineObject):
 
     """
 
-    def __init__(self,skip_data=1,tot_filter=0,input_queue=None,create_output=True,num_outputs=1,shared_output=None):
+    def __init__(self,skip_data=1,tot_filter=0,epsilon=3.0,samples=3,input_queue=None,create_output=True,num_outputs=1,shared_output=None):
         BasePipelineObject.__init__(self,TOFCentroiding.__name__,input_queue=input_queue,create_output=create_output,num_outputs=num_outputs,shared_output=shared_output)
 
         self._centroid_count = 0
         self._search_time = 0.0
         self._blob_time = 0.0
         self._skip_data = Value('I',skip_data)
-        self._tot_threshold = Value('I',0)
+        self._tot_threshold = Value('I',tot_filter)
+        self._epsilon = Value('d',3.0)
+        self._min_samples = Value('I',3)
         self._num_centroids = 0
 
     @property
@@ -46,6 +48,29 @@ class TOFCentroiding(BasePipelineObject):
         value = max(0,value)
         self._tot_threshold.value = value
 
+
+    @property
+    def epsilon(self):
+        """Sets whether to process every nth pixel packet. 
+        
+        For example, setting it to 2 means every second packet is processed. 1 means all pixel packets are processed.
+
+        """
+        return self._epsilon.value
+    
+    @epsilon.setter
+    def epsilon(self,value):
+        #value = max(1,value)
+        self.info('Epsilon set to {}'.format(value))
+        self._epsilon.value = value
+
+    @property
+    def samples(self):
+        return self._min_samples.value
+    
+    @samples.setter
+    def samples(self,value):
+        self._min_samples.value = value
 
     def process(self,data_type,data):
 
@@ -74,7 +99,7 @@ class TOFCentroiding(BasePipelineObject):
         tot = tot[tot_filter]
 
         start = time.time()
-        labels = self.find_cluster(shot,x,y,tof,tot,epsilon=2,min_samples=3)
+        labels = self.find_cluster(shot,x,y,tof,tot,epsilon=self.epsilon,min_samples=self.samples)
         self._search_time += time.time() - start
         label_filter = labels!=0
 
@@ -125,7 +150,7 @@ class TOFCentroiding(BasePipelineObject):
 
 
         tof_scale = epsilon/tof_eps
-        X = np.vstack((shot*epsilon*1000,x,y)).transpose()
+        X = np.vstack((shot*epsilon*1000,x,y,tof*tof_scale)).transpose()
         dist= DBSCAN(eps=epsilon, min_samples=min_samples,metric='euclidean',n_jobs=1).fit(X)
         labels = dist.labels_ + 1
         return labels
