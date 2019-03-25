@@ -205,7 +205,7 @@ class TimepixDevice(Logger):
         """
         #self._device.getPixelConfig()
         pixel_config = self._device.currentPixelConfig
-        return (pixel_config >> 1) &0x1E
+        return (pixel_config >> 1) & 0xF
     
     @thresholdMask.setter
     def thresholdMask(self,threshold):
@@ -238,13 +238,9 @@ class TimepixDevice(Logger):
 
     def uploadPixels(self):
         """Uploads local pixel configuration to timepix"""
-        try:
-            self._device.uploadPixelConfig()
-        except PymePixException as e:
-            if 'ERR_UNEXP' in e.message:
-                pass
-            else:
-                raise
+
+        self._device.uploadPixelConfig()
+
         
     def refreshPixels(self):
         """Loads timepix pixel configuration to local array"""
