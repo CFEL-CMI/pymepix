@@ -277,9 +277,9 @@ class SpidrDevice(Logger):
         #         packet = np.packbits(np.unpackbits(to_write).reshape(-1,8)[:,2:8].reshape(-1))
             
         #     self._ctrl.req
-
+        self.resetPixels()
         final_pixels = (self._pixel_mask&0x1) | (self._pixel_threshold&0xf)<<1 | (self._pixel_test&1)<<5
-        self.info('FINAL_PIXELS {}'.format(final_pixels))
+        self.debug('FINAL_PIXELS {}'.format(final_pixels))
         #Flatten and unpack the bits of the matrix selecting only the necessary bits
         for x in range(0,256):
             
