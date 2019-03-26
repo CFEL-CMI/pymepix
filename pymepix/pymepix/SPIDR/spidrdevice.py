@@ -27,11 +27,14 @@ class SpidrDevice(Logger):
 
         self.info('Device {} with id {} created'.format(self._dev_num,self.deviceId))
 
-        self._pixel_config = [np.ndarray(shape=(256,256),dtype=np.uint8)]*4
-        self._selected_config = self._pixel_config[0]
-        #self._cptr = self.columnTestPulseRegister
-        self.resetPixelConfig(all_pixels=True)
+        self.clearPixelConfig()
 
+
+
+    def clearPixelConfig(self):
+        self._pixel_mask = np.ones(shape=(256,256),dtype=np.uint8)
+        self._pixel_threshold = np.zeros(shape=(256,256),dtype=np.uint8)
+        self._pixel_test = np.zeros(shape=(256,256),dtype=np.uint8)
 
 
     @property
@@ -197,42 +200,27 @@ class SpidrDevice(Logger):
         self._cptr = self.columnTestPulseRegister
 
 
-    @property
-    def currentPixelConfig(self):
-        return self._selected_config
 
-
-    def selectPixelConfig(self,index):
-        self._selected_config = self._pixel_config[index]
 
     def getPixelConfig(self):
 
         for y in range(256):
+            #print('Requested row {}'.format(y))
             column,pixelrow = self._ctrl.requestGetIntBytes(SpidrCmds.CMD_GET_PIXCONF,self._dev_num,256,y)
+
             #print ('Column : {} Pixels: {}'.format(row,pixelcolumn))
-            self._selected_config[column,:] = pixelrow[:]
+            self._pixel_mask[column,:] = pixelrow[:]&0x1
+            self._pixel_threshold[column,:] = (pixelrow[:]>>1)&0xf
+            self._pixel_test[column,:] = (pixelrow[:]>>5)&0x1
+            #self._pixel_config[self._pixel_idx][column,:] = pixelrow[:]
 
     def resetPixels(self):
         self._ctrl.requestSetInt(SpidrCmds.CMD_RESET_PIXELS,self._dev_num,0)
 
-
-    @property
-    def numPixelConfigs(self):
-        return len(self._pixel_config)
-    
-    def pixelConfig(self,index):
-        return self._pixel_config[index]
     
     def resetPixelConfig(self,index=-1,all_pixels=False):
         
-        if all_pixels:
-            for x in self._pixel_config:
-                x[...] = 0
-
-        elif index == - 1:
-            self._selected_config[...] = 0
-        else:
-            self._pixel_config[index][...] = 0
+        self.clearPixelConfig()
     
 
 
@@ -240,31 +228,29 @@ class SpidrDevice(Logger):
     def setSinglePixelThreshold(self,x,y,threshold):
 
         threshold &= 0xF
-        self._selected_config[x,y] =~0x01E
-        self._selected_config[x,y] |= threshold<<1
+        self._pixel_threshold[x,y] = threshold
+        #self._pixel_config[self._pixel_idx][x,y] =~0x01E
+        #self._pixel_config[self._pixel_idx][x,y] |= threshold<<1
     
     def setPixelThreshold(self,threshold):
 
-        threshold &=15
-        self._selected_config[:,:] &=np.uint8(~0x01E)
-        self._selected_config[:,:] |= (threshold<<np.uint8(1)) & np.uint8(0x01E)
+        threshold &=0xF
+        self._pixel_threshold[...] = threshold[...]
 
     def setSinglePixelMask(self,x,y,mask):
 
-        self._selected_config[x,y] &= np.uint8(~1)
-        self._selected_config[x,y] |= mask & np.uint8(1)
+        self._pixel_mask[x,y] = mask
     
     def setPixelMask(self,mask):
-        mask &=1
-        self._selected_config[...] &= np.uint8(~1)
-        self._selected_config[...] |= (mask & np.uint8(1))
+        self._pixel_mask[...] = mask[...]&0x1
 
     
     def setSinglePixelTestBit(self,x,y,val):
-        val &=1
-        self._selected_config[x,y]&= np.uint8(~(1<<5))
-        self._selected_config[x,y]|= (val << 5)
-    
+        self._pixel_test[x,y] = val
+
+    def setPixelTestBit(self,test):
+        self._pixel_test[...] = test[...]&0x1
+
     def uploadPixelConfig(self,formatted=True,columns_per_packet=1):
 
         columns_per_packet = max(1,columns_per_packet)
@@ -286,19 +272,20 @@ class SpidrDevice(Logger):
 
         # for x in range(0,256,columns_per_packet):
         #     for col in range(0,columns_per_packet):
-        #         to_write = self._selected_config[x+col,:]
+        #         to_write = self._pixel_config[self._pixel_idx][x+col,:]
         #         offset = 0
         #         packet = np.packbits(np.unpackbits(to_write).reshape(-1,8)[:,2:8].reshape(-1))
             
         #     self._ctrl.req
-
-
+        self.resetPixels()
+        final_pixels = (self._pixel_mask&0x1) | (self._pixel_threshold&0xf)<<1 | (self._pixel_test&1)<<5
+        self.debug('FINAL_PIXELS {}'.format(final_pixels))
         #Flatten and unpack the bits of the matrix selecting only the necessary bits
-        for x in range(0,256,columns_per_packet):
+        for x in range(0,256):
             
             start_col = x
-            end_col = x + columns_per_packet
-            matrix_packet = np.packbits(np.unpackbits(self._selected_config[:,start_col:end_col].flatten()).reshape(-1,8)[:,2:8].reshape(-1))
+            end_col = x + 1
+            matrix_packet = final_pixels[:,start_col:end_col].reshape(256)
             #@print (matrix_packet.shape,matrix_packet.dtype)
             #print ('Sending packet with columns {}-{}'.format(start_col,end_col))
             self._ctrl.requestSetIntBytes(SpidrCmds.CMD_SET_PIXCONF,self._dev_num,x,matrix_packet)
@@ -409,3 +396,4 @@ class SpidrDevice(Logger):
     @serverPort.setter
     def serverPort(self,value):
         return self._ctrl.requestSetInt( SpidrCmds.CMD_SET_SERVERPORT, self._dev_num,value)
+

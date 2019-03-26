@@ -73,11 +73,28 @@ class TOFCentroiding(BasePipelineObject):
         self._min_samples.value = value
 
     def process(self,data_type,data):
+        if data_type != MessageType.EventData:
+            return None,None
+        shot,x,y,tof,tot = data
+
+        _,indices,counts = np.unique(shot, return_index=True,return_counts=True)
+        comb = zip(indices,counts)
+        for idx,cnt in comb:
+            start = idx
+            end = idx + cnt
+            res = self.process_centroid(shot[start:end],x[start:end],y[start:end],tof[start:end],tot[start:end])
+            if res is not None:
+                self.pushOutput(res[0],res[1])
+        
+        return None,None
+
+        
+
+    def process_centroid(self,shot,x,y,tof,tot):
 
         #print('CENTROID DATA',data)
 
-        if data_type != MessageType.EventData:
-            return None,None
+
 
         self._num_centroids +=1
 
@@ -87,8 +104,6 @@ class TOFCentroiding(BasePipelineObject):
 
         # if self._num_centroids % self.centroidSkip == 0:
         #     return None,None
-
-        shot,x,y,tof,tot = data
         
         tot_filter = (tot > self.totThreshold)
         #Filter out pixels
