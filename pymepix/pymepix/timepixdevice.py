@@ -184,11 +184,12 @@ class TimepixDevice(Logger):
 
     def resetPixels(self):
         """Clears pixel configuration"""
+        self._device.clearPixelConfig()
         self._device.resetPixels()
 
 
     @property
-    def thresholdMask(self):
+    def pixelThreshold(self):
         """Threshold mask set for timepix device
 
         Parameters
@@ -204,12 +205,7 @@ class TimepixDevice(Logger):
 
         """
         #self._device.getPixelConfig()
-        pixel_config = self._device.currentPixelConfig
-        return (pixel_config >> 1) & 0xF
-    
-    @thresholdMask.setter
-    def thresholdMask(self,threshold):
-        self._device.setPixelThreshold(threshold.astype(np.uint8))
+        return self._device._pixel_threshold
     
     @property
     def pixelMask(self):
@@ -229,12 +225,27 @@ class TimepixDevice(Logger):
 
         """
         #self._device.getPixelConfig()
-        pixel_config = self._device.currentPixelConfig
-        return pixel_config&0x1
+        return self._device._pixel_mask
 
-    @pixelMask.setter
-    def pixelMask(self,mask):
-        self._device.setPixelMask(mask.astype(np.uint8))
+    @property
+    def pixelTest(self):
+        """Pixel mask set for timepix device
+
+        Parameters
+        ----------
+        value : :obj:`numpy.array` of :obj:`int`
+            256x256 uint8 threshold mask to set locally
+            
+
+        Returns
+        -----------
+        :obj:`numpy.array` of :obj:`int` or :obj:`None`:
+            Locally stored pixel mask matrix
+        
+
+        """
+        #self._device.getPixelConfig()
+        return self._device._pixel_test
 
     def uploadPixels(self):
         """Uploads local pixel configuration to timepix"""
