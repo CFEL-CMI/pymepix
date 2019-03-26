@@ -107,13 +107,13 @@ class TimepixDevice(Logger):
             self._device.setDac(code,value)
             #time.sleep(0.5)
         
-        self.thresholdMask = sophyconfig.thresholdPixels()
+        self.pixelThreshold = sophyconfig.thresholdPixels()
         
         self.pixelMask = sophyconfig.maskPixels()
         
         self.uploadPixels()
         self.refreshPixels()
-        #print(self.thresholdMask)
+        #print(self.pixelThreshold)
 
     def setupDevice(self):
         """Sets up valid paramters for acquisition
@@ -190,23 +190,27 @@ class TimepixDevice(Logger):
 
     @property
     def pixelThreshold(self):
-        """Threshold mask set for timepix device
+        """Threshold set for timepix device
 
         Parameters
         ----------
         value : :obj:`numpy.array` of :obj:`int`
-            256x256 uint8 threshold mask to set locally
+            256x256 uint8 threshold to set locally
             
 
         Returns
         -----------
         :obj:`numpy.array` of :obj:`int` or :obj:`None`:
-            Locally stored threshold mask matrix
+            Locally stored threshold  matrix
 
         """
         #self._device.getPixelConfig()
         return self._device._pixel_threshold
-    
+
+    @pixelThreshold.setter
+    def pixelThreshold(self,value):
+        self._device._pixel_threshold = value
+
     @property
     def pixelMask(self):
         """Pixel mask set for timepix device
@@ -227,25 +231,34 @@ class TimepixDevice(Logger):
         #self._device.getPixelConfig()
         return self._device._pixel_mask
 
+    @pixelMask.setter
+    def pixelMask(self,value):
+        self._device._pixel_mask = value
+
     @property
     def pixelTest(self):
-        """Pixel mask set for timepix device
+        """Pixel test set for timepix device
 
         Parameters
         ----------
         value : :obj:`numpy.array` of :obj:`int`
-            256x256 uint8 threshold mask to set locally
+            256x256 uint8 pixel test to set locally
             
 
         Returns
         -----------
         :obj:`numpy.array` of :obj:`int` or :obj:`None`:
-            Locally stored pixel mask matrix
+            Locally stored pixel test matrix
         
 
         """
         #self._device.getPixelConfig()
         return self._device._pixel_test
+
+
+    @pixelTest.setter
+    def pixelTest(self,value):
+        self._device._pixel_test = value
 
     def uploadPixels(self):
         """Uploads local pixel configuration to timepix"""

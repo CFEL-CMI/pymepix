@@ -396,3 +396,4 @@ class SpidrDevice(Logger):
     @serverPort.setter
     def serverPort(self,value):
         return self._ctrl.requestSetInt( SpidrCmds.CMD_SET_SERVERPORT, self._dev_num,value)
+

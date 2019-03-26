@@ -80,7 +80,7 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
         self._timepix[0].setupAcquisition(pymepix.processing.CentroidPipeline)
         # self._timepix.
         self._timepix.dataCallback = self.onData
-        self._timepix[0].thresholdMask = np.zeros(shape=(256,256),dtype=np.uint8)
+        self._timepix[0].pixelThreshold = np.zeros(shape=(256,256),dtype=np.uint8)
         self._timepix[0].pixelMask = np.zeros(shape=(256,256),dtype=np.uint8)
         self._timepix[0].uploadPixels()
 

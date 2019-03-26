@@ -45,7 +45,7 @@ Individual parameters can also be set for example. To set the fine threshold to 
 pixel threshold configurations can be set by passing a 256x256 numpy array::
 
     import numpy as np
-    tpx0.thresholdMask = np.zeros(shape=(256,256),dtype=np.uint8)
+    tpx0.pixelThreshold = np.zeros(shape=(256,256),dtype=np.uint8)
 
 The same for pixel masks, to set a checkboard mask do::
 
