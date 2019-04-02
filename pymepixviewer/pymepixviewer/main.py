@@ -46,7 +46,8 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
         self.connectSignals()
         self.startupTimepix()
         
-        # 
+        #
+        time.sleep(1.0) 
         self.onModeChange(ViewerMode.TOA)
 
     def switchToMode(self):
@@ -64,6 +65,7 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
             self._timepix[0].acquisition.enableEvents = True
             logger.info('Switch to Centroid mode, {}'.format(self._timepix[0].acquisition.enableEvents))
         
+        time.sleep(2.0)
         self._timepix.startAcq()
 
 
@@ -88,6 +90,9 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
 
         self.coarseThresholdUpdate.emit(self._timepix[0].Vthreshold_coarse)
         self.fineThresholdUpdate.emit(self._timepix[0].Vthreshold_fine)
+
+
+
         self._timepix.startAcq()        
 
     def closeTimepix(self):

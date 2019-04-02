@@ -34,14 +34,17 @@ def store_tof(f,data):
     np.save(f,tot)  
 
 def store_centroid(f,data):
-    cluster_shot,cluster_x,cluster_y,cluster_area,cluster_integral,cluster_eig,cluster_vect,cluster_tof = data
+    if f is None:
+        return
+    
+    if f.closed:
+        return
+
+    cluster_shot,cluster_x,cluster_y,cluster_tof,cluster_tot = data
 
     np.save(f,cluster_shot)  
     np.save(f,cluster_x) 
     np.save(f,cluster_y) 
-    np.save(f,cluster_area)
-    np.save(f,cluster_integral)
-    np.save(f,cluster_eig)
-    np.save(f,cluster_vect)
     np.save(f,cluster_tof)
+    np.save(f,cluster_tot)
  
