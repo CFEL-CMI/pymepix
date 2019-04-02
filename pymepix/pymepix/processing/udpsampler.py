@@ -80,12 +80,12 @@ class UdpSampler(BasePipelineObject):
         if (len(self._packet_buffer) > self._chunk_size) or (flush_time > self._flush_timeout):
             packet = np.frombuffer(self._packet_buffer,dtype='<u8')
 
-            tpx_packets = self.get_useful_packets(packet)
+            #tpx_packets = self.get_useful_packets(packet)
 
             self._packet_buffer = None
             self._last_update = time.time()
-            if tpx_packets.size > 0:
-                return MessageType.RawData,(tpx_packets,self._longtime.value)
+            if packet.size > 0:
+                return MessageType.RawData,(packet,self._longtime.value)
             else:
                 return None,None
         else:

@@ -46,7 +46,8 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
         self.connectSignals()
         self.startupTimepix()
         
-        # 
+        #
+        time.sleep(1.0) 
         self.onModeChange(ViewerMode.TOA)
 
     def switchToMode(self):
@@ -64,6 +65,7 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
             self._timepix[0].acquisition.enableEvents = True
             logger.info('Switch to Centroid mode, {}'.format(self._timepix[0].acquisition.enableEvents))
         
+        time.sleep(2.0)
         self._timepix.startAcq()
 
 
@@ -80,7 +82,7 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
         self._timepix[0].setupAcquisition(pymepix.processing.CentroidPipeline)
         # self._timepix.
         self._timepix.dataCallback = self.onData
-        self._timepix[0].thresholdMask = np.zeros(shape=(256,256),dtype=np.uint8)
+        self._timepix[0].pixelThreshold = np.zeros(shape=(256,256),dtype=np.uint8)
         self._timepix[0].pixelMask = np.zeros(shape=(256,256),dtype=np.uint8)
         self._timepix[0].uploadPixels()
 
@@ -88,6 +90,9 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
 
         self.coarseThresholdUpdate.emit(self._timepix[0].Vthreshold_coarse)
         self.fineThresholdUpdate.emit(self._timepix[0].Vthreshold_fine)
+
+
+
         self._timepix.startAcq()        
 
     def closeTimepix(self):
@@ -115,10 +120,21 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
         self._timepix[0].acquisition.centroidSkip = skip
 
     def setBlobProccesses(self,blob):
+        import time
         logger.info('Setting number of blob processes {}'.format(blob))
         self._timepix.stopAcq()
+        time.sleep(10)
         self._timepix[0].acquisition.numBlobProcesses = blob
         self._timepix.startAcq()
+
+
+    def setEpsilon(self,epsilon):
+        logger.info('Setting epsilon {}'.format(epsilon))
+        self._timepix[0].acquisition.epsilon = epsilon
+
+    def setSamples(self,samples):
+        logger.info('Setting samples {}'.format(samples))
+        self._timepix[0].acquisition.samples = samples
 
     def connectSignals(self):
         self.actionSophy_spx.triggered.connect(self.getfile)
@@ -160,6 +176,9 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
         self._config_panel.proctab.totThresholdChanged.connect(self.setTotThreshold)
         self._config_panel.proctab.centroidSkipChanged.connect(self.setCentroidSkip)
         self._config_panel.proctab.blobNumberChanged.connect(self.setBlobProccesses)
+        self._config_panel.proctab.epsilonChanged.connect(self.setEpsilon)
+        self._config_panel.proctab.samplesChanged.connect(self.setSamples)
+
 
         self.onRaw.connect(self._config_panel.fileSaver.onRaw)
         self.onPixelToA.connect(self._config_panel.fileSaver.onToa)
@@ -247,7 +266,7 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
             logger.debug('TOF: {}'.format(event))
             self.onPixelToF.emit(event)
         elif data_type is MessageType.CentroidData:
-            logger.info('CENTROID: {}'.format(event))
+            logger.debug('CENTROID: {}'.format(event))
             self.onCentroid.emit(event)
 
         
@@ -281,7 +300,7 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
             return
         else:
             dock_view = QtGui.QDockWidget('Display {}'.format(name),self)
-            blob_view = BlobView(start=start,end=end,parent=self)
+            blob_view = BlobView(start=start,end=end,parent=self,current_mode=self._current_mode)
             dock_view.setWidget(blob_view)
             self._view_widgets[name] = dock_view
             self.displayNow.connect(blob_view.plotData)

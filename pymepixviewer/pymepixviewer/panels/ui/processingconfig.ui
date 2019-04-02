@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>506</width>
-    <height>223</height>
+    <height>301</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -141,6 +141,48 @@
           </item>
          </layout>
         </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_7">
+          <item>
+           <widget class="QLabel" name="label_11">
+            <property name="text">
+             <string>Epsilon:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QDoubleSpinBox" name="epsilon">
+            <property name="toolTip">
+             <string>Describes the distance between events (pixel space)</string>
+            </property>
+            <property name="value">
+             <double>2.000000000000000</double>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_8">
+          <item>
+           <widget class="QLabel" name="label_12">
+            <property name="text">
+             <string>Num Samples</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSpinBox" name="samples">
+            <property name="toolTip">
+             <string>Tells how minimum number of pixels to be considered a cluster </string>
+            </property>
+            <property name="value">
+             <number>3</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
        </layout>
       </widget>
      </item>
@@ -154,7 +196,7 @@
      <property name="sizeHint" stdset="0">
       <size>
        <width>20</width>
-       <height>40</height>
+       <height>44</height>
       </size>
      </property>
     </spacer>

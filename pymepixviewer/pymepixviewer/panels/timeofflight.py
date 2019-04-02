@@ -179,7 +179,7 @@ class TimeOfFlightPanel(QtGui.QWidget,Ui_Form):
 
     def onBlob(self,blob):
         if self._blob_tof_mode:
-            tof = event[7]
+            tof = blob[3]
             self._updateTof(tof)
 
     def setupTofConfig(self):

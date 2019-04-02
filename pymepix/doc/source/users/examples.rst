@@ -18,7 +18,7 @@ Starting timepix and polling data::
     timepix.biasVoltage = 50
 
     #Set pixel masks
-    timepix[0].thresholdMask = np.zeros(shape=(256,256),dtype=np.uint8)
+    timepix[0].pixelThreshold = np.zeros(shape=(256,256),dtype=np.uint8)
     timepix[0].pixelMask = np.zeros(shape=(256,256),dtype=np.uint8)
     timepix[0].uploadPixels()
 
@@ -72,7 +72,7 @@ Using callbacks to acquire::
     timepix.biasVoltage = 50
 
     #Set pixel masks
-    timepix[0].thresholdMask = np.zeros(shape=(256,256),dtype=np.uint8)
+    timepix[0].pixelThreshold = np.zeros(shape=(256,256),dtype=np.uint8)
     timepix[0].pixelMask = np.zeros(shape=(256,256),dtype=np.uint8)
     timepix[0].uploadPixels()
 
