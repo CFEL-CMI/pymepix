@@ -34,11 +34,6 @@ def store_tof(f,data):
     np.save(f,tot)  
 
 def store_centroid(f,data):
-    if f is None:
-        return
-    
-    if f.closed:
-        return
 
     cluster_shot,cluster_x,cluster_y,cluster_tof,cluster_tot = data
 

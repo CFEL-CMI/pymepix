@@ -1,13 +1,13 @@
 from pyqtgraph.Qt import QtCore, QtGui
 from pymepix.util.storage import open_output_file,store_raw,store_toa,store_tof,store_centroid
 from pymepix.processing import MessageType
-
+import numpy as np
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-class FileSaver(QtCore.QObject):
+class FileSaver(QtCore.QThread):
 
     def __init__(self):
         QtCore.QObject.__init__(self)
@@ -56,7 +56,11 @@ class FileSaver(QtCore.QObject):
             self._blob_file.close()
         logger.info('Opening blob file :{}'.format(filename))
         self._blob_file = open_output_file(filename,'blob',index=self._index)
-    
+        self._blob_x=[]
+        self._blob_shot=[]
+        self._blob_y=[]
+        self._blob_tof = []
+        self._blob_tot = []
     def setIndex(self,index):
         self._index = index
 
@@ -73,9 +77,30 @@ class FileSaver(QtCore.QObject):
         if self._tof_file is not None:
             store_tof(self._tof_file,data)  
 
+    def convertBlobs(self):
+        shot = np.concatenate(self._blob_shot)
+        x = np.concatenate(self._blob_x)
+        y = np.concatenate(self._blob_y)
+        tof = np.concatenate(self._blob_tof)
+        tot = np.concatenate(self._blob_tot)
+        self._blob_x=[]
+        self._blob_shot=[]
+        self._blob_y=[]
+        self._blob_tof = []
+        self._blob_tot = []
+        return shot,x,y,tof,tot
+
     def onCentroid(self,data):
-        if self._blob_file is not None:
-            store_centroid(self._blob_file,data) 
+        if self._blob_file is not None and not self._blob_file.closed:
+            shot,x,y,tof,tot = data
+            self._blob_shot.append(shot)
+            self._blob_x.append(x)
+            self._blob_y.append(y)
+            self._blob_tof.append(tof)
+            self._blob_tot.append(tot)
+            if len(self._blob_shot) > 1000:
+                store_centroid(self._blob_file,self.convertBlobs()) 
+
 
  
     def closeFiles(self):
@@ -85,6 +110,8 @@ class FileSaver(QtCore.QObject):
             self._raw_file = None
         if self._blob_file is not None:
             logger.info('Closing blob file')
+            if len(self._blob_shot) > 0:
+                store_centroid(self._blob_file,self.convertBlobs()) 
             self._blob_file.close()
             self._blob_file = None
         if self._tof_file is not None:

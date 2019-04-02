@@ -115,7 +115,7 @@ class BlobView(QtGui.QWidget,Ui_Form):
         shots = cluster_shot[tof_filter]
         if x.size == 0:
             self._last_trigger=cluster_shot.max()
-            self.updateTrend(self._last_trigger,0)
+            #self.updateTrend(self._last_trigger,0)
             self.rec_blobs.setText(str(int(0)))
             return
 
@@ -133,7 +133,7 @@ class BlobView(QtGui.QWidget,Ui_Form):
 
         self.computeDirectionCosine(x,y,tof)
         self._last_trigger = shots.max()
-        self.updateTrend(self._last_trigger,avg_blobs)
+        #self.updateTrend(self._last_trigger,avg_blobs)
 
         if self._histogram_mode:
             self.updateHistogram(x,y)
@@ -161,10 +161,7 @@ class BlobView(QtGui.QWidget,Ui_Form):
         self._blob_trend.append(avg_blobs)
         self._blob_trend_trigger.append(trigger)
         #self._blob_trend_trigger[-1]= trigger
-        try:
-            self._blob_trend_data.setData(x=np.array(self._blob_trend_trigger),y=np.array(self._blob_trend))
-        except:
-            pass
+
 
 
 
@@ -177,7 +174,10 @@ class BlobView(QtGui.QWidget,Ui_Form):
             if self._histogram is not None:
                 
                 self.image_view.setImage(self._histogram/self._histogram.max(),autoLevels=False,autoRange=False,autoHistogramRange=False)
-
+        try:
+            self._blob_trend_data.setData(x=np.array(self._blob_trend_trigger),y=np.array(self._blob_trend))
+        except:
+            pass
     
     def clearData(self):
         self._matrix[...]=0.0
