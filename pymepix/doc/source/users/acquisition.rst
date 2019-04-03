@@ -15,13 +15,13 @@ Acquisition can be started and stopped by::
     timepix = Pymepix(('192.168.1.10',50000))
 
     #Start acquisition
-    timepix.startAcq()
+    timepix.start()
 
     #Wait
     time.sleep(1.0)
 
     #Stop acquisition
-    timepix.stopAcq()
+    timepix.stop()
 
 
 Pymepix provides data as a tuple given by (:class:`MessageType`,data). These are explained in :ref:`dataformats`. 
@@ -68,7 +68,7 @@ Now to make pymepix use it simply do:
 
 Now when acquisition is started:
 
->>> timepix.startAcq()
+>>> timepix.start()
 
 The output seen is::
 

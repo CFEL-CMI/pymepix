@@ -41,6 +41,7 @@ class DaqConfigPanel(QtGui.QWidget,Ui_Form):
 
 
     resetPlots = QtCore.pyqtSignal()
+    closeFile = QtCore.pyqtSignal()
     # updateRateChange = QtCore.pyqtSignal(float)
     # eventCountChange = QtCore.pyqtSignal(int)
 
@@ -89,6 +90,8 @@ class DaqConfigPanel(QtGui.QWidget,Ui_Form):
 
         self._repeating_thread = None
         self._filesaver = FileSaver()
+        self.closeFile.connect(self._filesaver.closeFiles)
+        self._filesaver.start()
 
         self._elapsed_time_thread = QtCore.QTimer()
         self._elapsed_time = QtCore.QElapsedTimer()
@@ -178,7 +181,7 @@ class DaqConfigPanel(QtGui.QWidget,Ui_Form):
     def endAcquisition(self):
         self.text_status.setText('Live')
         self._in_acq = False
-        self._filesaver.closeFiles()
+        self.closeFile.emit()
         self._elapsed_time.restart()
     
     def endAcqClicked(self):

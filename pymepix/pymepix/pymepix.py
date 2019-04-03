@@ -197,11 +197,11 @@ class Pymepix(Logger):
         self._spidr.datadrivenReadout()
 
 
-    def startAcq(self):
+    def start(self):
         """Starts acquisition"""
 
         if self._running==True:
-            self.stopAcq()
+            self.stop()
 
         self.info('Starting acquisition')
         self._prepare()
@@ -219,7 +219,7 @@ class Pymepix(Logger):
 
         self._running = True
 
-    def stopAcq(self):
+    def stop(self):
         """Stops acquisition"""
 
 
@@ -294,7 +294,7 @@ def main():
         quit()
     if args.spx:
         logging.info('Opening Sophy file {}'.format(args.spx))
-        pymepix[0].loadSophyConfig(args.spx)
+        pymepix[0].loadConfig(args.spx)
 
     #Switch to TOF mode if set
     if args.decode and args.tof:
@@ -327,7 +327,7 @@ def main():
 
     logging.info('------Starting acquisition---------')
     #Start acquisition
-    pymepix.startAcq()
+    pymepix.start()
     while time.time()-start_time < total_time:
         try:
             data_type,data = pymepix.poll()
@@ -346,6 +346,6 @@ def main():
             
     
 
-    pymepix.stopAcq()
+    pymepix.stop()
 if __name__=="__main__":
     main()
