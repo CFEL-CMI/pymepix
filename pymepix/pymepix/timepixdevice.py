@@ -2,12 +2,20 @@ import numpy as np
 from .SPIDR.spidrdevice import SpidrDevice
 from .SPIDR.error import PymePixException
 from.timepixdef import *
-from .config.sophyconfig import SophyConfig
+from .config import TimepixConfig,SophyConfig,DefaultConfig
+#from .config.sophyconfig import SophyConfig
 from .core.log import Logger
 from .processing.acquisition import PixelPipeline
 from multiprocessing.sharedctypes import Value
 import time
 import threading
+
+class ConfigClassException(Exception):
+    pass
+
+class BadPixelFormat(Exception):
+    pass
+
 class TimepixDevice(Logger):
     """ Provides high level control of a timepix/medipix object
 
@@ -53,6 +61,8 @@ class TimepixDevice(Logger):
         self._run_timer = True
         self._pause_timer = False
 
+        self._config_class = SophyConfig
+
         self.setEthernetFilter(0xFFFF)
 
         #Start the timer thread
@@ -70,46 +80,33 @@ class TimepixDevice(Logger):
 
 
     def _initDACS(self):
+        self.setConfigClass(DefaultConfig)
+        self.loadConfig()
+        self.setConfigClass(SophyConfig)
 
-        self._device.setDac(1,       128)     # TPX3_IBIAS_PREAMP_ON  [0-255]
-        self._device.setDac(2,         8)    # TPX3_IBIAS_PREAMP_OFF [0-15]
-        self._device.setDac(3,       128)     # TPX3_VPREAMP_NCAS     [0-255]
-        self._device.setDac(4,         5)     # TPX3_IBIAS_IKRUM      [0-255]
-        self._device.setDac(5,       128)     # TPX3_VFBK             [0-255]
-        self._device.setDac(6,       420)     # TPX3_VTHRESH_FINE     [0-512]
-        self._device.setDac(7,         6)     # TPX3_VTHRESH_COARSE   [0-15]
-        self._device.setDac(8,        84)     # TPX3_IBIAS_DISCS1_ON  [0-255]
-        self._device.setDac(9,         8)     # TPX3_IBIAS_DISCS1_OFF [0- 15]
-        self._device.setDac(10,      128)      # TPX3_IBIAS_DISCS2_ON  [0-255]
-        self._device.setDac(11,        8)      # TPX3_IBIAS_DISCS2_OFF [0-15]
-        self._device.setDac(12,      192)# TPX3_IBIAS_PIXELDAC   [0-255]
-        self._device.setDac(13 ,     128) # TPX3_IBIAS_TPBUFIN    [0-255]
-        self._device.setDac(14  ,    128)  # TPX3_IBIAS_TPBUFOUT   [0-255]
-        self._device.setDac(15   ,   128)   # TPX3_VTP_COARSE       [0-255]
-        self._device.setDac(16    ,  256)    # TPX3_VTP_FINE         [0-512]
-        self._device.setDac(17     , 128)     # TPX3_IBIAS_CP_PLL     [0-255]
-        self._device.setDac(18      ,128)      # TPX3_PLL_VCNTRL       [0-255]
+    def setConfigClass(self,klass):
+        if issubclass(klass,TimepixConfig):
+            self._config_class = klass
+        else:
+            raise ConfigClassException 
 
-    def loadSophyConfig(self,sophyFile):
-        """Loads dac settings and pixel setting from a sophy (.spx) file
-
-        Parameters
-        -------------
-        sophyFile: str
-            filename to SoPhy spx file
+    def loadConfig(self,*args,**kwargs):
+        """Loads dac settings from the Config class
         
         """
         
-        sophyconfig = SophyConfig(sophyFile)
+        config = self._config_class(*args,**kwargs)
         
-        for code,value in sophyconfig.dacCodes():
+        for code,value in config.dacCodes():
             self.info('Setting DAC {},{}'.format(code,value))
-            self._device.setDac(code,value)
+            self.setDac(code,value)
             #time.sleep(0.5)
-        
-        self.pixelThreshold = sophyconfig.thresholdPixels()
-        
-        self.pixelMask = sophyconfig.maskPixels()
+
+        if config.thresholdPixels() is not None:
+            self.pixelThreshold = config.thresholdPixels()
+
+        if config.maskPixels() is not None:
+            self.pixelMask = config.maskPixels()
         
         self.uploadPixels()
         self.refreshPixels()
@@ -135,6 +132,8 @@ class TimepixDevice(Logger):
         #self._device.setTpPeriodPhase(10,0)
         #self._device.tpNumber = 1
         # self._device.columnTestPulseRegister
+
+    
     @property
     def acquisition(self):
         """Returns the acquisition object
@@ -576,6 +575,20 @@ class TimepixDevice(Logger):
         n = value*1000.0
         nint = int(n/2.5)
         self._device.setDac(DacRegisterCodes.VTP_fine,nint & 0x1FF) 
+
+
+    def setDac(self,code,value):
+        """Sets the DAC parameter using codes
+
+        Parameters
+        ----------
+        code: :obj:`int`
+            DAC code to set
+        
+        value: :obj:`int`
+            value to set
+        """
+        self._device.setDac(code,value)
 
 def main():
     import logging

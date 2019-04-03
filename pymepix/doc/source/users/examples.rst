@@ -23,7 +23,7 @@ Starting timepix and polling data::
     timepix[0].uploadPixels()
 
     #Start acquisition
-    timepix.startAcq()
+    timepix.start()
 
     while True:
         try:
@@ -56,7 +56,7 @@ Starting timepix and polling data::
             print('tot',tot)
 
     #Stop
-    timepix.stopAcq()
+    timepix.stop()
 
 Using callbacks to acquire::
 
@@ -105,8 +105,8 @@ Using callbacks to acquire::
     timepix.dataCallback = my_callback
 
     #Start acquisition
-    timepix.startAcq()
+    timepix.start()
     #Wait 5 seconds
     time.sleep(5.0)
     #Stop
-    timepix.stopAcq()
+    timepix.stop()
