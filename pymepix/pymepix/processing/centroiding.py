@@ -79,6 +79,8 @@ class TOFCentroiding(BasePipelineObject):
 
         _,indices,counts = np.unique(shot, return_index=True,return_counts=True)
         comb = zip(indices,counts)
+
+
         for idx,cnt in comb:
             start = idx
             end = idx + cnt

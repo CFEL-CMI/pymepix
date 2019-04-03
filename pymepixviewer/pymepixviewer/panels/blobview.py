@@ -37,6 +37,8 @@ class BlobView(QtGui.QWidget,Ui_Form):
         self._last_trigger = 0
 
         self._histogram_mode = False
+        self._histogram_x = []
+        self._histogram_y = []
         self._histogram_bins=256
         self.checkBox.stateChanged.connect(self.onHistogramCheck)
         self.blob_trend_check.stateChanged.connect(self.onTrendCheck)
@@ -94,12 +96,22 @@ class BlobView(QtGui.QWidget,Ui_Form):
         y_cm = np.average(y)
 
 
-    def updateHistogram(self,x,y):
-        h = np.histogram2d(x,y,bins=self._histogram_bins,range=[[0,256],[0,256]])
+    def _updateHist(self):
+        h = np.histogram2d(np.concatenate(self._histogram_x),np.concatenate(self._histogram_y),bins=self._histogram_bins,range=[[0,256],[0,256]])
+        self._histogram_x=[]
+        self._histogram_y=[]
         if self._histogram is None:
             self._histogram = h[0]
         else:
             self._histogram += h[0]
+    def updateHistogram(self,x,y):
+        self._histogram_x.append(x)
+        self._histogram_y.append(y)
+
+        if len(self._histogram_x) > 100:
+
+
+            self._updateHist()
 
 
 
@@ -115,7 +127,7 @@ class BlobView(QtGui.QWidget,Ui_Form):
         shots = cluster_shot[tof_filter]
         if x.size == 0:
             self._last_trigger=cluster_shot.max()
-            self.updateTrend(self._last_trigger,0)
+            #self.updateTrend(self._last_trigger,0)
             self.rec_blobs.setText(str(int(0)))
             return
 
@@ -161,10 +173,7 @@ class BlobView(QtGui.QWidget,Ui_Form):
         self._blob_trend.append(avg_blobs)
         self._blob_trend_trigger.append(trigger)
         #self._blob_trend_trigger[-1]= trigger
-        try:
-            self._blob_trend_data.setData(x=np.array(self._blob_trend_trigger),y=np.array(self._blob_trend))
-        except:
-            pass
+
 
 
 
@@ -174,15 +183,23 @@ class BlobView(QtGui.QWidget,Ui_Form):
         if not self._histogram_mode:
             self.image_view.setImage(self._matrix/self._matrix.max(),autoLevels=False,autoRange=False,autoHistogramRange=False)
         else:
+            if len(self._histogram_x)>0:
+                self._updateHist()
             if self._histogram is not None:
-                
-                self.image_view.setImage(self._histogram/self._histogram.max(),autoLevels=False,autoRange=False,autoHistogramRange=False)
 
+                self.image_view.setImage(self._histogram/self._histogram.max(),autoLevels=False,autoRange=False,autoHistogramRange=False)
+        try:
+            self._blob_trend_data.setData(x=np.array(self._blob_trend_trigger),y=np.array(self._blob_trend))
+        except:
+            pass
+            
     
     def clearData(self):
         self._matrix[...]=0.0
         self._int_blob_count = 0
         self._histogram = None
+        self._histogram_x=[]
+        self._histogram_y=[]
         #self.plotData()
 
 

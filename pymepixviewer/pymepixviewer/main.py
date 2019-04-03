@@ -46,11 +46,12 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
         self.connectSignals()
         self.startupTimepix()
         
-        # 
+        #
+        time.sleep(1.0) 
         self.onModeChange(ViewerMode.TOA)
 
     def switchToMode(self):
-        self._timepix.stopAcq()
+        self._timepix.stop()
         if self._current_mode is ViewerMode.TOA:
             #self._timepix[0].setupAcquisition(pymepix.processing.PixelPipeline)
             self._timepix[0].acquisition.enableEvents = False
@@ -64,7 +65,8 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
             self._timepix[0].acquisition.enableEvents = True
             logger.info('Switch to Centroid mode, {}'.format(self._timepix[0].acquisition.enableEvents))
         
-        self._timepix.startAcq()
+        time.sleep(2.0)
+        self._timepix.start()
 
 
     def startupTimepix(self):
@@ -88,10 +90,13 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
 
         self.coarseThresholdUpdate.emit(self._timepix[0].Vthreshold_coarse)
         self.fineThresholdUpdate.emit(self._timepix[0].Vthreshold_fine)
-        self._timepix.startAcq()        
+
+
+
+        self._timepix.start()        
 
     def closeTimepix(self):
-        self._timepix.stopAcq()
+        self._timepix.stop()
 
 
     def setFineThreshold(self,value):
@@ -117,10 +122,10 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
     def setBlobProccesses(self,blob):
         import time
         logger.info('Setting number of blob processes {}'.format(blob))
-        self._timepix.stopAcq()
+        self._timepix.stop()
         time.sleep(10)
         self._timepix[0].acquisition.numBlobProcesses = blob
-        self._timepix.startAcq()
+        self._timepix.start()
 
 
     def setEpsilon(self,epsilon):
@@ -315,10 +320,11 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
             return
 
 
-        self._timepix.stopAcq()
+        self._timepix.stop()
 
         try:
-            self._timepix[0].loadSophyConfig(fname[0])
+            self._timepix[0].setConfigClass(pymepix.config.SophyConfig)
+            self._timepix[0].loadConfig(fname[0])
         except FileNotFoundError:
             QtGui.QMessageBox.warning(None, 'File not found',
                                'File with name {} not found'.format(fname[0]),
@@ -328,7 +334,7 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
         self.fineThresholdUpdate.emit(self._timepix[0].Vthreshold_fine)
 
 
-        self._timepix.startAcq()
+        self._timepix.start()
 
         self.clearNow.emit()
     def onRoiChange(self,name,start,end):
