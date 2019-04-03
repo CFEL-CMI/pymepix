@@ -294,7 +294,7 @@ def main():
         quit()
     if args.spx:
         logging.info('Opening Sophy file {}'.format(args.spx))
-        pymepix[0].loadSophyConfig(args.spx)
+        pymepix[0].loadConfig(args.spx)
 
     #Switch to TOF mode if set
     if args.decode and args.tof:
