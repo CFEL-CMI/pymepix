@@ -1,3 +1,3 @@
-from pymepix.SPIDR.spidrcontroller import SPIDRController
-from pymepix.SPIDR.spidrdefs import *
-from pymepix.SPIDR.error import PymePixException
+from .SPIDR.spidrcontroller import SPIDRController
+from .SPIDR.spidrdefs import *
+from .SPIDR.error import PymePixException
