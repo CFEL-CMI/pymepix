@@ -2,6 +2,7 @@
 
 Pymepix is a python module that provides high level access to timepix as well as low level access to SPIDR.
 
+
 ## Getting Started
 
 
@@ -11,7 +12,25 @@ Pymepix has very few dependencies and mostly uses the batteries included in Pyth
 Installing pymepix should install the prerequisties: numpy and sklearn.
 
 
-### Installing
+### Installing from PyPi
+
+To install simply do:
+
+```
+pip install pymepix
+```
+
+Try importing pymepix:
+
+```
+python -c "import pymepix"
+```
+
+If there are no errors then it was successful!
+
+
+### Installing from source
+
 Clone the directory using:
 
 ```

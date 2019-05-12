@@ -19,7 +19,16 @@ conda install pyqt=5
 
 
 
-### Installing
+### Installing from PyPI
+
+To install simply do:
+
+```
+pip install pymepixviewer
+```
+
+### Installing from source
+
 Clone the directory using:
 
 ```
