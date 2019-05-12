@@ -49,6 +49,10 @@ classifiers = [
     'Environment :: X11 Applications :: Qt'
 ]
 
+long_description = None
+with open('README.md') as f:
+    long_description = f.read()
+
 setup(name='pymepixviewer',
       author='CFEL-CMI group, et al (see AUTHORS)',
       author_email='cmidaq@cfel.de',
@@ -60,6 +64,8 @@ setup(name='pymepixviewer',
       packages=packages,
       include_package_data=True,
       entry_points=entry_points,
+      long_description=long_description,
+      long_description_content_type='text/markdown',
       provides=provides,
       requires=requires,
       install_requires=install_requires,
