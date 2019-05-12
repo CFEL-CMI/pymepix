@@ -47,6 +47,25 @@ Example:
     if data_type is MessageType.PixelData:
         x,y,toa,tot = data
 
+----------------
+Decoded Triggers
+----------------
+
+Data Type:
+    :class:`MessageType.TriggerData`
+
+Data:
+    :array(uint64): trigger number
+    :array(float): global trigger time in seconds
+
+
+Example:
+::
+
+    data_type,data = timepix.poll()
+    if data_type is MessageType.TriggerData:
+        t_num,t_time = data
+
 
 --------------------
 Time of Flight/Event

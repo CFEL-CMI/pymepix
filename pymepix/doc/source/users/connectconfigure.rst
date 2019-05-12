@@ -35,7 +35,7 @@ To set the biasVoltage to 50 Volts in spidr you can do::
 
 Setting the  we can manage its settings directly. To easily setup the device we can use a SoPhy config file (.spx)::
 
-    tpx0.loadSophyConfig('myFile.spx')
+    tpx0.loadConfig('myFile.spx')
 
 This sets up all the DAC setting and pixel configurations.
 Individual parameters can also be set for example. To set the fine threshold to 100 mV do:
@@ -45,13 +45,11 @@ Individual parameters can also be set for example. To set the fine threshold to 
 pixel threshold configurations can be set by passing a 256x256 numpy array::
 
     import numpy as np
-    tpx0.pixelThreshold = np.zeros(shape=(256,256),dtype=np.uint8)
+    tpx0.pixelThreshold[...] = 0
 
 The same for pixel masks, to set a checkboard mask do::
 
-    checkerboard = np.zeros(shape=(256,256),dtype=np.uint8)
-    checkerboard[::2] = 1
-    tpx0.pixelMask = checkerboard
+    tpx0.pixelMask[::2] = 1
 
 These need to be uploaded to timepix before they take effect:
 
