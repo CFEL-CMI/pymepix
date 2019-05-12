@@ -20,7 +20,7 @@ provides = ['pymepix',]
 
 requires = []
 
-install_requires = []
+install_requires = ['numpy','sklearn']
 
 
 
@@ -52,7 +52,7 @@ setup(name='pymepix',
       author='CFEL-CMI group, et al (see AUTHORS)',
       author_email='cmidaq@cfel.de',
       maintainer='CFEL-CMI group',
-      version='0.5',
+      version='1.0',
       description='Timepix python library',
       classifiers=classifiers,
       packages=packages,
