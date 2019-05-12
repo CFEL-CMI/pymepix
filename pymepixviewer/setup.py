@@ -20,7 +20,7 @@ provides = ['pymepixviewer',]
 
 requires = [ 'pymepix','pyqtgraph']
 
-install_requires = ['pymepix','pyqtgraph']
+install_requires = ['pymepix','pyqtgraph','numpy']
 
 
 

@@ -60,11 +60,16 @@ Pymepix-viewer is a graphical user interface for data acquisition using the pyme
 
 #### Prerequisites
 
-Pyqtgraph is required (and by extension PyQt), install using:
+PyQt5 is a requirement. This can be installed (painfully) manually here:
+
+https://www.metachris.com/2016/03/how-to-install-qt56-pyqt5-virtualenv-python3/
+
+or easily using Anaconda3:
 
 ```
-pip install pyqtgraph
+conda install pyqt=5
 ```
+
 
 
 #### Installing
