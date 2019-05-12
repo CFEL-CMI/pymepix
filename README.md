@@ -14,30 +14,27 @@ Pymepix is a python module that provides high level access to timepix as well as
 
 #### Prerequisites
 
-The only real requirement is numpy, for centroiding get the sklearn package:
-
-```
-pip install sklearn
-```
+Pymepix has very few dependencies and mostly uses the batteries included in Python 3.
+Installing pymepix should install the prerequisties: numpy and sklearn.
 
 
 #### Installing
 Clone the directory using:
 
 ```
-git clone https://<desy-username>@stash.desy.de/scm/cmi/libtimepix.git
+https://<desy username>@stash.desy.de/scm/cmipublic/timepix.git
 ```
 
 move into the pymepix project folder
 
 ```
-cd libtimepix/pymepix
+cd timepix/pymepix
 ```
 
 Then install
 
 ```
-python setup.py install
+pip install .
 ```
 
 To build documentation do
@@ -49,7 +46,7 @@ python setup.py build_sphinx
 
 Try importing pymepix:
 ```
-import pymepix
+python -c "import pymepix"
 ```
 
 If there are no errors then it was successful!
@@ -74,19 +71,19 @@ pip install pyqtgraph
 Clone the directory using:
 
 ```
-git clone https://<desy-username>@stash.desy.de/scm/cmi/libtimepix.git
+https://<desy username>@stash.desy.de/scm/cmipublic/timepix.git
 ```
 
 move into the pymepixviewer project folder
 
 ```
-cd libtimepix/pymepixviewer
+cd timepix/pymepixviewer
 ```
 
 Then install
 
 ```
-python setup.py install
+pip install .
 ```
 
 #### Running
