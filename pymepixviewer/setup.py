@@ -2,7 +2,6 @@
 
 
 import os
-import imp
 from setuptools import Distribution
 from setuptools import setup, find_packages
 from setuptools.command.install import install
@@ -32,40 +31,32 @@ entry_points = {'console_scripts': console_scripts,}
 
 classifiers = [
     'Development Status :: 4 - Beta',
+    'Environment :: Console',
+    'Environment :: No Input/Output (Daemon)',
+    'Environment :: Win32 (MS Windows)',
     'Intended Audience :: Developers',
     'Intended Audience :: Science/Research',
-    'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+    'License :: OSI Approved :: GNU Library or Lesser General Public License (LGPL)',
     'Operating System :: Microsoft :: Windows',
     'Operating System :: POSIX',
     'Operating System :: POSIX :: Linux',
     'Operating System :: Unix',
     'Operating System :: OS Independent',
+    'Programming Language :: Python',
     'Topic :: Scientific/Engineering',
-    'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.4',
-    'Programming Language :: Python :: 3.5',
-    'Programming Language :: Python :: 3.6',
-    'Programming Language :: Python :: 3.7',
-    'Environment :: X11 Applications :: Qt'
+    'Topic :: Software Development :: Libraries',
 ]
-
-long_description = None
-with open('README.md') as f:
-    long_description = f.read()
 
 setup(name='pymepixviewer',
       author='CFEL-CMI group, et al (see AUTHORS)',
       author_email='cmidaq@cfel.de',
       maintainer='CFEL-CMI group',
-      version='1.0',
-      description='Timepix Data Acquisition GUI',
-      download_url="https://stash.desy.de/projects/CMIPUBLIC/repos/timepix/browse",
+      version='0.5',
+      description='Timepix DAQ GUI',
       classifiers=classifiers,
       packages=packages,
       include_package_data=True,
       entry_points=entry_points,
-      long_description=long_description,
-      long_description_content_type='text/markdown',
       provides=provides,
       requires=requires,
       install_requires=install_requires,
