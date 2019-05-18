@@ -8,13 +8,13 @@ import numpy as np
 from enum import IntEnum
 from multiprocessing.sharedctypes import Value
 
-class TOFCentroiding(BasePipelineObject):
+class Centroiding(BasePipelineObject):
     """Performs centroiding on EventData recieved from Packet processor
 
     """
 
     def __init__(self,skip_data=1,tot_filter=0,epsilon=3.0,samples=3,input_queue=None,create_output=True,num_outputs=1,shared_output=None):
-        BasePipelineObject.__init__(self,TOFCentroiding.__name__,input_queue=input_queue,create_output=create_output,num_outputs=num_outputs,shared_output=shared_output)
+        BasePipelineObject.__init__(self,Centroiding.__name__,input_queue=input_queue,create_output=create_output,num_outputs=num_outputs,shared_output=shared_output)
 
         self._centroid_count = 0
         self._search_time = 0.0
