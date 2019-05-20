@@ -1,0 +1,11 @@
+*.dat
+*.egg
+*.egg-info/
+*.tpx3
+*.spx
+*.pyc
+.build/
+.eggs/
+.DS_Store
+.vscode/settings.json
+build/
