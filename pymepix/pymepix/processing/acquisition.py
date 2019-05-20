@@ -2,7 +2,7 @@
 
 from .baseacquisition import AcquisitionPipeline
 from .packetprocessor import PacketProcessor
-from .centroiding import TOFCentroiding
+from .centroiding import Centroiding
 from .udpsampler import UdpSampler
 
 
@@ -117,13 +117,13 @@ class CentroidPipeline(PixelPipeline):
         self._samples = 3
         self._epsilon = 3.0
     
-        self.addStage(4,TOFCentroiding)
+        self.addStage(4,Centroiding)
 
         self._reconfigureCentroid()
 
     def _reconfigureCentroid(self):
         self._reconfigureProcessor()
-        p = self.getStage(4).configureStage(TOFCentroiding,skip_data=self._skip_centroid,tot_filter=self._tot_threshold,epsilon=self._epsilon,samples=self._samples)
+        p = self.getStage(4).configureStage(Centroiding,skip_data=self._skip_centroid,tot_filter=self._tot_threshold,epsilon=self._epsilon,samples=self._samples)
 
     @property
     def centroidSkip(self):

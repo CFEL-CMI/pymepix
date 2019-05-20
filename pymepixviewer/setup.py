@@ -2,7 +2,6 @@
 
 
 import os
-import imp
 from setuptools import Distribution
 from setuptools import setup, find_packages
 from setuptools.command.install import install
