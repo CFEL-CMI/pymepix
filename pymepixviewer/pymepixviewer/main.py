@@ -32,7 +32,7 @@ class PymepixDAQ(QtGui.QMainWindow,Ui_MainWindow):
         self.setupWindow() 
 
         self._view_widgets= {}
-
+        self._current_mode=ViewerMode.TOA
         self._event_max = -1
         self._current_event_count = 0
 
