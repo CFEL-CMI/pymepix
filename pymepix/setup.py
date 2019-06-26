@@ -60,7 +60,7 @@ classifiers = [
     'Operating System :: Unix',
     'Operating System :: OS Independent',
     'Programming Language :: Python',
-    'Programming Language :: Python :: 3 :: Only'
+    'Programming Language :: Python :: 3 :: Only',
     'Programming Language :: Python :: 3.4',
     'Programming Language :: Python :: 3.5',
     'Programming Language :: Python :: 3.6',
@@ -91,7 +91,6 @@ setup(name = 'pymepix',
       requires = requires,
       install_requires = install_requires,
 )
-
 
 
 
