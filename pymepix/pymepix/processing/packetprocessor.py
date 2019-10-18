@@ -122,10 +122,11 @@ class PacketProcessor(BasePipelineObject):
         triggers = packet[np.logical_and(np.logical_or(header==0x4,header==0x6),subheader == 0xF)]
 
         if pixels.size > 0:
-            self.process_pixels(pixels,longtime)
+            self.process_pixels(np.int64(pixels), longtime)
 
         if triggers.size > 0:
-                self.process_triggers(triggers,longtime)
+            # print('triggers', triggers, longtime)
+            self.process_triggers(np.int64(triggers), longtime)
 
         if self._handle_events:
 
