@@ -29,14 +29,10 @@ from .udpsampler import UdpSampler
 
 
 class PixelPipeline(AcquisitionPipeline):
-    """ An acquisition pipeline that includes the udpsampler and pixel processor 
-    
+    """ An acquisition pipeline that includes the udpsampler and pixel processor
+
         A pipeline that will read from a UDP address and decode the pixels a useable form.
         This class can be used as a base for all acqusition pipelines.
-
-
-
-    
     """
 
 
@@ -65,17 +61,17 @@ class PixelPipeline(AcquisitionPipeline):
 
         Parameters
         ------------
-        value : bool 
+        value : bool
 
 
-        Returns     
+        Returns
         ------------
-        bool  
-        
+        bool
+
         """
         return self._use_events
 
-    
+
     @enableEvents.setter
     def enableEvents(self,value):
         self.info('Setting event to {}'.format(value))
@@ -94,22 +90,22 @@ class PixelPipeline(AcquisitionPipeline):
         >>> pixelpipeline.eventWindow = (3E-6,8E-6)
 
 
-        
+
         Parameters
         ------------
         value: :obj:`tuple` of 2 :obj:`float`
             A tuple of two floats that represents the (min,max) time of flight window in seconds
             This is useful to filter out a particular region
-        
+
 
         Returns
         ----------
         :obj:`tuple` of 2 floats
             Currently set event window
-        
+
         """
         return self._event_window
-    
+
     @eventWindow.setter
     def eventWindow(self,value):
         self._event_window = value
@@ -119,7 +115,7 @@ class PixelPipeline(AcquisitionPipeline):
             for p in self.getStage(2).processes:
                 p.minWindow = min_win
                 p.maxWindow = max_win
-    
+
 
 
 class CentroidPipeline(PixelPipeline):
@@ -127,18 +123,18 @@ class CentroidPipeline(PixelPipeline):
 
     Same as the pixel pipeline but also includes centroid processing, note that this can be extremely slow
     when dealing with a huge number of objects
-    
-    
+
+
     """
 
     def __init__(self,data_queue,address,longtime):
-        PixelPipeline.__init__(self,data_queue,address,longtime,use_event=True,name='Centroid') 
+        PixelPipeline.__init__(self,data_queue,address,longtime,use_event=True,name='Centroid')
         self.info('Initializing Centroid pipeline')
         self._skip_centroid = 1
         self._tot_threshold = 0
         self._samples = 3
         self._epsilon = 3.0
-    
+
         self.addStage(4,Centroiding)
 
         self._reconfigureCentroid()
@@ -150,15 +146,15 @@ class CentroidPipeline(PixelPipeline):
     @property
     def centroidSkip(self):
         """Perform centroiding on every nth packet
-        
+
         Parameters
         -----------
         value: int
-            
-        
+
+
         """
         return self._skip_centroid
-    
+
     @centroidSkip.setter
     def centroidSkip(self,value):
         self.info('Setting Centroid skip to {}'.format(value))
@@ -172,15 +168,15 @@ class CentroidPipeline(PixelPipeline):
     @property
     def epsilon(self):
         """Perform centroiding on every nth packet
-        
+
         Parameters
         -----------
         value: int
-            
-        
+
+
         """
         return self._epsilon
-    
+
     @epsilon.setter
     def epsilon(self,value):
         self._epsilon = value
@@ -194,15 +190,15 @@ class CentroidPipeline(PixelPipeline):
     @property
     def samples(self):
         """Perform centroiding on every nth packet
-        
+
         Parameters
         -----------
         value: int
-            
-        
+
+
         """
         return self._samples
-    
+
     @samples.setter
     def samples(self,value):
         self._samples = value
@@ -232,7 +228,7 @@ class CentroidPipeline(PixelPipeline):
 
         """
         return self._tot_threshold
-    
+
     @totThreshold.setter
     def totThreshold(self,value):
         self._tot_threshold = value
@@ -240,8 +236,8 @@ class CentroidPipeline(PixelPipeline):
         if self.isRunning:
             skip = self._tot_threshold
             for p in self.getStage(4).processes:
-                p.totThreshold = skip    
-    
+                p.totThreshold = skip
+
 
     @property
     def numBlobProcesses(self):
@@ -249,7 +245,7 @@ class CentroidPipeline(PixelPipeline):
 
         Setting this will spawn the appropriate number of processes to perform centroiding.
         Changes take effect on next acquisition.
-        
+
 
         """
         return self.getStage(4).numProcess
