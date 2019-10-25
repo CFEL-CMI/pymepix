@@ -1,24 +1,23 @@
-##############################################################################
-##
 # This file is part of Pymepix
 #
+# In all scientific work using Pymepix, please reference it as
+#
+# A. F. Al-Refaie, M. Johny, J. Correa, D. Pennicard, P. Svihra, A. Nomerotski, S. Trippel, and J. Küpper:
+# "PymePix: a python library for SPIDR readout of Timepix3", J. Inst. 14, P10003 (2019)
+# https://doi.org/10.1088/1748-0221/14/10/P10003
 # https://arxiv.org/abs/1905.07999
 #
+# Pymepix is free software: you can redistribute it and/or modify it under the terms of the GNU
+# General Public License as published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
 #
-# Pymepix is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+# even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
 #
-# Pymepix is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with Pymepix.  If not, see <http://www.gnu.org/licenses/>.
-#
-##############################################################################
+# You should have received a copy of the GNU General Public License along with this program. If not,
+# see <https://www.gnu.org/licenses/>.
+
 
 """SPIDR related classes"""
 
@@ -45,7 +44,7 @@ class SPIDRController(Logger):
 
     Examples
     --------
-    
+
     The class can be used to talk to SPIDR
 
     >>> spidr = SPIDRController(('192.168.1.10',50000))
@@ -86,8 +85,8 @@ class SPIDRController(Logger):
         #self.resetModule(SpidrReadoutSpeed.Default)
         self._devices = []
         self._initDevices()
-        
-        
+
+
 
     def __getitem__(self, key):
         return self._devices[key]
@@ -96,12 +95,12 @@ class SPIDRController(Logger):
         return len(self._devices)
 
     def _initDevices(self):
-        
+
         count = self.deviceCount
 
         for x in range(count):
             self._devices.append(SpidrDevice(self,x))
-        
+
     def resetModule(self,readout_speed):
         """Resets the SPIDR board and sets a new readout speed
 
@@ -109,7 +108,7 @@ class SPIDRController(Logger):
         ----------
         readout_speed : :class:`SpidrReadoutSpeed`
             Read-out speed the device will operate at
-        
+
         Notes
         ----------
         Its not clear if this does anything as its not usually used
@@ -126,28 +125,28 @@ class SPIDRController(Logger):
         ----------
         value : int
             Value to write to the register
-        
+
         Returns
         ----------
         int
             Current value of the register
-        
+
         Raises
         ----------
         :class:`PymePixException`
             Communication error
-        
+
         Notes
         ----------
         Register controls clock setup
 
         """
         return self.getSpidrReg(SpidrRegs.SPIDR_CPU2TPX_WR_I)
-    
+
     @CpuToTpx.setter
     def CpuToTpx(self,value):
         return self.setSpidrReg(SpidrRegs.SPIDR_CPU2TPX_WR_I,value)
-    
+
         #---------Shutter registers---------
     @property
     def ShutterTriggerCtrl(self):
@@ -157,12 +156,12 @@ class SPIDRController(Logger):
         ----------
         value : int
             Value to write to the register
-        
+
         Returns
         ----------
         int
             Current value of the register
-        
+
         Raises
         ----------
         :class:`PymePixException`
@@ -172,10 +171,10 @@ class SPIDRController(Logger):
         """
 
         return self.getSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_CTRL_I)
-    
+
     @ShutterTriggerCtrl.setter
     def ShutterTriggerCtrl(self,value):
-        return self.setSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_CTRL_I,value)  
+        return self.setSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_CTRL_I,value)
 
     @property
     def ShutterTriggerMode(self):
@@ -185,17 +184,17 @@ class SPIDRController(Logger):
         ----------
         value : :class:`SpidrShutterMode`
             Shutter trigger mode to set
-        
+
         Returns
         ----------
         :class:`SpidrShutterMode`
             Current shutter operation mode read from SPIDR
-        
+
         Raises
         ----------
         :class:`PymePixException`
             Communication error
-        
+
         Notes
         ----------
         AutoTrigger is the only functioning trigger mode that SPIDR can operate in
@@ -203,7 +202,7 @@ class SPIDRController(Logger):
 
         """
         return SpidrShutterMode(self.ShutterTriggerCtrl &0x7)
-    
+
     @ShutterTriggerMode.setter
     def ShutterTriggerMode(self,mode):
         reg = self.ShutterTriggerCtrl
@@ -221,12 +220,12 @@ class SPIDRController(Logger):
         ----------
         value : int
             Trigger count to set for auto trigger mode ( Set to 0 for infinite triggers)
-        
+
         Returns
         ----------
         int:
             Current value of the trigger count read from SPIDR
-        
+
         Raises
         ----------
         :class:`PymePixException`
@@ -235,10 +234,10 @@ class SPIDRController(Logger):
 
         """
         return self.getSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_CNT_I)
-    
+
     @ShutterTriggerCount.setter
     def ShutterTriggerCount(self,value):
-        return self.setSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_CNT_I,value)  
+        return self.setSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_CNT_I,value)
 
     @property
     def ShutterTriggerFreq(self):
@@ -248,7 +247,7 @@ class SPIDRController(Logger):
         ----------
         value : float
             Frequency in mHz
-        
+
         Returns
         ----------
         float:
@@ -263,15 +262,15 @@ class SPIDRController(Logger):
         freq = self.getSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_FREQ_I)
 
         mhz = 40000000000.0/freq
-        
+
         return int(mhz)
-    
+
     @ShutterTriggerFreq.setter
     def ShutterTriggerFreq(self,mhz):
 
 
         freq = 40000000000.0/mhz
-        return self.setSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_FREQ_I,freq)  
+        return self.setSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_FREQ_I,freq)
 
     @property
     def ShutterTriggerLength(self):
@@ -281,11 +280,11 @@ class SPIDRController(Logger):
         ----------
         value : int
             Length in ns
-        
+
         Returns
         ----------
         value: int
-            Current length in ns read from SPIDR 
+            Current length in ns read from SPIDR
 
         Raises
         ----------
@@ -294,10 +293,10 @@ class SPIDRController(Logger):
 
         """
         return self.getSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_LENGTH_I)*25
-    
+
     @ShutterTriggerLength.setter
     def ShutterTriggerLength(self,value):
-        return self.setSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_LENGTH_I,(value+24)//25)  
+        return self.setSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_LENGTH_I,(value+24)//25)
 
     @property
     def ShutterTriggerDelay(self):
@@ -307,11 +306,11 @@ class SPIDRController(Logger):
         ----------
         value : int
             Time in ns
-        
+
         Returns
         ----------
         value: int
-            Current time in ns read from SPIDR 
+            Current time in ns read from SPIDR
 
         Raises
         ----------
@@ -320,20 +319,20 @@ class SPIDRController(Logger):
 
         """
         return self.getSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_DELAY_I)*25
-    
+
     @ShutterTriggerDelay.setter
     def ShutterTriggerDelay(self,value):
-        return self.setSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_DELAY_I,value//25)  
-    
+        return self.setSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_DELAY_I,value//25)
+
     @property
     def DeviceAndPorts(self):
         return self.getSpidrReg(SpidrRegs.SPIDR_DEVICES_AND_PORTS_I)
-    
+
     @property
     def TdcTriggerCounter(self):
         """Trigger packets sent by SPIDR since last counter reset"""
         return self.getSpidrReg(SpidrRegs.SPIDR_TDC_TRIGGERCOUNTER_I)
-    
+
     @property
     def UdpPacketCounter(self):
         """UDP packets sent by SPIDR since last counter reset"""
@@ -346,7 +345,7 @@ class SPIDRController(Logger):
     @property
     def UdpPausePacketCounter(self):
         """UDP packets collected during readout pause since last counter reset"""
-        return self.getSpidrReg(SpidrRegs.SPIDR_UDPPAUSE_PKTCOUNTER_I)    
+        return self.getSpidrReg(SpidrRegs.SPIDR_UDPPAUSE_PKTCOUNTER_I)
 
     @UdpPacketCounter.setter
     def UdpPacketCounter(self,value):
@@ -358,7 +357,7 @@ class SPIDRController(Logger):
 
     @UdpPausePacketCounter.setter
     def UdpPausePacketCounter(self,value):
-        return self.setSpidrReg(SpidrRegs.SPIDR_UDPPAUSE_PKTCOUNTER_I,0)   
+        return self.setSpidrReg(SpidrRegs.SPIDR_UDPPAUSE_PKTCOUNTER_I,0)
 
     #---------------------------------------------------
 
@@ -532,7 +531,7 @@ class SPIDRController(Logger):
 
         Returns
         ---------
-        int: 
+        int:
             Number of devices connected to SPIDR
 
         Raises
@@ -564,7 +563,7 @@ class SPIDRController(Logger):
         :class:`PymePixException`
             Communication error
 
-        
+
         Notes
         --------
         Index of devices are the same as the those in the SPIDRController list
@@ -602,10 +601,10 @@ class SPIDRController(Logger):
     def resetDevices(self):
         """ Resets all devices"""
         self.requestSetInt(SpidrCmds.CMD_RESET_DEVICES,0,0)
-    
+
     def reinitDevices(self):
         """ Resets and initializes all devices
-        
+
         Raises
         ----------
         :class:`PymePixException`
@@ -617,7 +616,7 @@ class SPIDRController(Logger):
 
     def setPowerPulseEnable(self,enable):
         self.requestSetInt(SpidrCmds.CMD_PWRPULSE_ENA,0,int(enable))
-    
+
     def setTpxPowerPulseEnable(self,enable):
         self.requestSetInt(SpidrCmds.CMD_TPX_POWER_ENA,0,int(enable))
 
@@ -635,7 +634,7 @@ class SPIDRController(Logger):
         :class:`PymePixException`
             Communication error
 
-        """        
+        """
         self.requestSetInt(SpidrCmds.CMD_BIAS_SUPPLY_ENA,0,int(enable))
 
 
@@ -660,7 +659,7 @@ class SPIDRController(Logger):
         :class:`PymePixException`
             Communication error
 
-        """  
+        """
 
         adc_data = self.requestGetInt(SpidrCmds.CMD_GET_SPIDR_ADC,0,1)
         return (((adc_data & 0xFFF)*1500 + 4095) / 4096) / 10
@@ -668,7 +667,7 @@ class SPIDRController(Logger):
     def biasVoltage(self,volts):
         if volts < 12: volts = 12
         if volts > 104: volts = 104
-        
+
         dac_value = int(((volts-12)*4095)/(104-12))
         self.info('Setting bias Voltage to {} V (Dac value {})'.format(volts,dac_value))
         self.requestSetInt(SpidrCmds.CMD_SET_BIAS_ADJUST,0,dac_value)
@@ -690,7 +689,7 @@ class SPIDRController(Logger):
         Raises
         ----------
         :class:`PymePixException`
-            Communication error        
+            Communication error
 
 
         .. Tip::
@@ -705,17 +704,17 @@ class SPIDRController(Logger):
 
     def disablePeriphClk80Mhz(self):
         self.CpuToTpx &= ~(1<<24)
-    
+
     def enableExternalRefClock(self):
         """SPIDR recieves its reference clock externally
 
-        This is often used when combining multiple Timepixs together so they can synchronize their clocks. 
+        This is often used when combining multiple Timepixs together so they can synchronize their clocks.
         The SPIDR board essentially acts as a slave to other SPIDRs
 
         Raises
         ----------
         :class:`PymePixException`
-            Communication error    
+            Communication error
 
         """
 
@@ -730,7 +729,7 @@ class SPIDRController(Logger):
         Raises
         ----------
         :class:`PymePixException`
-            Communication error    
+            Communication error
 
         """
         self.CpuToTpx &= ~(1<<25)
@@ -753,7 +752,7 @@ class SPIDRController(Logger):
         Raises
         ----------
         :class:`PymePixException`
-            Communication error    
+            Communication error
 
 
         .. Warning::
@@ -779,10 +778,10 @@ class SPIDRController(Logger):
         ----------
         mode: int
             Shutter trigger mode
-        
+
         length_us: int
             Shutter open time in microseconds
-        
+
         freq_hz: int
             Auto trigger frequency in Hertz
 
@@ -797,7 +796,7 @@ class SPIDRController(Logger):
         :class:`PymePixException`
             Communication error
 
-        
+
         """
 
 
@@ -805,7 +804,7 @@ class SPIDRController(Logger):
 
         if delay_ns == 0:
             data.pop()
-        
+
         self.requestSetInts(SpidrCmds.CMD_SET_TRIGCONFIG,0,data)
 
     @property
@@ -816,7 +815,7 @@ class SPIDRController(Logger):
 
     def startAutoTrigger(self):
         """Starts the auto trigger
-        
+
         Raises
         ----------
         :class:`PymePixException`
@@ -827,7 +826,7 @@ class SPIDRController(Logger):
 
     def stopAutoTrigger(self):
         """Stops the auto trigger
-        
+
         Raises
         ----------
         :class:`PymePixException`
@@ -840,7 +839,7 @@ class SPIDRController(Logger):
 
     def openShutter(self):
         """Immediately opens the shutter indefinetly
-        
+
         Raises
         ----------
         :class:`PymePixException`
@@ -854,10 +853,10 @@ class SPIDRController(Logger):
         """
         self.setShutterTriggerConfig( SpidrShutterMode.Auto.value, 0, 10, 1,0)
         self.startAutoTrigger()
-    
+
     def closeShutter(self):
         """Immediately closes the shutter
-        
+
         Raises
         ----------
         :class:`PymePixException`
@@ -869,7 +868,7 @@ class SPIDRController(Logger):
     @property
     def externalShutterCounter(self):
         return self.requestGetInt(SpidrCmds.CMD_GET_EXTSHUTTERCNTR,0)
-    
+
     @property
     def shutterCounter(self):
 
@@ -886,8 +885,8 @@ class SPIDRController(Logger):
             the timestamps will be offset
 
 
-        
-        
+
+
         Raises
         ----------
         :class:`PymePixException`
@@ -909,7 +908,7 @@ class SPIDRController(Logger):
         ----------
         :class:`PymePixException`
             Communication error
-        
+
         """
         self.requestSetInt(SpidrCmds.CMD_RESET_TIMER,0,0)
 
@@ -929,13 +928,13 @@ class SPIDRController(Logger):
             self.setSpidrReg(SpidrRegs.SPIDR_PIXEL_PKTCOUNTER_I,idx)
 
 
-    
+
     def getSpidrReg(self,addr):
 
         res = self.requestGetInts(SpidrCmds.CMD_GET_SPIDRREG,0,2,addr)
         if res[0] != addr:
             raise Exception('Incorrect register address returned {} expected {}'.format(res[0],addr))
-        
+
         return res[1]
 
 
@@ -956,7 +955,7 @@ class SPIDRController(Logger):
             Length of the message in bytes
         expected_bytes: int
             Length of expected reply from request (if any) (Default: 0)
-        
+
 
         Returns
         -----------
@@ -980,12 +979,12 @@ class SPIDRController(Logger):
             self._sock.send(self._req_buffer.tobytes()[0:message_length])
 
             if cmd & SpidrCmds.CMD_NOREPLY: return
-            
+
             bytes_returned = self._sock.recv_into(self._reply_view,4096)
 
             if bytes_returned < 0:
                 raise Exception('Failed to get reply')
-            
+
             if bytes_returned < expected_bytes:
                 raise Exception("Unexpected reply length, got {} expected at least {}".format(bytes_returned,expected_bytes))
 
@@ -1010,7 +1009,7 @@ class SPIDRController(Logger):
 
             if socket.ntohl(int(_replyMsg[3])) != dev_nr:
                 raise Exception('Unexpected device {}'.format(dev_nr))
-            
+
             return _replyMsg
 
 
@@ -1065,7 +1064,7 @@ class SPIDRController(Logger):
         byte_val = np.copy(reply[5:].view(dtype=np.uint8)[:expected_bytes])
 
         return int_val,byte_val
-    
+
     def requestSetInt(self,cmd,dev_nr,value):
         msg_length = (4+1)*4
         self._req_buffer[4] = socket.htonl(value)
@@ -1090,7 +1089,7 @@ class SPIDRController(Logger):
 
         self.request(cmd,dev_nr,msg_length,20)
 
-    
+
 
 
 def main():
@@ -1105,7 +1104,7 @@ def main():
     print ('Device Ids {}'.format(spidr.deviceIds))
     for idx,dev in enumerate(spidr):
         print ("Device {}: {}".format(idx,dev.deviceId))
-    
+
     print ('CHIP Fanspeed: ',spidr.chipboardFanSpeed)
     print ('SPIDR Fanspeed: ',spidr.spidrFanSpeed)
     print ('Pressure: ',spidr.pressure, 'mbar')
@@ -1124,4 +1123,3 @@ def main():
 
 if __name__=="__main__":
     main()
-
