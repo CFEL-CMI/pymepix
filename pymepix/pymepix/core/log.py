@@ -25,8 +25,8 @@ import logging
 import threading
 from multiprocessing import Queue
 import multiprocessing
-__all__ = ['Logger','ProcessLogger']
 
+__all__ = ['Logger', 'ProcessLogger']
 
 
 class PymepixLogger(object):
@@ -45,9 +45,8 @@ class PymepixLogger(object):
     """
     _proc_log_queue = Queue()
 
-
-
     _init = False
+
     @classmethod
     def getLogQueue(cls):
         """Provides logging queue for multiprocessing logging
@@ -69,17 +68,16 @@ class PymepixLogger(object):
 
         thread_log.info('Starting Multiprocess logging')
         while True:
-
-            name,log_level,message,args,kwargs = log_queue.get()
+            name, log_level, message, args, kwargs = log_queue.get()
             _log = logging.getLogger(name)
-            _log.log(log_level,message,*args,**kwargs)
+            _log.log(log_level, message, *args, **kwargs)
 
     @classmethod
     def getRootLogger(cls):
         return cls._root_logger
 
     @classmethod
-    def getLogger(cls,name):
+    def getLogger(cls, name):
         return logging.getLogger('pymepix.{}'.format(name))
 
     @classmethod
@@ -87,16 +85,13 @@ class PymepixLogger(object):
         if cls._init is False:
             cls._root_logger = logging.getLogger('pymepix')
 
-
             cls._root_logger.info('Reinitializing PymepixLogger')
             cls._log_thread = threading.Thread(target=cls._logging_thread)
             cls._log_thread.daemon = True
             cls._log_thread.start()
         cls._init = True
 
-
-
-    def __init__(self,name):
+    def __init__(self, name):
         self._log_name = 'pymepix.{}'.format(name)
         PymepixLogger.reInit()
 
@@ -104,19 +99,20 @@ class PymepixLogger(object):
     def logName(self):
         return self._log_name
 
-    def info(self,message,*args, **kwargs):
-        pass
-    def warning(self,message,*args, **kwargs):
-        pass
-    def debug(self,message,*args, **kwargs):
+    def info(self, message, *args, **kwargs):
         pass
 
-    def error(self,message,*args, **kwargs):
+    def warning(self, message, *args, **kwargs):
         pass
 
-    def critical(self,message,*args, **kwargs):
+    def debug(self, message, *args, **kwargs):
         pass
 
+    def error(self, message, *args, **kwargs):
+        pass
+
+    def critical(self, message, *args, **kwargs):
+        pass
 
 
 class Logger(PymepixLogger):
@@ -129,28 +125,29 @@ class Logger(PymepixLogger):
 
     """
 
-    def __init__(self,name):
-        PymepixLogger.__init__(self,name)
+    def __init__(self, name):
+        PymepixLogger.__init__(self, name)
         self._logger = logging.getLogger(self.logName)
 
-    def info(self,message,*args, **kwargs):
+    def info(self, message, *args, **kwargs):
         """ See :class:`logging.Logger` """
-        self._logger.info(message,*args,**kwargs)
-    def warning(self,message,*args, **kwargs):
-        """ See :class:`logging.Logger` """
-        self._logger.warning(message,*args,**kwargs)
-    def debug(self,message,*args, **kwargs):
-        """ See :class:`logging.Logger` """
-        self._logger.debug(message,*args,**kwargs)
+        self._logger.info(message, *args, **kwargs)
 
-    def error(self,message,*args, **kwargs):
+    def warning(self, message, *args, **kwargs):
         """ See :class:`logging.Logger` """
-        self._logger.error(message,*args,**kwargs)
+        self._logger.warning(message, *args, **kwargs)
 
-    def critical(self,message,*args, **kwargs):
+    def debug(self, message, *args, **kwargs):
         """ See :class:`logging.Logger` """
-        self._logger.critical(message,*args,**kwargs)
+        self._logger.debug(message, *args, **kwargs)
 
+    def error(self, message, *args, **kwargs):
+        """ See :class:`logging.Logger` """
+        self._logger.error(message, *args, **kwargs)
+
+    def critical(self, message, *args, **kwargs):
+        """ See :class:`logging.Logger` """
+        self._logger.critical(message, *args, **kwargs)
 
 
 class ProcessLogger(PymepixLogger):
@@ -163,39 +160,38 @@ class ProcessLogger(PymepixLogger):
 
     """
 
-    def __init__(self,name):
-        PymepixLogger.__init__(self,name)
+    def __init__(self, name):
+        PymepixLogger.__init__(self, name)
         self._logger = logging.getLogger(self.logName)
         self._log_queue = PymepixLogger.getLogQueue()
 
-    def info(self,message,*args, **kwargs):
+    def info(self, message, *args, **kwargs):
         """ See :class:`logging.Logger` """
-        self._log_queue.put( (self._log_name,logging.INFO,message,args,kwargs) )
-    def warning(self,message,*args, **kwargs):
-        """ See :class:`logging.Logger` """
-        self._log_queue.put( (self._log_name,logging.WARNING,message,args,kwargs) )
-    def debug(self,message,*args, **kwargs):
-        """ See :class:`logging.Logger` """
-        self._log_queue.put( (self._log_name,logging.DEBUG,message,args,kwargs) )
+        self._log_queue.put((self._log_name, logging.INFO, message, args, kwargs))
 
-    def error(self,message,*args, **kwargs):
+    def warning(self, message, *args, **kwargs):
         """ See :class:`logging.Logger` """
-        self._log_queue.put( (self._log_name,logging.ERROR,message,args,kwargs) )
+        self._log_queue.put((self._log_name, logging.WARNING, message, args, kwargs))
 
-    def critical(self,message,*args, **kwargs):
+    def debug(self, message, *args, **kwargs):
         """ See :class:`logging.Logger` """
-        self._log_queue.put( (self._log_name,logging.CRITICAL,message,args,kwargs) )
+        self._log_queue.put((self._log_name, logging.DEBUG, message, args, kwargs))
 
+    def error(self, message, *args, **kwargs):
+        """ See :class:`logging.Logger` """
+        self._log_queue.put((self._log_name, logging.ERROR, message, args, kwargs))
 
+    def critical(self, message, *args, **kwargs):
+        """ See :class:`logging.Logger` """
+        self._log_queue.put((self._log_name, logging.CRITICAL, message, args, kwargs))
 
 
 def main():
     pass
-if __name__=="__main__":
+
+
+if __name__ == "__main__":
     main()
-
-
-
 
 ### Local Variables:
 ### fill-column: 100

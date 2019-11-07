@@ -139,21 +139,21 @@ def main():
     # plt.show()  
     print(spx.maskPixels().max())
     thresh = spx.thresholdPixels()
-    print('MAX',np.max(thresh))
-    print('MEAN',np.mean(thresh))
-    print('STDDEV',np.std(thresh))
+    print('MAX', np.max(thresh))
+    print('MEAN', np.mean(thresh))
+    print('STDDEV', np.std(thresh))
     plt.imshow(spx.maskPixels())
     plt.show()
 
-    
     # plt.hist(thresh.flatten(),bins=16,range=[0,15])
     # plt.show()
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     main()
-#dac_setting = e.findall(".//entry[@class='sophy.medipix.SPMPXDACCollection']")
-#dac_setting = dac_setting[0]
-#dac_setting = dac_setting[0]
+# dac_setting = e.findall(".//entry[@class='sophy.medipix.SPMPXDACCollection']")
+# dac_setting = dac_setting[0]
+# dac_setting = dac_setting[0]
 # In [68]: for element in dac_setting.findall(".//element[@class='java.util.Map.Entry']"):
 #     ...:     key=element.find('key')
 #     ...:

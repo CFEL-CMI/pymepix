@@ -8,6 +8,7 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+
 class Ui_Form(object):
     def setupUi(self, Form):
         Form.setObjectName("Form")
@@ -75,7 +76,7 @@ class Ui_Form(object):
         self.label.setObjectName("label")
         self.horizontalLayout_2.addWidget(self.label)
         self.event_start = QtWidgets.QLineEdit(self.groupBox_2)
-        self.event_start.setAlignment(QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter)
+        self.event_start.setAlignment(QtCore.Qt.AlignLeading | QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
         self.event_start.setObjectName("event_start")
         self.horizontalLayout_2.addWidget(self.event_start)
         self.label_2 = QtWidgets.QLabel(self.groupBox_2)
@@ -142,5 +143,6 @@ class Ui_Form(object):
         self.label_3.setText(_translate("Form", "Binning"))
         self.blob_tof.setText(_translate("Form", "Use Centroid TOF"))
         self.update_config.setText(_translate("Form", "Update"))
+
 
 from pyqtgraph import PlotWidget

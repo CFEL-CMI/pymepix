@@ -82,7 +82,7 @@ class PymePixException(Exception):
         "SPIDR_ERR_I2C"
     ]
 
-    STORE_ERR_STR=[
+    STORE_ERR_STR = [
         "no error",
         "STORE_ERR_TPX",
         "STORE_ERR_WRITE",
@@ -92,33 +92,34 @@ class PymePixException(Exception):
         "STORE_ERR_NOFLASH"
     ]
 
-    MONITOR_ERR_STR=[
+    MONITOR_ERR_STR = [
         "MON_ERR_TEMP_DAQ",
         "MON_ERR_POWER_DAQ",
     ]
-    def __init__(self,error_code): 
+
+    def __init__(self, error_code):
 
         self.message = self.errorMessage(error_code)
 
-        Exception.__init__(self,self.message)
+        Exception.__init__(self, self.message)
 
-    def errorMessage(self,code):
-        
-        err_id = code &0xFF
+    def errorMessage(self, code):
+
+        err_id = code & 0xFF
 
         message = ""
 
         if err_id >= len(self.ERR_STR) or err_id < 0:
             return 'Unknown error code {}'.format(err_id)
         else:
-            message+= "Recieved error code {}: {}".format(err_id,self.ERR_STR[err_id])
-        
+            message += "Recieved error code {}: {}".format(err_id, self.ERR_STR[err_id])
+
         if err_id == 6:
-            err = (code &0xFF00) >> 8
-            message+=', '
-            if err> len(self.TPX3_ERR_STR):
-                message+='<unknown>'
+            err = (code & 0xFF00) >> 8
+            message += ', '
+            if err > len(self.TPX3_ERR_STR):
+                message += '<unknown>'
             else:
-                message +=self.TPX3_ERR_STR[err]
-        
+                message += self.TPX3_ERR_STR[err]
+
         return message

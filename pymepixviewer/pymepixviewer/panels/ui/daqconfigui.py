@@ -8,6 +8,7 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+
 class Ui_Form(object):
     def setupUi(self, Form):
         Form.setObjectName("Form")
@@ -31,7 +32,7 @@ class Ui_Form(object):
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setObjectName("horizontalLayout")
         self.label = QtWidgets.QLabel(Form)
-        self.label.setAlignment(QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter)
+        self.label.setAlignment(QtCore.Qt.AlignLeading | QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
         self.label.setObjectName("label")
         self.horizontalLayout.addWidget(self.label)
         self.elapsed_time_h = QtWidgets.QLCDNumber(Form)
@@ -105,6 +106,7 @@ class Ui_Form(object):
         self.end_acq.setText(_translate("Form", "Stop Acquisition"))
         self.label_12.setText(_translate("Form", "Status:"))
         self.text_status.setText(_translate("Form", "Live"))
+
 
 from pymepixviewer.panels.acqconfig import AcquisitionConfig
 from pymepixviewer.panels.processingconfig import ProcessingConfig

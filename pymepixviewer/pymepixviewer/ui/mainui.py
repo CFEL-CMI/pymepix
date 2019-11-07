@@ -8,6 +8,7 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
@@ -41,4 +42,3 @@ class Ui_MainWindow(object):
         self.menuFile.setTitle(_translate("MainWindow", "File"))
         self.menuLoad_Setting.setTitle(_translate("MainWindow", "Load Setting"))
         self.actionSophy_spx.setText(_translate("MainWindow", "SoPhy file"))
-

@@ -8,6 +8,7 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+
 class Ui_Form(object):
     def setupUi(self, Form):
         Form.setObjectName("Form")
@@ -121,11 +122,12 @@ class Ui_Form(object):
         self.label_8.setText(_translate("Form", "TOT threshold:"))
         self.tot_threshold.setToolTip(_translate("Form", "Determines the TOT threshold"))
         self.label_7.setText(_translate("Form", "Centroid Skip:"))
-        self.centroid_skip.setToolTip(_translate("Form", "Allows the blob finder to skip every nth packet (1 means all are processed)"))
+        self.centroid_skip.setToolTip(
+            _translate("Form", "Allows the blob finder to skip every nth packet (1 means all are processed)"))
         self.label_9.setText(_translate("Form", "No Process:"))
-        self.blob_num.setToolTip(_translate("Form", "Allows the blob finder to skip every nth packet (1 means all are processed)"))
+        self.blob_num.setToolTip(
+            _translate("Form", "Allows the blob finder to skip every nth packet (1 means all are processed)"))
         self.label_11.setText(_translate("Form", "Epsilon:"))
         self.epsilon.setToolTip(_translate("Form", "Describes the distance between events (pixel space)"))
         self.label_12.setText(_translate("Form", "Num Samples"))
         self.samples.setToolTip(_translate("Form", "Tells how minimum number of pixels to be considered a cluster "))
-
