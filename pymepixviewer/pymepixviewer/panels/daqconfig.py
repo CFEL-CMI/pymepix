@@ -25,10 +25,11 @@ from .ui.daqconfigui import Ui_Form
 from ..core.filesaver import FileSaver
 import threading
 from threading import Thread
-import time,os
+import time, os
 import logging
 
 logger = logging.getLogger(__name__)
+
 
 class RepeatFunction(Thread):
     """Call a function after a specified number of seconds:
@@ -55,17 +56,16 @@ class RepeatFunction(Thread):
         repeats = 0
         while not self.finished.is_set() and repeats < self.repeats:
             self.function(*self.args, **self.kwargs)
-            repeats+=1
+            repeats += 1
         self.finished.set()
 
-class DaqConfigPanel(QtGui.QWidget,Ui_Form):
 
-
+class DaqConfigPanel(QtGui.QWidget, Ui_Form):
     resetPlots = QtCore.pyqtSignal()
     closeFile = QtCore.pyqtSignal()
+
     # updateRateChange = QtCore.pyqtSignal(float)
     # eventCountChange = QtCore.pyqtSignal(int)
-
 
     # def run_acquisition(self,path_name,prefix,raw_checked,blob_checked,exposure,startindex):
 
@@ -78,11 +78,11 @@ class DaqConfigPanel(QtGui.QWidget,Ui_Form):
     #             time.sleep(time_val)
     #     print('ENDING')
     #     self.endAcquisition()
-    def run_acquisition(self,acq_time,filename,index,raw,toa,tof,blob):
+    def run_acquisition(self, acq_time, filename, index, raw, toa, tof, blob):
         try:
             self._in_acq = True
-            self._filesaver.openFiles(filename,index,raw,toa,tof,blob)
-            self.text_status.setText('Acquiring.....')        
+            self._filesaver.openFiles(filename, index, raw, toa, tof, blob)
+            self.text_status.setText('Acquiring.....')
             logger.info('Starting Acquisition')
             start = time.time()
             time_val = acq_time
@@ -91,20 +91,18 @@ class DaqConfigPanel(QtGui.QWidget,Ui_Form):
                 while time.time() - start < time_val and self._in_acq:
                     time.sleep(0.5)
 
-            tot_time = time.time()-start
-            logger.info('ENDING, time taken {}s or {} minutes'.format(tot_time,tot_time/60.0))
+            tot_time = time.time() - start
+            logger.info('ENDING, time taken {}s or {} minutes'.format(tot_time, tot_time / 60.0))
             self.endAcquisition()
         except Exception as e:
             logger.error(str(e))
             return
 
-
-
-    def __init__(self,parent=None):
+    def __init__(self, parent=None):
         super(DaqConfigPanel, self).__init__(parent)
 
         # Set up the user interface from Designer.
-        self.setupUi(self)  
+        self.setupUi(self)
 
         self._in_acq = False
         self.connectSignals()
@@ -119,16 +117,14 @@ class DaqConfigPanel(QtGui.QWidget,Ui_Form):
         self._elapsed_time_thread.timeout.connect(self.updateTimer)
         self._elapsed_time_thread.start(1000)
 
-
     @property
     def fileSaver(self):
         return self._filesaver
 
-
     def connectSignals(self):
         # self.openpath.clicked.connect(self.openPath)
         # self.display_rate.valueChanged.connect(self.displayRateChange)
-        #self.event_count.returnPressed.connect(self.eventCountChanged)
+        # self.event_count.returnPressed.connect(self.eventCountChanged)
 
         self.start_acq.clicked.connect(self.startAcqClicked)
         self.end_acq.clicked.connect(self.endAcqClicked)
@@ -136,25 +132,24 @@ class DaqConfigPanel(QtGui.QWidget,Ui_Form):
 
     def openPath(self):
         directory = QtGui.QFileDialog.getExistingDirectory(self, "Open Directory",
-                                             "/home",
-                                             QtGui.QFileDialog.ShowDirsOnly
-                                             | QtGui.QFileDialog.DontResolveSymlinks)
+                                                           "/home",
+                                                           QtGui.QFileDialog.ShowDirsOnly
+                                                           | QtGui.QFileDialog.DontResolveSymlinks)
 
         self.path_name.setText(directory)
 
-    def displayRateChange(self,value):
-        seconds = 1.0/value
+    def displayRateChange(self, value):
+        seconds = 1.0 / value
         self.updateRateChange.emit(seconds)
-    
+
     def eventCountChanged(self):
 
         self.eventCountChange.emit(int(self.event_count.text()))
 
-
     def _collectAcquisitionSettings(self):
         acq = self.acqtab
 
-        filename = os.path.join(acq.path_name.text(),acq.file_prefix.text())
+        filename = os.path.join(acq.path_name.text(), acq.file_prefix.text())
         logger.info('Filename to store to: {}'.format(filename))
         index = acq.startindex.value()
         logger.info('Start index is {}'.format(index))
@@ -163,7 +158,8 @@ class DaqConfigPanel(QtGui.QWidget,Ui_Form):
         tof_checked = bool(acq.write_tof.isChecked())
         blob_checked = bool(acq.write_blob.isChecked())
 
-        logger.info('File settings: raw:{} toa:{} tof:{} blob:{}'.format(raw_checked,pixels_checked,tof_checked,blob_checked))
+        logger.info('File settings: raw:{} toa:{} tof:{} blob:{}'.format(raw_checked, pixels_checked, tof_checked,
+                                                                         blob_checked))
 
         acq_time = float(acq.acq_time.text())
         logger.info('Acq time is {} s'.format(acq_time))
@@ -171,12 +167,11 @@ class DaqConfigPanel(QtGui.QWidget,Ui_Form):
         repeats = int(acq.repeat_value.value())
         logger.info('Will repeat this {} times'.format(repeats))
 
-        return filename,index,raw_checked,pixels_checked,tof_checked,blob_checked,acq_time,repeats
-
+        return filename, index, raw_checked, pixels_checked, tof_checked, blob_checked, acq_time, repeats
 
     def updateTimer(self):
         if self._in_acq:
-            seconds = self._elapsed_time.elapsed()/1000
+            seconds = self._elapsed_time.elapsed() / 1000
             m, s = divmod(seconds, 60)
             h, m = divmod(m, 60)
 
@@ -184,18 +179,17 @@ class DaqConfigPanel(QtGui.QWidget,Ui_Form):
             self.elapsed_time_m.display(int(round(m)))
             self.elapsed_time_h.display(h)
 
-
-
     def startAcqClicked(self):
 
-        filename,index,raw,toa,tof,blob,acq_time,repeats = self._collectAcquisitionSettings()
+        filename, index, raw, toa, tof, blob, acq_time, repeats = self._collectAcquisitionSettings()
 
         if self._repeating_thread is not None:
             self._repeating_thread.cancel()
             self._repeating_thread = None
-        
+
         logger.info('Staring acquisition thread')
-        self._repeating_thread = RepeatFunction(repeats,self.run_acquisition,(acq_time,filename,index,raw,toa,tof,blob,))
+        self._repeating_thread = RepeatFunction(repeats, self.run_acquisition,
+                                                (acq_time, filename, index, raw, toa, tof, blob,))
         self._repeating_thread.start()
         self._elapsed_time.restart()
 
@@ -204,14 +198,14 @@ class DaqConfigPanel(QtGui.QWidget,Ui_Form):
         self._in_acq = False
         self.closeFile.emit()
         self._elapsed_time.restart()
-    
+
     def endAcqClicked(self):
         self.endAcquisition()
         if self._repeating_thread is not None:
             self._repeating_thread.cancel()
             self._repeating_thread = None
 
-        
+
 def main():
     import sys
     app = QtGui.QApplication([])
@@ -219,5 +213,7 @@ def main():
     config.show()
 
     app.exec_()
-if __name__=="__main__":
+
+
+if __name__ == "__main__":
     main()

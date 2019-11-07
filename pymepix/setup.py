@@ -30,19 +30,17 @@ from distutils.core import setup
 from distutils.command.install_scripts import install_scripts
 from distutils import log
 
-
-
 packages = find_packages(exclude=('tests', 'doc'))
 
-provides = ['pymepix',]
+provides = ['pymepix', ]
 
 requires = []
 
-install_requires = ['numpy','sklearn']
+install_requires = ['numpy', 'sklearn']
 
 console_scripts = ['pymepix-acq=pymepix.pymepix:main']
 
-entry_points = {'console_scripts': console_scripts,}
+entry_points = {'console_scripts': console_scripts, }
 
 classifiers = [
     'Development Status :: 5 - Production/Stable',
@@ -73,25 +71,23 @@ long_description = None
 with open('README.md') as f:
     long_description = f.read()
 
-setup(name = 'pymepix',
-      author = 'Ahmed Al-Refaie and the CFEL-CMI group',
-      author_email = 'cmidaq@cfel.de',
-      maintainer = 'CFEL-CMI group',
-      version = '1.0',
-      description = 'Timepix Python library',
-      download_url = 'https://stash.desy.de/projects/CMIPUBLIC/repos/timepix',
-      classifiers = classifiers,
-      packages = packages,
-      include_package_data = True,
-      entry_points = entry_points,
-      long_description = long_description,
-      long_description_content_type = 'text/markdown',
-      provides = provides,
-      requires = requires,
-      install_requires = install_requires,
-)
-
-
+setup(name='pymepix',
+      author='Ahmed Al-Refaie and the CFEL-CMI group',
+      author_email='cmidaq@cfel.de',
+      maintainer='CFEL-CMI group',
+      version='1.0',
+      description='Timepix Python library',
+      download_url='https://stash.desy.de/projects/CMIPUBLIC/repos/timepix',
+      classifiers=classifiers,
+      packages=packages,
+      include_package_data=True,
+      entry_points=entry_points,
+      long_description=long_description,
+      long_description_content_type='text/markdown',
+      provides=provides,
+      requires=requires,
+      install_requires=install_requires,
+      )
 
 ### Local Variables:
 ### fill-column: 100

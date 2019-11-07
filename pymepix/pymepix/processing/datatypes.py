@@ -40,8 +40,3 @@ class MessageType(IntEnum):
     """Open File message"""
     CloseFileCommand = 5
     """Close File Message"""
-
-
-
-
-    

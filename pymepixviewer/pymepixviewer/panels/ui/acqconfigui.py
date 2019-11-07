@@ -8,6 +8,7 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+
 class Ui_Form(object):
     def setupUi(self, Form):
         Form.setObjectName("Form")
@@ -174,4 +175,3 @@ class Ui_Form(object):
         self.acq_time.setText(_translate("Form", "10"))
         self.label_9.setText(_translate("Form", "s"))
         self.label_13.setText(_translate("Form", "No of Files"))
-

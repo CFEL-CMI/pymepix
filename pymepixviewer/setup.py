@@ -30,24 +30,17 @@ from distutils.core import setup
 from distutils.command.install_scripts import install_scripts
 from distutils import log
 
-
-
 packages = find_packages(exclude=('tests', 'doc'))
 
-provides = ['pymepixviewer',]
+provides = ['pymepixviewer', ]
 
+requires = ['pymepix', 'pyqtgraph']
 
-requires = [ 'pymepix','pyqtgraph']
-
-install_requires = ['pymepix','pyqtgraph','numpy']
-
-
+install_requires = ['pymepix', 'pyqtgraph', 'numpy']
 
 console_scripts = ['pymepixviewer=pymepixviewer.main:main']
 
-
-entry_points = {'console_scripts': console_scripts,}
-
+entry_points = {'console_scripts': console_scripts, }
 
 classifiers = [
     'Development Status :: 4 - Beta',
@@ -80,4 +73,4 @@ setup(name='pymepixviewer',
       provides=provides,
       requires=requires,
       install_requires=install_requires,
-)
+      )

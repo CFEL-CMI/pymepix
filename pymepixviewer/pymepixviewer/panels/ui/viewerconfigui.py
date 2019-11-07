@@ -8,6 +8,7 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+
 class Ui_Form(object):
     def setupUi(self, Form):
         Form.setObjectName("Form")
@@ -127,4 +128,3 @@ class Ui_Form(object):
         self.label_4.setText(_translate("Form", "Event Count:"))
         self.event_count.setText(_translate("Form", "-1"))
         self.reset_plots.setText(_translate("Form", "Reset Plots"))
-
