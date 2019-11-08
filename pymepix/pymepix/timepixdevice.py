@@ -21,13 +21,13 @@
 ##############################################################################
 
 import numpy as np
-from .SPIDR.spidrdevice import SpidrDevice
-from .SPIDR.error import PymePixException
-from .timepixdef import *
-from .config import TimepixConfig, SophyConfig, DefaultConfig
+from pymepix.SPIDR.spidrdevice import SpidrDevice
+from pymepix.SPIDR.error import PymePixException
+from pymepix.timepixdef import *
+from pymepix.config import TimepixConfig, SophyConfig, DefaultConfig
 # from .config.sophyconfig import SophyConfig
-from .core.log import Logger
-from .processing.acquisition import PixelPipeline
+from pymepix.core.log import Logger
+from pymepix.processing.acquisition import PixelPipeline
 from multiprocessing.sharedctypes import Value
 import time
 import threading
@@ -60,7 +60,7 @@ class TimepixDevice(Logger):
             self._timer = (self._timer_msb & 0xFFFFFFFF) << 32 | (self._timer_lsb & 0xFFFFFFFF)
             self._longtime.value = self._timer
             self.debug(
-                'Reading heartbeat LSB: {} MSB: {} TIMER: {} '.format(self._timer_lsb, self._timer_msb, self._timer))
+                f'Reading heartbeat LSB: {self._timer_lsb} MSB: {self._timer_msb} TIMER: {self._timer} {self._timer * 25e-9} ')
             time.sleep(1.0)
 
     def __init__(self, spidr_device, data_queue):
@@ -71,12 +71,14 @@ class TimepixDevice(Logger):
         self._udp_address = (self._device.ipAddrDest, self._device.serverPort)
         self.info('UDP Address is {}:{}'.format(*self._udp_address))
         self._pixel_offset_coords = (0, 0)
-        self._device.reset()
-        self._device.reinitDevice()
+        # TODO: this doesn't work, it makes the spot round and the tof appear at 10ms
+        # self._device.reset()
+        # self._device.reinitDevice()
 
         self._longtime = Value('L', 0)
         self.setupAcquisition(PixelPipeline)
 
+        # TODO: this doesn't work
         self._initDACS()
 
         self._event_callback = None
@@ -101,9 +103,15 @@ class TimepixDevice(Logger):
                                                        **kwargs)
 
     def _initDACS(self):
+        # TODO: where does the 5 in the pixel threshold mask come from???
+        # self.getDeviceConfig()
+
         self.setConfigClass(DefaultConfig)
-        self.loadConfig()
-        self.setConfigClass(SophyConfig)
+        # TODO: these settings are not the same as from SoPhy yet
+        # self.loadConfig()
+        # self.setConfigClass(SophyConfig)
+
+        self.getDeviceConfig()
 
     def setConfigClass(self, klass):
         if issubclass(klass, TimepixConfig):
@@ -113,30 +121,32 @@ class TimepixDevice(Logger):
 
     def loadConfig(self, *args, **kwargs):
         """Loads dac settings from the Config class
-        
+
         """
 
         config = self._config_class(*args, **kwargs)
 
-        for code, value in config.dacCodes():
-            self.info('Setting DAC {},{}'.format(code, value))
+        for name, code, value in config.dacCodes():
+            self.info(f'Setting DAC {name}: {value}')
             self.setDac(code, value)
             # time.sleep(0.5)
 
-        if config.thresholdPixels() is not None:
-            self.pixelThreshold = config.thresholdPixels()
+        # TODO: this doesn't work for now
+        # if config.thresholdPixels() is not None:
+        #    self.pixelThreshold = config.thresholdPixels()
 
-        if config.maskPixels() is not None:
-            self.pixelMask = config.maskPixels()
+        # if config.maskPixels() is not None:
+        #    self.pixelMask = config.maskPixels()
 
-        self.uploadPixels()
-        self.refreshPixels()
+        # self.uploadPixels()
+        # self.refreshPixels()
+
         # print(self.pixelThreshold)
 
     def setupDevice(self):
         """Sets up valid paramters for acquisition
 
-        This will be manual when other acqusiiton parameters are working
+        This will be manual when other acquisition parameters are working
 
         """
         self.debug('Setting up acqusition')
@@ -148,11 +158,75 @@ class TimepixDevice(Logger):
         self.debug('GrayCounter set to {}'.format(GrayCounter(self.grayCounter)))
         self.superPixel = SuperPixel.Enable
         self.debug('SuperPixel set to {}'.format(SuperPixel(self.superPixel)))
-        pll_cfg = 0x01E | 0x100
+        # TODO: PLL
+        # 0x11E -> 00 0001 0001 1110
+        # SoPhy ->            1 1110
+        # PLL configuration: 40 MHz on pixel matrix
+        pll_cfg = 0x01E | 0x100  # 40 MHz, 16 clock phases
         self._device.pllConfig = pll_cfg
         # self._device.setTpPeriodPhase(10,0)
         # self._device.tpNumber = 1
         # self._device.columnTestPulseRegister
+
+    def getDeviceConfig(self):
+        '''
+        extract current timepix device configuration
+        :return: none
+        '''
+
+        pass
+
+        print(f"pixel threshold: {self.pixelThreshold}")
+        print(f"pixel mask: {self.pixelMask}")
+        print(f"polarity: {self.polarity}")
+        print(f"operation mode: {self.operationMode}")
+        print(f"gray counter: {self.grayCounter}")
+        print(f"super pixel: {self.superPixel}")
+        print(f"time overflow: {self.timerOverflowControl}")
+        print(f"Ibias DiscS1 off: {self.Ibias_DiscS1_OFF}")
+        print(f"Ibias DiscS1 on: {self.Ibias_DiscS1_ON}")
+        print(f"Ibias DiscS2 off: {self.Ibias_DiscS2_OFF}")
+        print(f"Ibias DiscS2 on: {self.Ibias_DiscS2_ON}")
+        print(f"Ibias preamp off: {self.Ibias_Preamp_OFF}")
+        print(f"Ibias preamp on: {self.Ibias_Preamp_ON}")
+        print(f"V preamp NCAS: {self.VPreamp_NCAS}")
+        print(f"Ibias Ikrum: {self.Ibias_Ikrum}")
+        print(f"Vfbk: {self.Vfbk}")
+        print(f"Vthreashold coarse: {self.Vthreshold_coarse}")
+        print(f"Vthreashold fine: {self.Vthreshold_fine}")
+        print(f"Ibias pixel DAC: {self.Ibias_PixelDAC}")
+        print(f"Ibias TP buffer in: {self.Ibias_TPbufferIn}")
+        print(f"Ibias TP buffer out: {self.Ibias_TPbufferOut}")
+        print(f"VTP coarse: {self.VTP_coarse}")
+        print(f"VTP fine: {self.VTP_fine}")
+        print(f'PLL config: {bin(self._device.pllConfig)}')
+        import h5py
+        import time
+        with h5py.File(f'{time.strftime("%Y%m%d-%H%M%S_TimePixSettings.hdf5")}', 'w') as f:
+            f.create_dataset('pixel threshold', data=self.pixelThreshold)
+            f.create_dataset('pixel mask', data=self.pixelMask)
+            f.create_dataset('polarity', data=self.polarity)
+            f.create_dataset('operation mode', data=self.operationMode)
+            f.create_dataset('gray counter', data=self.grayCounter)
+            f.create_dataset('super pixel', data=self.superPixel)
+            f.create_dataset('time overflow', data=self.timerOverflowControl)
+            f.create_dataset('Ibias DiscS1 off', data=self.Ibias_DiscS1_OFF)
+            f.create_dataset('Ibias DiscS1 on', data=self.Ibias_DiscS1_ON)
+            f.create_dataset('Ibias DiscS2 off', data=self.Ibias_DiscS2_OFF)
+            f.create_dataset('Ibias DiscS2 on', data=self.Ibias_DiscS2_ON)
+            f.create_dataset('Ibias preamp off', data=self.Ibias_Preamp_OFF)
+            f.create_dataset('Ibias preamp on', data=self.Ibias_Preamp_ON)
+            f.create_dataset('V preamp NCAS', data=self.VPreamp_NCAS)
+            f.create_dataset('Ibias Ikrum', data=self.Ibias_Ikrum)
+            f.create_dataset('Vfbk', data=self.Vfbk)
+            f.create_dataset('Vthreashold coarse', data=self.Vthreshold_coarse)
+            f.create_dataset('Vthreashold fine', data=self.Vthreshold_fine)
+            f.create_dataset('Ibias pixel DAC', data=self.Ibias_PixelDAC)
+            f.create_dataset('Ibias TP buffer in', data=self.Ibias_TPbufferIn)
+            f.create_dataset('Ibias TP buffer out', data=self.Ibias_TPbufferOut)
+            f.create_dataset('VTP coarse', data=self.VTP_coarse)
+            f.create_dataset('VTP fine', data=self.VTP_fine)
+            f.create_dataset('PLL config', data=self._device.pllConfig)
 
     @property
     def acquisition(self):
@@ -181,7 +255,7 @@ class TimepixDevice(Logger):
         --------
         str
             Device string identifier
-        
+
         """
         devId = self._device.deviceId
         waferno = (devId >> 8) & 0xFFF
@@ -214,7 +288,7 @@ class TimepixDevice(Logger):
         ----------
         value : :obj:`numpy.array` of :obj:`int`
             256x256 uint8 threshold to set locally
-            
+
 
         Returns
         -----------
@@ -237,13 +311,13 @@ class TimepixDevice(Logger):
         ----------
         value : :obj:`numpy.array` of :obj:`int`
             256x256 uint8 threshold mask to set locally
-            
+
 
         Returns
         -----------
         :obj:`numpy.array` of :obj:`int` or :obj:`None`:
             Locally stored pixel mask matrix
-        
+
 
         """
         # self._device.getPixelConfig()
@@ -261,13 +335,13 @@ class TimepixDevice(Logger):
         ----------
         value : :obj:`numpy.array` of :obj:`int`
             256x256 uint8 pixel test to set locally
-            
+
 
         Returns
         -----------
         :obj:`numpy.array` of :obj:`int` or :obj:`None`:
             Locally stored pixel test matrix
-        
+
 
         """
         # self._device.getPixelConfig()
@@ -279,7 +353,6 @@ class TimepixDevice(Logger):
 
     def uploadPixels(self):
         """Uploads local pixel configuration to timepix"""
-
         self._device.uploadPixelConfig()
 
     def refreshPixels(self):
@@ -426,7 +499,9 @@ class TimepixDevice(Logger):
 
     @property
     def Ibias_Ikrum(self):
-        """nA"""
+        """
+        Bias current, affects the pulse shaping and has effect on gain. The higher the current, the shorter shaping, but lower gain.
+        Unit=nA"""
         value = self._device.getDac(DacRegisterCodes.Ibias_Ikrum)
         return ((value & 0xFF) * 240.0) / 1000.0
 
@@ -570,7 +645,7 @@ class TimepixDevice(Logger):
     @property
     def VTP_coarse(self):
         """V"""
-        value = self._device.getDac(DacRegisterCodes.VTP_coarse) * 5.0
+        value = self._device.getDac(DacRegisterCodes.VTP_coarse) * 5
         return float((value & 0xFF)) / 1000.0
 
     @VTP_coarse.setter
@@ -583,7 +658,8 @@ class TimepixDevice(Logger):
     @property
     def VTP_fine(self):
         """V"""
-        value = self._device.getDac(DacRegisterCodes.VTP_fine) * 2.5
+        # TODO: multiply by 2.5 and typecast to int for bit operation isn't good...
+        value = int(self._device.getDac(DacRegisterCodes.VTP_fine) * 2.5)
         return float((value & 0x1FF)) / 1000.0
 
     @VTP_fine.setter
@@ -600,7 +676,7 @@ class TimepixDevice(Logger):
         ----------
         code: :obj:`int`
             DAC code to set
-        
+
         value: :obj:`int`
             value to set
         """
