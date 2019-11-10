@@ -26,11 +26,11 @@ import pyqtgraph as pg
 import numpy as np
 import time
 from pyqtgraph.Qt import QtCore, QtGui
-from .panels.timeofflight import TimeOfFlightPanel
-from .panels.daqconfig import DaqConfigPanel
-from .panels.blobview import BlobView
-from .ui.mainui import Ui_MainWindow
-from .core.datatypes import ViewerMode
+from pymepixviewer.panels.timeofflight import TimeOfFlightPanel
+from pymepixviewer.panels.daqconfig import DaqConfigPanel
+from pymepixviewer.panels.blobview import BlobView
+from pymepixviewer.ui.mainui import Ui_MainWindow
+from pymepixviewer.core.datatypes import ViewerMode
 import logging
 
 logger = logging.getLogger(__name__)
@@ -93,7 +93,8 @@ class PymepixDAQ(QtGui.QMainWindow, Ui_MainWindow):
 
     def startupTimepix(self):
 
-        self._timepix = pymepix.Pymepix(('192.168.1.10', 50000))
+        # self._timepix = pymepix.Pymepix(('192.168.1.10', 50000))
+        self._timepix = pymepix.Pymepix(('127.0.0.10', 50015), src_ip_port=('127.0.0.1', 0))
 
         if len(self._timepix) == 0:
             logger.error('NO TIMEPIX DEVICES DETECTED')
@@ -180,8 +181,8 @@ class PymepixDAQ(QtGui.QMainWindow, Ui_MainWindow):
         self.clearNow.connect(self._overview_panel.clearData)
         self.modeChange.connect(self._overview_panel.modeChange)
 
-        # self._config_panel.startAcquisition.connect(self.startAcquisition)
-        # self._config_panel.stopAcquisition.connect(self.stopAcquisition)
+        self._config_panel.start_acq.clicked.connect(self.startAcquisition)
+        self._config_panel.end_acq.clicked.connect(self.stopAcquisition)
 
         self._config_panel.viewtab.resetPlots.connect(self.clearNow.emit)
         self._config_panel.proctab.eventWindowChanged.connect(self.setEventWindow)
@@ -283,16 +284,20 @@ class PymepixDAQ(QtGui.QMainWindow, Ui_MainWindow):
             # self.displayNow.emit()
             self._last_update = time.time()
 
-    # def startAcquisition(self,pathname,prefixname,do_raw,do_blob,exposure,startindex):
-    #     self._timepix.filePath=pathname
-    #     self._timepix.filePrefix = prefixname
-    #     self._timepix.eventWindowTime = exposure
+    def startAcquisition(self):
+        print('Start data recording')
+        import time
+        fileName = f'{time.strftime("%Y%m%d-%H%M%S_")}{self._config_panel.acqtab.file_prefix.text()}'
+        self._timepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0].outfile_name = fileName
+        self._timepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0].record = 1
+        self._config_panel.start_acq.setStyleSheet('QPushButton {color: red;}')
 
-    #     logger.debug('Do raw',do_raw,'Do_blob',do_blob)
-    #     self._timepix.beginFileWrite(write_raw=do_raw,write_blob=do_blob,start_index=startindex)
+    def stopAcquisition(self):
+        print('Stop data recording')
+        self._timepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0].record = 0
+        self._timepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0]._raw2Disk.enable = 0
+        self._config_panel.start_acq.setStyleSheet('QPushButton {color: black;}')
 
-    # def stopAcquisition(self):
-    #     self._timepix.stopFileWrite()
 
     def addViewWidget(self, name, start, end):
         if name in self._view_widgets:

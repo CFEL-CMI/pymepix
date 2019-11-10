@@ -126,8 +126,8 @@ class DaqConfigPanel(QtGui.QWidget, Ui_Form):
         # self.display_rate.valueChanged.connect(self.displayRateChange)
         # self.event_count.returnPressed.connect(self.eventCountChanged)
 
-        self.start_acq.clicked.connect(self.startAcqClicked)
-        self.end_acq.clicked.connect(self.endAcqClicked)
+        # self.start_acq.clicked.connect(self.startAcqClicked)
+        # self.end_acq.clicked.connect(self.endAcqClicked)
         self.viewtab.reset_plots.clicked.connect(self.resetPlots.emit)
 
     def openPath(self):
