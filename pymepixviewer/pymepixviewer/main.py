@@ -35,6 +35,20 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+class GenericThread(QtCore.QThread):
+    def __init__(self, function, *args, **kwargs):
+        QtCore.QThread.__init__(self)
+        self.function = function
+        self.args = args
+        self.kwargs = kwargs
+
+    def __del__(self):
+        self.wait()
+
+    def run(self):
+        self.function(*self.args,**self.kwargs)
+        return
+
 
 class PymepixDAQ(QtGui.QMainWindow, Ui_MainWindow):
     displayNow = QtCore.pyqtSignal()
@@ -44,9 +58,26 @@ class PymepixDAQ(QtGui.QMainWindow, Ui_MainWindow):
     onCentroid = QtCore.pyqtSignal(object)
     clearNow = QtCore.pyqtSignal()
     modeChange = QtCore.pyqtSignal(object)
+    updateStatusSignal = QtCore.pyqtSignal(object)
 
     fineThresholdUpdate = QtCore.pyqtSignal(float)
     coarseThresholdUpdate = QtCore.pyqtSignal(float)
+
+    def statusUdate(self):
+        logger.info('Starting status update thread')
+
+        while True:
+            fpga = self._timepix._spidr.fpgaTemperature
+            local = self._timepix._spidr.localTemperature
+            remote = self._timepix._spidr.remoteTemperature
+            chipSpeed = self._timepix._spidr.chipboardFanSpeed
+            spidrSpeed = self._timepix._spidr.spidrFanSpeed
+            queue = 8  # self._timepix._data_queue.qsize()
+
+            self.updateStatusSignal.emit(
+                f'T_(FPGA)={fpga}, T_(loc)={local}, T_(remote)={remote}, Fan(chip)={chipSpeed}, Fan(SPIDR)={spidrSpeed}, Queue={queue}')
+            # self.statusbar.showMessage(, 5000)
+            time.sleep(5)
 
     def __init__(self, parent=None):
         super(PymepixDAQ, self).__init__(parent)
@@ -195,6 +226,9 @@ class PymepixDAQ(QtGui.QMainWindow, Ui_MainWindow):
         self.onPixelToA.connect(self._config_panel.fileSaver.onToa)
         self.onPixelToF.connect(self._config_panel.fileSaver.onTof)
         self.onCentroid.connect(self._config_panel.fileSaver.onCentroid)
+
+        self._statusUpdate = GenericThread(self.statusUdate)
+        self.updateStatusSignal.connect(lambda msg: self.statusbar.showMessage(msg, 5000))
 
     def onBiasVoltageUpdate(self, value):
         logger.info('Bias Voltage changed to {} V'.format(value))
