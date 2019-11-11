@@ -285,18 +285,23 @@ class PymepixDAQ(QtGui.QMainWindow, Ui_MainWindow):
             self._last_update = time.time()
 
     def startAcquisition(self):
-        print('Start data recording')
-        import time
+        path = self._config_panel.acqtab.path_name.text()
+        print(path)
         fileName = f'{time.strftime("%Y%m%d-%H%M%S_")}{self._config_panel.acqtab.file_prefix.text()}'
         self._timepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0].outfile_name = fileName
         self._timepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0].record = 1
         self._config_panel.start_acq.setStyleSheet('QPushButton {color: red;}')
+        self._config_panel.start_acq.setText('Recording')
+        self._config_panel._in_acq = True
+        self._config_panel._elapsed_time.restart()
+
 
     def stopAcquisition(self):
-        print('Stop data recording')
         self._timepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0].record = 0
         self._timepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0]._raw2Disk.enable = 0
         self._config_panel.start_acq.setStyleSheet('QPushButton {color: black;}')
+        self._config_panel.start_acq.setText('Start Acquisition')
+        self._config_panel._in_acq = False
 
 
     def addViewWidget(self, name, start, end):

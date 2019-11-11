@@ -181,7 +181,7 @@ class DaqConfigPanel(QtGui.QWidget, Ui_Form):
 
     def startAcqClicked(self):
 
-        filename, index, raw, toa, tof, blob, acq_time, repeats = self._collectAcquisitionSettings()
+        #filename, index, raw, toa, tof, blob, acq_time, repeats = self._collectAcquisitionSettings()
 
         if self._repeating_thread is not None:
             self._repeating_thread.cancel()
