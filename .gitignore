@@ -1,3 +1,5 @@
+*.hdf5
+*.raw
 *.dat
 *.egg
 *.egg-info/

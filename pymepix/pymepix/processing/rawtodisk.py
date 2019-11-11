@@ -17,7 +17,7 @@
 #
 # You should have received a copy of the GNU General Public License along with this program. If not,
 # see <https://www.gnu.org/licenses/>.
-import os, sys
+import time
 from pymepix.core.log import ProcessLogger
 import multiprocessing
 from multiprocessing.sharedctypes import Value
@@ -40,6 +40,10 @@ class raw2Disk (multiprocessing.Process, ProcessLogger):
             self.error('Exception occured in init; no data queue provided?')
 
         self._enable = Value('I', 1)
+        self._timerBool = Value('I', 0)
+        import ctypes
+        self._startTime = Value(ctypes.c_double, 0)
+        self._stopTime  = Value(ctypes.c_double, 1)
 
     @property
     def enable(self):
@@ -70,6 +74,19 @@ class raw2Disk (multiprocessing.Process, ProcessLogger):
         self.debug('Setting enabled flag to {}'.format(value))
         self._enable.value = int(value)
 
+    @property
+    def timer(self):
+        return bool(self._timerBool.value)
+
+    @enable.setter
+    def timer(self, value):
+        self.debug('Setting timer flag to {}'.format(value))
+        if value == 1:
+            self._startTime.value = time.time()
+        elif value == 0:
+            self._stopTime.value = time.time()
+        self._timerBool.value = int(value)
+
     def run(self):
         while True:
             enabled = self.enable
@@ -86,5 +103,11 @@ class raw2Disk (multiprocessing.Process, ProcessLogger):
                 self.info('error')
 
             store_raw(self._raw_file, (data, 1))
+
         self._raw_file.close()
+        import numpy as np
+        size = np.fromfile(self._raw_file.name, dtype=np.uint64).shape[0]
+        timeDiff = self._stopTime.value - self._startTime.value
+        print(f'recieved {size} packets; {64 * size * 1e-6:.2f}MBits {(64 * size * 1e-6) / timeDiff:.2f}MBits/sec; {(64 * size * 1e-6 / 8) / timeDiff:.2f}MByte/sec')
         self.info("finished saving data")
+
