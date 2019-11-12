@@ -42,7 +42,7 @@ class UdpSampler(BasePipelineObject):
 
     def __init__(self, address, longtime, chunk_size=1000, flush_timeout=0.3, input_queue=None, create_output=True,
                  num_outputs=1, shared_output=None):
-        BasePipelineObject.__init__(self, 'UdpSampler', input_queue=input_queue, create_output=create_output, num_outputs=1,
+        BasePipelineObject.__init__(self, 'UdpSampler', input_queue=input_queue, create_output=create_output, num_outputs=num_outputs,
                                     shared_output=shared_output)
 
         try:
