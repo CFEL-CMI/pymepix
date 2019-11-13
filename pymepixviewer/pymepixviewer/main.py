@@ -25,6 +25,7 @@ from pymepix.processing import MessageType
 import pyqtgraph as pg
 import numpy as np
 import time
+import os
 from pyqtgraph.Qt import QtCore, QtGui
 from pymepixviewer.panels.timeofflight import TimeOfFlightPanel
 from pymepixviewer.panels.daqconfig import DaqConfigPanel
@@ -324,8 +325,8 @@ class PymepixDAQ(QtGui.QMainWindow, Ui_MainWindow):
 
     def startAcquisition(self):
         path = self._config_panel.acqtab.path_name.text()
-        print(path)
-        self._fileName = f'{time.strftime("%Y%m%d-%H%M%S_")}{self._config_panel.acqtab.file_prefix.text()}'
+        fName = f'{time.strftime("%Y%m%d-%H%M%S_")}{self._config_panel.acqtab.file_prefix.text()}'
+        self._fileName = os.path.join(path, fName)
         self._timepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0].outfile_name = self._fileName
         self._timepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0]._raw2Disk.timer = 1
         self._timepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0].record = 1
