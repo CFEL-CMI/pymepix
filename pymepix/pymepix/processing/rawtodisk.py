@@ -18,6 +18,7 @@
 # You should have received a copy of the GNU General Public License along with this program. If not,
 # see <https://www.gnu.org/licenses/>.
 import time
+import numpy as np
 from pymepix.core.log import ProcessLogger
 import multiprocessing
 from multiprocessing.sharedctypes import Value
@@ -39,6 +40,7 @@ class raw2Disk (multiprocessing.Process, ProcessLogger):
         else:
             self.error('Exception occured in init; no data queue provided?')
 
+        self._buffer = np.array([], dtype=np.uint64)
         self._enable = Value('I', 1)
         self._timerBool = Value('I', 0)
         import ctypes
@@ -95,19 +97,72 @@ class raw2Disk (multiprocessing.Process, ProcessLogger):
                 break
             try:
                 # I picked the timeout randomly; use what works
-                data = self._dataq.get(block=False, timeout=0.1)
-                self.debug(f'get data {data}')
+                data = self._dataq.get(timeout=0.1) # block=False results in high CPU without doing anything
+                #self.debug(f'get data {data}')
             except queue.Empty:
                 continue  # try again
             except:
                 self.info('error')
 
-            store_raw(self._raw_file, (data, 1))
+            self._buffer = np.append(self._buffer, data)
+            if len(self._buffer) > 10000:
+                store_raw(self._raw_file, (self._buffer, 1))
+                self._buffer = np.array([], dtype=np.uint64)
 
+        store_raw(self._raw_file, (self._buffer, 1))
+        # empty queue
+        if not self._dataq.empty():
+            remains = []
+            item = self._dataq.get(block=False)
+            while item:
+                try:
+                    remains.append(self._dataq.get(block=False))
+                except queue.Empty:
+                    break
+            print(f'{len(remains)} remains collected')
+            store_raw(self._raw_file, (np.asarray(remains), 1))
         self._raw_file.close()
-        import numpy as np
+
         size = np.fromfile(self._raw_file.name, dtype=np.uint64).shape[0]
         timeDiff = self._stopTime.value - self._startTime.value
         print(f'recieved {size} packets; {64 * size * 1e-6:.2f}MBits {(64 * size * 1e-6) / timeDiff:.2f}MBits/sec; {(64 * size * 1e-6 / 8) / timeDiff:.2f}MByte/sec')
         self.info("finished saving data")
 
+
+def main():
+    import numpy as np
+    from multiprocessing import Queue
+    import logging
+    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    fname = '/Users/brombh/PycharmProjects/timepix/analysis/data/pyrrole__100.raw'
+    data  = np.fromfile(fname, dtype=np.uint64)
+    total = int(np.floor((len(data) - 10) / 10))
+    total = len(data)
+    total = 10005
+    last_progress = 0
+
+    dataq = Queue()
+    fname = 'test.raw'
+    p = raw2Disk(dataq=dataq, fileN=fname)
+    p.start()
+    p.timer = 1
+    #time.sleep(30)
+
+    for i, d in enumerate(data[:(total+1)]):
+        dataq.put(d)
+        progress = int(i / total * 100)
+        if progress != 0 and progress % 5 == 0 and progress != last_progress:
+            print(f'Progress {i / total * 100:.1f}%')
+            last_progress = progress
+        #time.sleep(100e-9)
+    print(f'sent {i+1} packets')
+    time.sleep(2)
+
+    p.timer = 0
+    p.enable = 0
+    p.join()
+
+
+if __name__ == '__main__':
+    main()
