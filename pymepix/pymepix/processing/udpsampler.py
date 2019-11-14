@@ -21,7 +21,7 @@
 ##############################################################################
 
 from .basepipeline import BasePipelineObject
-import socket
+import socket, sys
 from .datatypes import MessageType
 import time
 import numpy as np
@@ -55,7 +55,7 @@ class UdpSampler(BasePipelineObject):
             self._longtime = longtime
             self._dataq = Queue()
             self._record = Value('I', 0)
-            self._outfile_name = 'test'#Array('c', b'20191109-121044_123456789012345678901234567890')
+            self._outfile_name = 'test'
         except Exception as e:
             self.error('Exception occured in init!!!')
             self.error(e, exc_info=True)
@@ -135,7 +135,8 @@ class UdpSampler(BasePipelineObject):
             return None, None
         # self.debug('Read {}'.format(raw_packet))
         if self._packet_buffer is None:
-            self._packet_buffer = raw_packet
+            time_ns = time.time_ns().to_bytes(8, sys.byteorder)
+            self._packet_buffer = time_ns + raw_packet
         else:
             self._packet_buffer += raw_packet
 
