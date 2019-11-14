@@ -109,6 +109,12 @@ class PymepixDAQ(QtGui.QMainWindow, Ui_MainWindow):
         self._fileName = ''
         self._statusUpdate.start()
 
+        for i in self._timepix._timepix_devices[0]._acquisition_pipeline._stages:
+            for j in i._pipeline_objects:
+                print(f'parent {j._parent_pid}, {j._log_name}, {j.pid}')
+                if j._log_name.find('UdpSampler') > -1:
+                    print(f'parent {j._raw2Disk._parent_pid}, {j._raw2Disk._log_name}, {j._raw2Disk.pid}')
+
     def switchToMode(self):
         self._timepix.stop()
         if self._current_mode is ViewerMode.TOA:
@@ -129,8 +135,8 @@ class PymepixDAQ(QtGui.QMainWindow, Ui_MainWindow):
 
     def startupTimepix(self):
 
-        # self._timepix = pymepix.Pymepix(('192.168.1.10', 50000))
-        self._timepix = pymepix.Pymepix(('127.0.0.10', 50015), src_ip_port=('127.0.0.1', 0))
+        self._timepix = pymepix.Pymepix(('192.168.1.10', 50000))
+        # self._timepix = pymepix.Pymepix(('127.0.0.10', 50017), src_ip_port=('127.0.0.1', 0))
 
         if len(self._timepix) == 0:
             logger.error('NO TIMEPIX DEVICES DETECTED')
@@ -141,9 +147,10 @@ class PymepixDAQ(QtGui.QMainWindow, Ui_MainWindow):
         self._timepix[0].setupAcquisition(pymepix.processing.CentroidPipeline)
         # self._timepix.
         self._timepix.dataCallback = self.onData
-        self._timepix[0].pixelThreshold = np.zeros(shape=(256, 256), dtype=np.uint8)
-        self._timepix[0].pixelMask = np.zeros(shape=(256, 256), dtype=np.uint8)
-        self._timepix[0].uploadPixels()
+        # TODO: doesn't work
+        #self._timepix[0].pixelThreshold = np.zeros(shape=(256, 256), dtype=np.uint8)
+        #self._timepix[0].pixelMask = np.zeros(shape=(256, 256), dtype=np.uint8)
+        #self._timepix[0].uploadPixels()
 
         logger.info('Fine: {} Coarse: {}'.format(self._timepix[0].Vthreshold_fine, self._timepix[0].Vthreshold_coarse))
 
