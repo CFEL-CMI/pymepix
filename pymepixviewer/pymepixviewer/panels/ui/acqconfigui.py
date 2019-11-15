@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'pymepixviewer\panels\ui\acqconfig.ui'
+# Form implementation generated from reading ui file 'acqconfig.ui'
 #
 # Created by: PyQt5 UI code generator 5.9.2
 #
@@ -162,6 +162,7 @@ class Ui_Form(object):
         self.label_20.setText(_translate("Form", "Coarse Threshold"))
         self.coarse_threshold.setSuffix(_translate("Form", "V"))
         self.label_6.setText(_translate("Form", "Path"))
+        self.path_name.setText(_translate("Form", "/home/gaston/timepix/data"))
         self.openpath.setText(_translate("Form", "Open"))
         self.label_7.setText(_translate("Form", "Prefix:"))
         self.file_prefix.setText(_translate("Form", "test_"))
@@ -175,3 +176,4 @@ class Ui_Form(object):
         self.acq_time.setText(_translate("Form", "10"))
         self.label_9.setText(_translate("Form", "s"))
         self.label_13.setText(_translate("Form", "No of Files"))
+

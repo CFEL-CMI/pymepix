@@ -108,6 +108,8 @@ class PymepixDAQ(QtGui.QMainWindow, Ui_MainWindow):
 
         self._fileName = ''
         self._statusUpdate.start()
+        self._shutterStatus = 1 # 1=open, 0=closed
+
 
         for i in self._timepix._timepix_devices[0]._acquisition_pipeline._stages:
             for j in i._pipeline_objects:
@@ -135,8 +137,8 @@ class PymepixDAQ(QtGui.QMainWindow, Ui_MainWindow):
 
     def startupTimepix(self):
 
-        self._timepix = pymepix.Pymepix(('192.168.1.10', 50000))
-        # self._timepix = pymepix.Pymepix(('127.0.0.10', 50017), src_ip_port=('127.0.0.1', 0))
+        # self._timepix = pymepix.Pymepix(('192.168.1.10', 50000))
+        self._timepix = pymepix.Pymepix(('127.0.0.10', 50017), src_ip_port=('127.0.0.1', 0))
 
         if len(self._timepix) == 0:
             logger.error('NO TIMEPIX DEVICES DETECTED')
@@ -226,6 +228,9 @@ class PymepixDAQ(QtGui.QMainWindow, Ui_MainWindow):
 
         self._config_panel.start_acq.clicked.connect(self.startAcquisition)
         self._config_panel.end_acq.clicked.connect(self.stopAcquisition)
+        self._config_panel.shutterBtn.clicked.connect(self.camShutter)
+        self._config_panel.shutterBtn.setStyleSheet('QPushButton {color: green;}')
+        self._config_panel.shutterBtn.setText('Close Shutter')
 
         self._config_panel.viewtab.resetPlots.connect(self.clearNow.emit)
         self._config_panel.proctab.eventWindowChanged.connect(self.setEventWindow)
@@ -349,6 +354,20 @@ class PymepixDAQ(QtGui.QMainWindow, Ui_MainWindow):
         self._config_panel.start_acq.setStyleSheet('QPushButton {color: black;}')
         self._config_panel.start_acq.setText('Start Acquisition')
         self._config_panel._in_acq = False
+
+    def camShutter(self):
+        if self._shutterStatus:
+            logger.debug('Closing shutter')
+            self._shutterStatus = 0
+            self._config_panel.shutterBtn.setStyleSheet('QPushButton {color: red;}')
+            self._config_panel.shutterBtn.setText('Open Shutter')
+            self._timepix._spidr.closeShutter()
+        else:
+            logger.debug('Open shutter')
+            self._shutterStatus = 1
+            self._config_panel.shutterBtn.setStyleSheet('QPushButton {color: green;}')
+            self._config_panel.shutterBtn.setText('Close Shutter')
+            self._timepix._spidr.openShutter()
 
     def addViewWidget(self, name, start, end):
         if name in self._view_widgets:

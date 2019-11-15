@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'pymepixviewer\panels\ui\daqconfig.ui'
+# Form implementation generated from reading ui file 'daqconfig.ui'
 #
 # Created by: PyQt5 UI code generator 5.9.2
 #
@@ -89,6 +89,9 @@ class Ui_Form(object):
         self.text_status.setFont(font)
         self.text_status.setObjectName("text_status")
         self.horizontalLayout_3.addWidget(self.text_status)
+        self.shutterBtn = QtWidgets.QPushButton(Form)
+        self.shutterBtn.setObjectName("shutterBtn")
+        self.horizontalLayout_3.addWidget(self.shutterBtn)
         self.verticalLayout_2.addLayout(self.horizontalLayout_3)
 
         self.retranslateUi(Form)
@@ -106,7 +109,7 @@ class Ui_Form(object):
         self.end_acq.setText(_translate("Form", "Stop Acquisition"))
         self.label_12.setText(_translate("Form", "Status:"))
         self.text_status.setText(_translate("Form", "Live"))
-
+        self.shutterBtn.setText(_translate("Form", "Camera Shutter"))
 
 from pymepixviewer.panels.acqconfig import AcquisitionConfig
 from pymepixviewer.panels.processingconfig import ProcessingConfig

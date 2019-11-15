@@ -116,7 +116,11 @@
            </widget>
           </item>
           <item>
-           <widget class="QLineEdit" name="path_name"/>
+           <widget class="QLineEdit" name="path_name">
+            <property name="text">
+             <string>/home/gaston/timepix/data</string>
+            </property>
+           </widget>
           </item>
           <item>
            <widget class="QPushButton" name="openpath">
