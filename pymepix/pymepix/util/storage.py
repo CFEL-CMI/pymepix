@@ -40,6 +40,9 @@ def store_raw(f, data):
     raw, longtime = data
     f.write(raw.tostring())
 
+def store_trainID(f, times, id):
+    np.save(f, times)
+    np.save(f, id)
 
 def store_toa(f, data):
     x, y, toa, tot = data
@@ -49,7 +52,6 @@ def store_toa(f, data):
     np.save(f, toa)
     np.save(f, tot)
 
-
 def store_tof(f, data):
     counter, x, y, tof, tot = data
 
@@ -58,7 +60,6 @@ def store_tof(f, data):
     np.save(f, y)
     np.save(f, tof)
     np.save(f, tot)
-
 
 def store_centroid(f, data):
     cluster_shot, cluster_x, cluster_y, cluster_tof, cluster_tot = data

@@ -116,6 +116,7 @@ class PymepixDAQ(QtGui.QMainWindow, Ui_MainWindow):
                 print(f'parent {j._parent_pid}, {j._log_name}, {j.pid}')
                 if j._log_name.find('UdpSampler') > -1:
                     print(f'parent {j._raw2Disk._parent_pid}, {j._raw2Disk._log_name}, {j._raw2Disk.pid}')
+                    print(f'parent {j._trainIDRec._parent_pid}, {j._trainIDRec._log_name}, {j._trainIDRec.pid}')
 
     def switchToMode(self):
         self._timepix.stop()
@@ -137,8 +138,8 @@ class PymepixDAQ(QtGui.QMainWindow, Ui_MainWindow):
 
     def startupTimepix(self):
 
-        # self._timepix = pymepix.Pymepix(('192.168.1.10', 50000))
-        self._timepix = pymepix.Pymepix(('127.0.0.10', 50017), src_ip_port=('127.0.0.1', 0))
+        self._timepix = pymepix.Pymepix(('192.168.1.10', 50000))
+        #self._timepix = pymepix.Pymepix(('127.0.0.10', 50017), src_ip_port=('127.0.0.1', 0))
 
         if len(self._timepix) == 0:
             logger.error('NO TIMEPIX DEVICES DETECTED')
@@ -339,18 +340,32 @@ class PymepixDAQ(QtGui.QMainWindow, Ui_MainWindow):
         path = self._config_panel.acqtab.path_name.text()
         fName = f'{time.strftime("%Y%m%d-%H%M%S_")}{self._config_panel.acqtab.file_prefix.text()}'
         self._fileName = os.path.join(path, fName)
+
+        # start raw2disk
         self._timepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0].outfile_name = self._fileName
         self._timepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0]._raw2Disk.timer = 1
         self._timepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0].record = 1
+
+        # start recording trainID
+        self._timepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0]._trainIDRec.record = 1
+
+        # setup GUI
         self._config_panel.start_acq.setStyleSheet('QPushButton {color: red;}')
         self._config_panel.start_acq.setText('Recording')
         self._config_panel._in_acq = True
         self._config_panel._elapsed_time.restart()
 
     def stopAcquisition(self):
+        # stop raw2Disk
         self._timepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0].record = 0
         self._timepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0]._raw2Disk.timer = 0
         self._timepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0]._raw2Disk.enable = 0
+
+        # stop redording train IDs
+        self._timepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0]._trainIDRec.record = 0
+        self._timepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0]._trainIDRec.enable = 0
+
+        # update GUI
         self._config_panel.start_acq.setStyleSheet('QPushButton {color: black;}')
         self._config_panel.start_acq.setText('Start Acquisition')
         self._config_panel._in_acq = False

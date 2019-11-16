@@ -24,13 +24,14 @@ import multiprocessing
 from multiprocessing.sharedctypes import Value
 import queue
 from pymepix.util.storage import open_output_file, store_raw
+import ctypes
 
 class raw2Disk (multiprocessing.Process, ProcessLogger):
     def __init__(self, name='raw2Disk', dataq=None, fileN=None):
         multiprocessing.Process.__init__(self)
         ProcessLogger.__init__(self, name)
 
-        self.info(f'initialising raw2Disk')
+        self.info(f'initialising {name}')
         if dataq is not None:
             self._dataq = dataq
             try:
@@ -41,9 +42,8 @@ class raw2Disk (multiprocessing.Process, ProcessLogger):
             self.error('Exception occured in init; no data queue provided?')
 
         self._buffer = np.array([], dtype=np.uint64)
-        self._enable = Value('I', 1)
-        self._timerBool = Value('I', 0)
-        import ctypes
+        self._enable = Value(ctypes.c_bool, 1)
+        self._timerBool = Value(ctypes.c_bool, 0)
         self._startTime = Value(ctypes.c_double, 0)
         self._stopTime  = Value(ctypes.c_double, 1)
 
@@ -69,7 +69,7 @@ class raw2Disk (multiprocessing.Process, ProcessLogger):
 
 
         """
-        return bool(self._enable.value)
+        return self._enable.value
 
     @enable.setter
     def enable(self, value):
@@ -78,7 +78,7 @@ class raw2Disk (multiprocessing.Process, ProcessLogger):
 
     @property
     def timer(self):
-        return bool(self._timerBool.value)
+        return self._timerBool.value
 
     @enable.setter
     def timer(self, value):
@@ -109,7 +109,7 @@ class raw2Disk (multiprocessing.Process, ProcessLogger):
                 store_raw(self._raw_file, (self._buffer, 1))
                 self._buffer = np.array([], dtype=np.uint64)
 
-        store_raw(self._raw_file, (self._buffer, 1))
+        #store_raw(self._raw_file, (self._buffer, 1))
         # empty queue
         if not self._dataq.empty():
             remains = []
@@ -123,9 +123,10 @@ class raw2Disk (multiprocessing.Process, ProcessLogger):
             store_raw(self._raw_file, (np.asarray(remains), 1))
         self._raw_file.close()
 
-        size = np.fromfile(self._raw_file.name, dtype=np.uint64).shape[0]
-        timeDiff = self._stopTime.value - self._startTime.value
-        print(f'recieved {size} packets; {64 * size * 1e-6:.2f}MBits {(64 * size * 1e-6) / timeDiff:.2f}MBits/sec; {(64 * size * 1e-6 / 8) / timeDiff:.2f}MByte/sec')
+        # TODO: print only if in debug mode
+        #size = np.fromfile(self._raw_file.name, dtype=np.uint64).shape[0]
+        #timeDiff = self._stopTime.value - self._startTime.value
+        #print(f'recieved {size} packets; {64 * size * 1e-6:.2f}MBits {(64 * size * 1e-6) / timeDiff:.2f}MBits/sec; {(64 * size * 1e-6 / 8) / timeDiff:.2f}MByte/sec')
         self.info("finished saving data")
 
 
@@ -133,7 +134,7 @@ def main():
     import numpy as np
     from multiprocessing import Queue
     import logging
-    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
     fname = '/Users/brombh/PycharmProjects/timepix/analysis/data/pyrrole__100.raw'
     data  = np.fromfile(fname, dtype=np.uint64)

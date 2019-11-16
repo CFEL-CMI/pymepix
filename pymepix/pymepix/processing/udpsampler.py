@@ -26,8 +26,10 @@ from .datatypes import MessageType
 import time
 import numpy as np
 from multiprocessing import Queue
-from multiprocessing.sharedctypes import Value, Array
+from multiprocessing.sharedctypes import Value
 from pymepix.processing.rawtodisk import raw2Disk
+from pymepix.processing.xfeltrainid import xfelTrainID
+import ctypes
 
 
 class UdpSampler(BasePipelineObject):
@@ -54,7 +56,7 @@ class UdpSampler(BasePipelineObject):
             self._total_time = 0.0
             self._longtime = longtime
             self._dataq = Queue()
-            self._record = Value('I', 0)
+            self._record = Value(ctypes.c_bool, 0)
             self._outfile_name = 'test'
         except Exception as e:
             self.error('Exception occured in init!!!')
@@ -120,9 +122,13 @@ class UdpSampler(BasePipelineObject):
     def outfile_name(self, fileN):
         self.info(f'Setting file name flag to {fileN}')
         #self._outfile_name.value = fileN
+        # start raw2Disk
         self._outfile_name = fileN
         self.stopRaw2Disk()
         self.startRaw2Disk()
+        # start xfel train ID
+        self.stopTrainID()
+        self.startTrainID()
 
     def process(self, data_type=None, data=None):
         start = time.time()
@@ -135,7 +141,7 @@ class UdpSampler(BasePipelineObject):
             return None, None
         # self.debug('Read {}'.format(raw_packet))
         if self._packet_buffer is None:
-            time_ns = time.time_ns().to_bytes(8, sys.byteorder)
+            time_ns = time.time_ns().to_bytes(8, sys.byteorder) # add timestamp
             self._packet_buffer = time_ns + raw_packet
         else:
             self._packet_buffer += raw_packet
@@ -177,10 +183,25 @@ class UdpSampler(BasePipelineObject):
     def stopRaw2Disk(self):
         self.info(f'stopping raw2Disk process')
         self._raw2Disk.enable = False
-        self._raw2Disk.join(1.0)
+        self._raw2Disk.join(5.0) # give it a chance to empty some more of the queue
         self._raw2Disk.terminate()
         self._raw2Disk.join()
 
         while not self._dataq.empty():
             self._dataq.get()
         self.info('Process Raw2Disk stop complete')
+
+    def startTrainID(self):
+        self.info(f'start xfelTrainID process')
+
+        # generate worker to save the data directly to disk
+        self._trainIDRec = xfelTrainID(filename=self.outfile_name)
+        self._trainIDRec.enable = True
+        self._trainIDRec.start()
+
+    def stopTrainID(self):
+        self.info(f'stopping xfelTrainID process')
+        self._trainIDRec.enable = False
+        self._trainIDRec.join(2.0) # file still needs to be saved
+        self._trainIDRec.terminate()
+        self._trainIDRec.join()
