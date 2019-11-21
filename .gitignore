@@ -1,5 +1,6 @@
 *.hdf5
 *.raw
+*.trainID
 *.dat
 *.egg
 *.egg-info/
