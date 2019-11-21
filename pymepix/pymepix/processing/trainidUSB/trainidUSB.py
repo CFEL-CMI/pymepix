@@ -12,7 +12,7 @@ import signal
 
 
 def trainidUSB(DEVICE='/dev/ttyUSB0', r='', t='', c='', B='', b='', T=''):
-    """ Function that decodes the timing information in the 115Kbaud protocol received via USB 
+    """ Function that decodes the timing information in the 115Kbaud protocol received via USB
     Arguments should just be pass a string (like "yes" "ok") to enable
 
     Keyword arguments :
@@ -21,17 +21,18 @@ def trainidUSB(DEVICE='/dev/ttyUSB0', r='', t='', c='', B='', b='', T=''):
     [c] crc            : calculate CRC data payload and check if matches
     [B] checkBeam      : interpret beam mode data (not compatible with raw)
     [b] checkBeamShort : interpret beam mode data and display in short form  (not compatible with raw)
-    [T] test           : test mode. Device is a file in the system, each line has data payload and crc data as if received from timing system  
+    [T] test           : test mode. Device is a file in the system, each line has data payload and crc data as if received from timing system
     """
+    print('c', c)
 
     # Information fields read from the USB interface
     timingInfoNames = ['Train ID', 'Beam Mode', 'CRC']
-    # Number of bytes in each information field 
+    # Number of bytes in each information field
     timingInfoLength = [16, 8, 2]
 
-    # Beam Locations	
+    # Beam Locations
     beamLocations = ['Injector 1', 'Injector 2', 'Acc_L1-L3', 'TLD', 'SASE1/3', 'SASE2']
-    # Beam Modes	
+    # Beam Modes
     beamModeInfo = ['[1] Single Bunch Operation', '[S]hort mode (<= 30 Bunches)', '[M]edium Mode (<= 300/500 Bunches)',
                     '[F]ull Mode (No restrictions)']
 
@@ -52,7 +53,7 @@ def trainidUSB(DEVICE='/dev/ttyUSB0', r='', t='', c='', B='', b='', T=''):
 
     while True:
         # Align with beginning of word (STX = ASCII 02)
-        while chr(2) != ser.read(1):
+        while bytes([2]) != ser.read(1):
             pass
 
         # Add time info if requested
@@ -61,7 +62,7 @@ def trainidUSB(DEVICE='/dev/ttyUSB0', r='', t='', c='', B='', b='', T=''):
         # Get information
         if r:
             for info in range(sum(timingInfoLength)):
-                outputString += ser.read(1)
+                outputString += ser.read(1).decode("utf-8")
 
         else:
             # Reset information on each run
@@ -70,9 +71,9 @@ def trainidUSB(DEVICE='/dev/ttyUSB0', r='', t='', c='', B='', b='', T=''):
             # Information fields are in order, so do not use standard Python dictionary
             for info in range(len(timingInfoNames)):
                 for sizeInfo in range(timingInfoLength[info]):
-                    timingInfo[timingInfoNames[info]] += ser.read(1)
-            # Check if last byte is a ETX 
-            if chr(3) != ser.read(1):
+                    timingInfo[timingInfoNames[info]] += ser.read(1).decode("utf-8")
+            # Check if last byte is a ETX
+            if bytes([3]) != ser.read(1):
                 print("Not properly align, skipping this run.")
                 continue
 
@@ -149,7 +150,7 @@ def main(argv):
 
     def checkUSB(usb):
         try:
-            stat.S_ISBLK(os.stat(device).st_mode)
+            stat.S_ISBLK(os.stat(usb).st_mode)
         except:
             return False
         return True
