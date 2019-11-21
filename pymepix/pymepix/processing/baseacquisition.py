@@ -261,20 +261,21 @@ class AcquisitionPipeline(Logger):
 def main():
     import logging
     import time
-    from .udpsampler import UdpSampler
-    from .packetprocessor import PacketProcessor
+    from pymepix.processing.udpsampler import UdpSampler
+    from pymepix.processing.packetprocessor import PacketProcessor
     from multiprocessing.sharedctypes import Value
     import threading
     # Create the logger
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     end_queue = Queue()
 
-    acqpipline = AcquisitionPipeline('Test', end_queue)
+    acqpipeline = AcquisitionPipeline('Test', end_queue)
 
     test_value = Value('I', 0)
 
-    acqpipline.addStage(0, UdpSampler, ('192.168.1.1', 8192), test_value, num_processes=1)
-    acqpipline.addStage(2, PacketProcessor, num_processes=1)
+    #acqpipline.addStage(0, UdpSampler, ('192.168.1.1', 8192), test_value, num_processes=1)
+    acqpipeline.addStage(0, UdpSampler, ('127.0.0.1', 50000), test_value)
+    #acqpipline.addStage(2, PacketProcessor, num_processes=1)
 
     def get_queue_thread(queue):
         while True:
@@ -283,16 +284,26 @@ def main():
             if value is None:
                 break
 
-    t = threading.Thread(target=get_queue_thread, args=(end_queue,))
-    t.daemon = True
-    t.start()
+    #t = threading.Thread(target=get_queue_thread, args=(end_queue,))
+    #t.daemon = True
+    #t.start()
 
-    acqpipline.start()
+    acqpipeline.start()
+    acqpipeline._stages[0]._pipeline_objects[0].outfile_name = 'hallo'
+    acqpipeline._stages[0]._pipeline_objects[0]._raw2Disk.timer = 1
+    acqpipeline._stages[0]._pipeline_objects[0].record = 1
+
     time.sleep(10.0)
-    acqpipline.stop()
+
+
+    acqpipeline._stages[0]._pipeline_objects[0].record = 0
+    acqpipeline._stages[0]._pipeline_objects[0]._raw2Disk.timer = 0
+    acqpipeline._stages[0]._pipeline_objects[0]._raw2Disk.enable = 0
+    acqpipeline.stop()
+
     end_queue.put(None)
 
-    t.join()
+    #t.join()
     print('Done')
 
 

@@ -26,7 +26,7 @@ import queue
 from pymepix.util.storage import open_output_file, store_raw
 
 class raw2Disk (multiprocessing.Process, ProcessLogger):
-    def __init__(self, name='raw2Disk', dataq=None, fileN=None):
+    def __init__(self, name='raw2Disk', dataq=None, fileN='test'):
         multiprocessing.Process.__init__(self)
         ProcessLogger.__init__(self, name)
 
