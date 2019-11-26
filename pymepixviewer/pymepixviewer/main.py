@@ -26,11 +26,11 @@ import pyqtgraph as pg
 import numpy as np
 import time
 from pyqtgraph.Qt import QtCore, QtGui
-from .panels.timeofflight import TimeOfFlightPanel
-from .panels.daqconfig import DaqConfigPanel
-from .panels.blobview import BlobView
-from .ui.mainui import Ui_MainWindow
-from .core.datatypes import ViewerMode
+from pymepixviewer.panels.timeofflight import TimeOfFlightPanel
+from pymepixviewer.panels.daqconfig import DaqConfigPanel
+from pymepixviewer.panels.blobview import BlobView
+from pymepixviewer.ui.mainui import Ui_MainWindow
+from pymepixviewer.core.datatypes import ViewerMode
 import logging
 
 logger = logging.getLogger(__name__)
