@@ -42,13 +42,13 @@ class AcquisitionStage(Logger):
     
     """
 
-    def __init__(self, stage):
+    def __init__(self, stage, num_processes=1):
         Logger.__init__(self, 'AcqStage-{}'.format(stage))
         self._stage_number = stage
 
         self._pipeline_objects = []
         self._pipeline_klass = None
-        self._num_processes = 1
+        self._num_processes = num_processes
         self._running = False
         self._input_queue = None
         self._output_queue = None
@@ -192,9 +192,9 @@ class AcquisitionPipeline(Logger):
 
         self._running = False
 
-    def addStage(self, stage_number, pipeline_klass, *args, **kwargs):
+    def addStage(self, stage_number, pipeline_klass, *args, num_processes=1, **kwargs):
         """Adds a stage to the pipeline"""
-        stage = AcquisitionStage(stage_number)
+        stage = AcquisitionStage(stage_number, num_processes)
         self.info('Adding stage {} with klass {}'.format(stage_number, pipeline_klass))
         stage.configureStage(pipeline_klass, *args, **kwargs)
         self._stages.append(stage)
@@ -273,14 +273,18 @@ def main():
 
     test_value = Value('I', 0)
 
-    #acqpipline.addStage(0, UdpSampler, ('192.168.1.1', 8192), test_value, num_processes=1)
-    acqpipeline.addStage(0, UdpSampler, ('127.0.0.1', 50000), test_value)
-    #acqpipline.addStage(2, PacketProcessor, num_processes=1)
+
+    acqpipline.addStage(0, UdpSampler, ('127.0.0.1', 50000), test_value)
+    acqpipline.addStage(2, PacketProcessor, num_processes=4)
+
 
     def get_queue_thread(queue):
+        recieved = []
         while True:
             value = queue.get()
-            print(value)
+            #messType, data = value
+            #recieved.append(value[1])
+            #print(value)
             if value is None:
                 break
 
@@ -293,8 +297,8 @@ def main():
     acqpipeline._stages[0]._pipeline_objects[0]._raw2Disk.timer = 1
     acqpipeline._stages[0]._pipeline_objects[0].record = 1
 
-    time.sleep(10.0)
 
+    time.sleep(10.0)
 
     acqpipeline._stages[0]._pipeline_objects[0].record = 0
     acqpipeline._stages[0]._pipeline_objects[0]._raw2Disk.timer = 0
