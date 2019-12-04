@@ -74,10 +74,11 @@ class PymepixDAQ(QtGui.QMainWindow, Ui_MainWindow):
             remote     = self._timepix._spidr.remoteTemperature
             chipSpeed  = self._timepix._spidr.chipboardFanSpeed
             spidrSpeed = self._timepix._spidr.spidrFanSpeed
+            longtime   = self._timepix._timepix_devices[0]._longtime.value
             #fileName      = 8#self._timepix._data_queue.qsize()
 
             self.updateStatusSignal.emit(
-                f'T_(FPGA)={fpga}, T_(loc)={local}, T_(remote)={remote}, Fan(chip)={chipSpeed}, Fan(SPIDR)={spidrSpeed}')
+                f'T_(FPGA)={fpga}, T_(loc)={local}, T_(remote)={remote}, Fan(chip)={chipSpeed}, Fan(SPIDR)={spidrSpeed}, Longtime={longtime}')
             #self.statusbar.showMessage(, 5000)
             time.sleep(5)
 
