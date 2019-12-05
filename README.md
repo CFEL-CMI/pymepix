@@ -1,2 +1,2 @@
-# Feature XFELNov2019
-some dedicated changes for beamtime at XFEL2019
+# Feature Lab47C
+use python >3.6
