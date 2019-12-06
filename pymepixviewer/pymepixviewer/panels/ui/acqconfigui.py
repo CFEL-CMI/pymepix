@@ -162,7 +162,7 @@ class Ui_Form(object):
         self.label_20.setText(_translate("Form", "Coarse Threshold"))
         self.coarse_threshold.setSuffix(_translate("Form", "V"))
         self.label_6.setText(_translate("Form", "Path"))
-        self.path_name.setText(_translate("Form", "/home/gaston/timepix/data"))
+        self.path_name.setText(_translate("Form", "/home/bl1user/timepix/data"))
         self.openpath.setText(_translate("Form", "Open"))
         self.label_7.setText(_translate("Form", "Prefix:"))
         self.file_prefix.setText(_translate("Form", "run"))

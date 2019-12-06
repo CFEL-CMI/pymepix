@@ -26,7 +26,7 @@ import numpy as np
 
 def open_output_file(filename, ext, index=0):
     import os, logging
-    file_format = '{}_{:06d}.{}'
+    file_format = '{}_{:04d}.{}'
     raw_filename = file_format.format(filename, index, ext)
     while os.path.isfile(raw_filename):
         index += 1

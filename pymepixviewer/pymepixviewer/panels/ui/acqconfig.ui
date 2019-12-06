@@ -118,7 +118,7 @@
           <item>
            <widget class="QLineEdit" name="path_name">
             <property name="text">
-             <string>/home/gaston/timepix/data</string>
+             <string>/home/bl1user/timepix/data</string>
             </property>
            </widget>
           </item>
