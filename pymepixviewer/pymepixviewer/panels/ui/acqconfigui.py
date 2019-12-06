@@ -165,7 +165,7 @@ class Ui_Form(object):
         self.path_name.setText(_translate("Form", "/home/gaston/timepix/data"))
         self.openpath.setText(_translate("Form", "Open"))
         self.label_7.setText(_translate("Form", "Prefix:"))
-        self.file_prefix.setText(_translate("Form", "test_"))
+        self.file_prefix.setText(_translate("Form", "run"))
         self.label_14.setText(_translate("Form", "Index"))
         self.label_5.setText(_translate("Form", "Storage:"))
         self.write_raw.setText(_translate("Form", "Raw"))
