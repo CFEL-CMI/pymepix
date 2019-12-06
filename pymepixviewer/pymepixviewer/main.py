@@ -74,11 +74,11 @@ class PymepixDAQ(QtGui.QMainWindow, Ui_MainWindow):
             remote     = self._timepix._spidr.remoteTemperature
             chipSpeed  = self._timepix._spidr.chipboardFanSpeed
             spidrSpeed = self._timepix._spidr.spidrFanSpeed
-            longtime   = self._timepix._timepix_devices[0]._longtime.value
+            longtime   = self._timepix._timepix_devices[0]._longtime.value*25e-9
             #fileName      = 8#self._timepix._data_queue.qsize()
 
             self.updateStatusSignal.emit(
-                f'T_(FPGA)={fpga}, T_(loc)={local}, T_(remote)={remote}, Fan(chip)={chipSpeed}, Fan(SPIDR)={spidrSpeed}, Longtime={longtime}')
+                f'T_(FPGA)={fpga}, T_(loc)={local}, T_(remote)={remote}, Fan(chip)={chipSpeed}, Fan(SPIDR)={spidrSpeed}, Longtime={longtime:.2f}')
             #self.statusbar.showMessage(, 5000)
             time.sleep(5)
 
@@ -139,7 +139,7 @@ class PymepixDAQ(QtGui.QMainWindow, Ui_MainWindow):
     def startupTimepix(self):
 
         self._timepix = pymepix.Pymepix(('192.168.1.10', 50000))
-        #self._timepix = pymepix.Pymepix(('127.0.0.10', 50017), src_ip_port=('127.0.0.1', 0))
+        #self._timepix = pymepix.Pymepix(('127.0.0.1', 50017), src_ip_port=('127.0.0.1', 0))
 
         if len(self._timepix) == 0:
             logger.error('NO TIMEPIX DEVICES DETECTED')
@@ -338,9 +338,13 @@ class PymepixDAQ(QtGui.QMainWindow, Ui_MainWindow):
 
     def startAcquisition(self):
         path = self._config_panel.acqtab.path_name.text()
-        fName = f'{time.strftime("%Y%m%d-%H%M%S_")}{self._config_panel.acqtab.file_prefix.text()}'
+        fName = f'{self._config_panel.acqtab.file_prefix.text()}'
         self._fileName = os.path.join(path, fName)
         self._timepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0].outfile_name = self._fileName
+
+        self._timepix._spidr.resetTimers()
+        self._timepix._spidr.restartTimers()
+
         self._timepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0]._raw2Disk.timer = 1
         self._timepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0].record = 1
         self._config_panel.start_acq.setStyleSheet('QPushButton {color: red;}')
