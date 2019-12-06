@@ -24,9 +24,9 @@ import pymepix
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore, QtGui
 import numpy as np
-from .ui.timeofflightpanelui import Ui_Form
-from .regionsofinterest import RoiModel, RoiItem
-from .roidialog import RoiDialog
+from pymepixviewer.panels.ui.timeofflightpanelui import Ui_Form
+from pymepixviewer.panels.regionsofinterest import RoiModel, RoiItem
+from pymepixviewer.panels.roidialog import RoiDialog
 import traceback
 
 
@@ -46,10 +46,18 @@ class TimeOfFlightPanel(QtGui.QWidget, Ui_Form):
         self._histo_x = None
         self._histo_y = None
         self._tof_data = pg.PlotDataItem()
+        self._gauss_data = pg.PlotCurveItem()
         self.tof_view.addItem(self._tof_data)
+        self.tof_view.addItem(self._gauss_data)
         self.tof_view.setLabel('bottom', text='Time of Flight', units='s')
         self.tof_view.setLabel('left', text='Hits')
         self.roi_list.setModel(self._roi_model)
+
+        self._legend = pg.TextItem('FWHM:')
+        self.tof_view.addItem(self._legend)
+        self._legend.setPos(0, 0)
+
+        self._gaussFit = True
 
         self._blob_tof_mode = False
         self.setupTofConfig()
@@ -77,7 +85,6 @@ class TimeOfFlightPanel(QtGui.QWidget, Ui_Form):
             self.clearTof()
 
     def onUpdateTofConfig(self):
-
         try:
             start = float(self.event_start.text()) * 1e-6
             end = float(self.event_end.text()) * 1E-6
@@ -113,6 +120,19 @@ class TimeOfFlightPanel(QtGui.QWidget, Ui_Form):
             return
         else:
             self._tof_data.setData(x=self._histo_x, y=self._histo_y, stepMode=True, fillLevel=0, brush=(0, 0, 255, 150))
+            if self._gaussFit and len(self._histo_y) > 0:
+                from scipy.optimize import curve_fit
+                fwhm = (2 * np.sqrt(2 * np.log(2)))
+                gaussFun = lambda x, a, x0, s: a * np.exp(-0.5 * ((x - x0) / (s / fwhm)) ** 2)
+                try:
+                    p, cov = curve_fit(gaussFun, self._histo_x[:-1], self._histo_y,
+                                       p0=[self._histo_y.max(),
+                                           self._histo_x[self._histo_y.argmax()], 1e-6])
+                    self._gauss_data.setData(x=self._histo_x, y=gaussFun(self._histo_x, *p))
+                    self._legend.setText(f'FWHM: {1e9*np.abs(p[2]):.2f}ns')
+                    self._legend.setPos(self._histo_x[0], 0.5*p[0])
+                except:
+                    return
 
     def onRoiUpdate(self, name, start, end):
         self.roiUpdate.emit(name, start, end)
@@ -206,10 +226,21 @@ def main():
     import sys
     app = QtGui.QApplication([])
     tof = TimeOfFlightPanel()
+
+    # provide sample data
+    np.random.seed(19680801)
+    # example data
+    mu = 40  # mean of distribution
+    sigma = 15  # standard deviation of distribution
+    x = mu + sigma * np.random.randn(43700)
+    num_bins = 50
+    tof._updateTof(x)
+    tof.displayTof()
+
+
     tof.show()
 
     app.exec_()
-
 
 if __name__ == "__main__":
     main()
