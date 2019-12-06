@@ -50,7 +50,7 @@ class xfelTrainID(multiprocessing.Process, ProcessLogger):
         try:
             self._outfile = open_output_file(filename, 'trainID')
         except:
-            self.info(f'Cannot open file {filename}')
+            self.error(f'Cannot open file {filename}')
         self._enable = Value(ctypes.c_bool, 1)
         self._record = Value(ctypes.c_bool, 0)
 
@@ -135,12 +135,27 @@ class xfelTrainID(multiprocessing.Process, ProcessLogger):
                 # Train ID in decimal
                 timingInfo['Train ID'] = int(timingInfo['Train ID'], 16)
     
-                ids.append(timingInfo['Train ID'])
-                times.append(zeit)
+                #ids.append(timingInfo['Train ID'])
+                #times.append(zeit)
+                # directly store data to disk
+                store_trainID(self._outfile, zeit, timingInfo['Train ID'])
                 #print(timingInfo['Train ID'], zeit)
+                '''
+                import pydoocs
+                from datetime import datetime
+                try:
+                    test_var = pydoocs.read("FLASH.FEL/ADC.ADQ.BL1/EXP1.CH01/CH00.DAQ.TD", macropulse = timingInfo['Train ID'])
+                    print(datetime.fromtimestamp(zeit*1e-9).strftime('%H:%M:%S.%f'),
+                          datetime.fromtimestamp(test_var['timestamp']).strftime('%H:%M:%S.%f'),
+                          timingInfo['Train ID'], test_var['macropulse'] )
+                    #print(dt.strftime('%H:%M:%S.%f'), timingInfo['Train ID'])
+                except:
+                    pass
+                '''
 
         self.info("finished saving data")
-        store_trainID(self._outfile, times, id)
+        #store_trainID(self._outfile, times, ids)
+        self._outfile.close()
 
 
 def main():

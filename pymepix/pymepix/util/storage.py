@@ -24,13 +24,18 @@
 import numpy as np
 
 
+
 def open_output_file(filename, ext, index=0):
     import os, logging
-    file_format = '{}_{:06d}.{}'
-    raw_filename = file_format.format(filename, index, ext)
-    while os.path.isfile(raw_filename):
-        index += 1
-        raw_filename = file_format.format(filename, index, ext)
+    import time
+    import glob
+    # file_format = '{}_{:04d}_{time}.{}'
+    files = np.sort(glob.glob(f'{filename}*.{ext}'))
+    if len(files) > 0:
+        index = int(files[-1].split('_')[1])+1
+    else:
+        index = 0
+    raw_filename = f'{filename}_{index:04d}_{time.strftime("%Y%m%d-%H%M")}.{ext}'
     logging.info('Opening output file {}'.format(filename))
 
     return open(raw_filename, 'wb')
@@ -40,9 +45,9 @@ def store_raw(f, data):
     raw, longtime = data
     f.write(raw.tostring())
 
-def store_trainID(f, times, id):
+def store_trainID(f, times, ids):
     np.save(f, times)
-    np.save(f, id)
+    np.save(f, ids)
 
 def store_toa(f, data):
     x, y, toa, tot = data

@@ -175,7 +175,6 @@ class TimepixDevice(Logger):
         '''
 
         pass
-
         print(f"pixel threshold: {self.pixelThreshold}")
         print(f"pixel mask: {self.pixelMask}")
         print(f"polarity: {self.polarity}")
@@ -200,6 +199,7 @@ class TimepixDevice(Logger):
         print(f"VTP coarse: {self.VTP_coarse}")
         print(f"VTP fine: {self.VTP_fine}")
         print(f'PLL config: {bin(self._device.pllConfig)}')
+        '''
         import h5py
         import time
         with h5py.File(f'{time.strftime("%Y%m%d-%H%M%S_TimePixSettings.hdf5")}', 'w') as f:
@@ -227,6 +227,7 @@ class TimepixDevice(Logger):
             f.create_dataset('VTP coarse', data=self.VTP_coarse)
             f.create_dataset('VTP fine', data=self.VTP_fine)
             f.create_dataset('PLL config', data=self._device.pllConfig)
+        '''
 
     @property
     def acquisition(self):

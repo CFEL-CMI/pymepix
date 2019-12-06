@@ -25,6 +25,7 @@ from multiprocessing.sharedctypes import Value
 import queue
 from pymepix.util.storage import open_output_file, store_raw
 import ctypes
+import subprocess, os
 
 class raw2Disk (multiprocessing.Process, ProcessLogger):
     def __init__(self, name='raw2Disk', dataq=None, fileN=None):
@@ -128,6 +129,10 @@ class raw2Disk (multiprocessing.Process, ProcessLogger):
         #timeDiff = self._stopTime.value - self._startTime.value
         #print(f'recieved {size} packets; {64 * size * 1e-6:.2f}MBits {(64 * size * 1e-6) / timeDiff:.2f}MBits/sec; {(64 * size * 1e-6 / 8) / timeDiff:.2f}MByte/sec')
         self.info("finished saving data")
+        if os.path.getsize(self._raw_file.name) > 0:
+            from subprocess import Popen
+            self.info(f'start process data from: {self._raw_file.name}')
+            Popen(['python', '/home/bl1user/timepix/conversionClient.py', self._raw_file.name])
 
 
 def main():

@@ -33,6 +33,7 @@ from pymepixviewer.panels.blobview import BlobView
 from pymepixviewer.ui.mainui import Ui_MainWindow
 from pymepixviewer.core.datatypes import ViewerMode
 import logging
+import glob
 
 logger = logging.getLogger(__name__)
 
@@ -74,10 +75,12 @@ class PymepixDAQ(QtGui.QMainWindow, Ui_MainWindow):
             remote     = self._timepix._spidr.remoteTemperature
             chipSpeed  = self._timepix._spidr.chipboardFanSpeed
             spidrSpeed = self._timepix._spidr.spidrFanSpeed
+            longtime   = self._timepix._timepix_devices[0]._longtime.value*25e-9
+            #fileName   = glob.glob(f'{self._fileName}*.raw')
             #fileName      = 8#self._timepix._data_queue.qsize()
 
             self.updateStatusSignal.emit(
-                f'T_(FPGA)={fpga}, T_(loc)={local}, T_(remote)={remote}, Fan(chip)={chipSpeed}, Fan(SPIDR)={spidrSpeed}')
+                f'T_(FPGA)={fpga}, T_(loc)={local}, T_(remote)={remote}, Fan(chip)={chipSpeed}, Fan(SPIDR)={spidrSpeed}, Longtime={longtime:.2f}')
             #self.statusbar.showMessage(, 5000)
             time.sleep(5)
 
@@ -139,7 +142,7 @@ class PymepixDAQ(QtGui.QMainWindow, Ui_MainWindow):
     def startupTimepix(self):
 
         self._timepix = pymepix.Pymepix(('192.168.1.10', 50000))
-        #self._timepix = pymepix.Pymepix(('127.0.0.10', 50017), src_ip_port=('127.0.0.1', 0))
+        #self._timepix = pymepix.Pymepix(('127.0.0.1', 50017), src_ip_port=('127.0.0.1', 0))
 
         if len(self._timepix) == 0:
             logger.error('NO TIMEPIX DEVICES DETECTED')
@@ -338,11 +341,16 @@ class PymepixDAQ(QtGui.QMainWindow, Ui_MainWindow):
 
     def startAcquisition(self):
         path = self._config_panel.acqtab.path_name.text()
-        fName = f'{time.strftime("%Y%m%d-%H%M%S_")}{self._config_panel.acqtab.file_prefix.text()}'
+        fName = f'{self._config_panel.acqtab.file_prefix.text()}'
         self._fileName = os.path.join(path, fName)
 
         # start raw2disk
         self._timepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0].outfile_name = self._fileName
+
+        self._timepix._spidr.resetTimers()
+        self._timepix._spidr.restartTimers()
+        time.sleep(1) # give camera time to reset timers
+
         self._timepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0]._raw2Disk.timer = 1
         self._timepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0].record = 1
 
@@ -401,6 +409,8 @@ class PymepixDAQ(QtGui.QMainWindow, Ui_MainWindow):
             self.modeChange.connect(blob_view.modeChange)
             self.addDockWidget(QtCore.Qt.RightDockWidgetArea, dock_view)
 
+            # get old data to widget
+
     def getfile(self):
         fname = QtGui.QFileDialog.getOpenFileName(self, 'Open file',
                                                   '/home', "SoPhy File (*.spx)")
@@ -431,6 +441,8 @@ class PymepixDAQ(QtGui.QMainWindow, Ui_MainWindow):
         if name in self._view_widgets:
             logger.debug('FOUND WIDGET', name, start, end)
             self._view_widgets[name].widget().onRegionChange(start, end)
+
+            # TODO get old data to widget
         else:
             logger.debug('Widget for {} does not exist', )
 
@@ -454,7 +466,6 @@ class PymepixDAQ(QtGui.QMainWindow, Ui_MainWindow):
 
 
 def main():
-    import sys
     import logging
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     app = QtGui.QApplication([])
