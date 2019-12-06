@@ -40,9 +40,9 @@ def store_raw(f, data):
     raw, longtime = data
     f.write(raw.tostring())
 
-def store_trainID(f, times, id):
+def store_trainID(f, times, ids):
     np.save(f, times)
-    np.save(f, id)
+    np.save(f, ids)
 
 def store_toa(f, data):
     x, y, toa, tot = data

@@ -138,9 +138,21 @@ class xfelTrainID(multiprocessing.Process, ProcessLogger):
                 ids.append(timingInfo['Train ID'])
                 times.append(zeit)
                 #print(timingInfo['Train ID'], zeit)
+                '''
+                import pydoocs
+                from datetime import datetime
+                try:
+                    test_var = pydoocs.read("FLASH.FEL/ADC.ADQ.BL1/EXP1.CH01/CH00.DAQ.TD", macropulse = timingInfo['Train ID'])
+                    print(datetime.fromtimestamp(zeit*1e-9).strftime('%H:%M:%S.%f'),
+                          datetime.fromtimestamp(test_var['timestamp']).strftime('%H:%M:%S.%f'),
+                          timingInfo['Train ID'], test_var['macropulse'] )
+                    #print(dt.strftime('%H:%M:%S.%f'), timingInfo['Train ID'])
+                except:
+                    pass
+                '''
 
         self.info("finished saving data")
-        store_trainID(self._outfile, times, id)
+        store_trainID(self._outfile, times, ids)
 
 
 def main():
