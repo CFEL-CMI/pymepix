@@ -190,8 +190,10 @@ class PymepixDAQ(QtGui.QMainWindow, Ui_MainWindow):
         self._config_panel.viewtab.frameTimeChange.connect(self.onFrameTimeUpdate)
         self._config_panel.acqtab.biasVoltageChange.connect(self.onBiasVoltageUpdate)
 
-        self._config_panel.acqtab.fine_threshold.valueChanged.connect(self.setFineThreshold)
-        self._config_panel.acqtab.coarse_threshold.valueChanged.connect(self.setCoarseThreshold)
+        self._config_panel.acqtab.fine_threshold.editingFinished.connect(
+            lambda: self.setFineThreshold(self._config_panel.acqtab.fine_threshold.value()))
+        self._config_panel.acqtab.coarse_threshold.editingFinished.connect(
+            lambda: self.setCoarseThreshold(self._config_panel.acqtab.coarse_threshold.value()))
 
         self.fineThresholdUpdate.connect(self._config_panel.acqtab.fine_threshold.setValue)
         self.coarseThresholdUpdate.connect(self._config_panel.acqtab.coarse_threshold.setValue)

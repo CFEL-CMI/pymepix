@@ -387,210 +387,194 @@ class TimepixDevice(Logger):
 
     @property
     def Ibias_Preamp_ON(self):
-        """nanoAmps"""
+        """[0, 255]"""
         value = self._device.getDac(DacRegisterCodes.Ibias_Preamp_ON)
-        return ((value & 0xFF) * 20.0)
+        return (value & 0xFF)
 
     @Ibias_Preamp_ON.setter
     def Ibias_Preamp_ON(self, value):
-        """nanoAmps"""
-        nA = value
-        nAint = int(nA / 20.0)
-        self._device.setDac(DacRegisterCodes.Ibias_Preamp_ON, nAint & 0xFF)
+        """[0, 255]"""
+        nint = int(value)
+        self._device.setDac(DacRegisterCodes.Ibias_Preamp_ON, nint & 0xFF)
 
     @property
     def Ibias_Preamp_OFF(self):
-        """nanoAmps"""
+        """[0, 15]"""
         value = self._device.getDac(DacRegisterCodes.Ibias_Preamp_OFF)
-        return ((value & 0xF) * 20.0)
+        return (value & 0xF)
 
     @Ibias_Preamp_OFF.setter
     def Ibias_Preamp_OFF(self, value):
-        """nanoAmps"""
-        nA = value
-        nAint = int(nA / 20.0)
-        self._device.setDac(DacRegisterCodes.Ibias_Preamp_OFF, nAint & 0xF)
+        """[0, 15]"""
+        nint = int(value)
+        self._device.setDac(DacRegisterCodes.Ibias_Preamp_OFF, nint & 0xF)
 
     @property
     def VPreamp_NCAS(self):
-        """Volts"""
+        """[0, 255]"""
         value = self._device.getDac(DacRegisterCodes.VPreamp_NCAS)
-        return ((value & 0xFF) * 5.0) / 1000.0
+        return (value & 0xFF)
 
     @VPreamp_NCAS.setter
     def VPreamp_NCAS(self, value):
-        """Volts"""
-        n = value * 1000.0
-        nint = int(n / 5.0)
+        """[0, 255]"""
+        nint = int(value)
         self._device.setDac(DacRegisterCodes.VPreamp_NCAS, nint & 0xFF)
 
     @property
     def Ibias_Ikrum(self):
-        """nA"""
+        """[0, 255]"""
         value = self._device.getDac(DacRegisterCodes.Ibias_Ikrum)
-        return ((value & 0xFF) * 240.0) / 1000.0
+        return (value & 0xFF)
 
     @Ibias_Ikrum.setter
     def Ibias_Ikrum(self, value):
-        """nA"""
-        n = value * 1000.0
-        nint = int(n / 240.0)
+        """[0, 255]"""
+        nint = int(value)
         self._device.setDac(DacRegisterCodes.Ibias_Ikrum, nint & 0xFF)
 
     @property
     def Vfbk(self):
-        """V"""
+        """[0, 255]"""
         value = self._device.getDac(DacRegisterCodes.Vfbk)
-        return ((value & 0xFF) * 5.0) / 1000.0
+        return (value & 0xFF)
 
     @Vfbk.setter
     def Vfbk(self, value):
-        """V"""
-        n = value * 1000.0
-        nint = int(n / 5.0)
+        """[0, 255]"""
+        nint = int(value)
         self._device.setDac(DacRegisterCodes.Vfbk, nint & 0xFF)
 
     @property
     def Vthreshold_fine(self):
-        """mV"""
+        """[0, 511]"""
         value = self._device.getDac(DacRegisterCodes.Vthreshold_fine)
-        return ((value & 0x1FF) * 500.0) / 1000.0
+        return (value & 0x1FF)
 
     @Vthreshold_fine.setter
     def Vthreshold_fine(self, value):
-        """mV"""
-        n = value * 1000.0
-        nint = int(n / 500.0)
+        """[0, 511]"""
+        nint = int(value)
         self._device.setDac(DacRegisterCodes.Vthreshold_fine, nint & 0x1FF)
 
     @property
     def Vthreshold_coarse(self):
-        """V"""
+        """[0, 15]"""
         value = self._device.getDac(DacRegisterCodes.Vthreshold_coarse)
-        return ((value & 0xF) * 80.0) / 1000.0
+        return (value & 0xF)
 
     @Vthreshold_coarse.setter
     def Vthreshold_coarse(self, value):
-        """V"""
-        n = value * 1000.0
-        nint = int(n / 80.0)
+        """[0, 15]"""
+        nint = int(value)
         self._device.setDac(DacRegisterCodes.Vthreshold_coarse, nint & 0xF)
 
     @property
     def Ibias_DiscS1_ON(self):
-        """uA"""
+        """[0, 255]"""
         value = self._device.getDac(DacRegisterCodes.Ibias_DiscS1_ON)
-        return ((value & 0xFF) * 20.0) / 1000.0
+        return (value & 0xFF)
 
     @Ibias_DiscS1_ON.setter
     def Ibias_DiscS1_ON(self, value):
-        """uA"""
-        n = value * 1000.0
-        nint = int(n / 20.0)
+        """[0, 255]"""
+        nint = int(value)
         self._device.setDac(DacRegisterCodes.Ibias_DiscS1_ON, nint & 0xFF)
 
     @property
     def Ibias_DiscS1_OFF(self):
-        """nA"""
+        """[0, 15]"""
         value = self._device.getDac(DacRegisterCodes.Ibias_DiscS1_OFF)
-        return ((value & 0xF) * 20.0)
+        return (value & 0xF)
 
     @Ibias_DiscS1_OFF.setter
     def Ibias_DiscS1_OFF(self, value):
-        """nA"""
-        n = value
-        nint = int(n / 20.0)
+        """[0, 15]"""
+        nint = int(value)
         self._device.setDac(DacRegisterCodes.Ibias_DiscS1_OFF, nint & 0xF)
 
     @property
     def Ibias_DiscS2_ON(self):
-        """uA"""
+        """[0, 255]"""
         value = self._device.getDac(DacRegisterCodes.Ibias_DiscS2_ON)
-        return ((value & 0xFF) * 13.0) / 1000.0
+        return (value & 0xFF)
 
     @Ibias_DiscS2_ON.setter
     def Ibias_DiscS2_ON(self, value):
-        """uA"""
-        n = value * 1000.0
-        nint = int(n / 13.0)
+        """[0, 255]"""
+        nint = int(value)
         self._device.setDac(DacRegisterCodes.Ibias_DiscS2_ON, nint & 0xFF)
 
     @property
     def Ibias_DiscS2_OFF(self):
-        """nA"""
+        """[0, 15]"""
         value = self._device.getDac(DacRegisterCodes.Ibias_DiscS2_OFF)
-        return ((value & 0xF) * 13.0)
+        return (value & 0xF)
 
     @Ibias_DiscS2_OFF.setter
     def Ibias_DiscS2_OFF(self, value):
-        """nA"""
-        n = value
-        nint = int(n / 13.0)
+        """[0, 15]"""
+        nint = int(value)
         self._device.setDac(DacRegisterCodes.Ibias_DiscS2_OFF, nint & 0xF)
 
     @property
     def Ibias_PixelDAC(self):
-        """nA"""
+        """[0, 255]"""
         value = self._device.getDac(DacRegisterCodes.Ibias_PixelDAC)
-        return ((value & 0xFF) * 1.08)
+        return (value & 0xFF)
 
     @Ibias_PixelDAC.setter
     def Ibias_PixelDAC(self, value):
-        """nA"""
-        n = value
-        nint = int(n / 1.08)
+        """[0, 255]"""
+        nint = int(value)
         self._device.setDac(DacRegisterCodes.Ibias_PixelDAC, nint & 0xFF)
 
     @property
     def Ibias_TPbufferIn(self):
-        """uA"""
+        """[0, 255]"""
         value = self._device.getDac(DacRegisterCodes.Ibias_TPbufferIn)
-        return ((value & 0xFF) * 40.0) / 1000.0
+        return (value & 0xFF)
 
     @Ibias_TPbufferIn.setter
     def Ibias_TPbufferIn(self, value):
-        """uA"""
-        n = value * 1000.0
-        nint = int(n / 40.0)
+        """[0, 255]"""
+        nint = int(value)
         self._device.setDac(DacRegisterCodes.Ibias_TPbufferIn, nint & 0xFF)
 
     @property
     def Ibias_TPbufferOut(self):
-        """uA"""
+        """[0, 255]"""
         value = self._device.getDac(DacRegisterCodes.Ibias_TPbufferOut)
         return float((value & 0xFF))
 
     @Ibias_TPbufferOut.setter
     def Ibias_TPbufferOut(self, value):
-        """uA"""
-        n = value
-        nint = int(n)
+        """[0, 255]"""
+        nint = int(value)
         self._device.setDac(DacRegisterCodes.Ibias_TPbufferOut, nint & 0xFF)
 
     @property
     def VTP_coarse(self):
-        """V"""
-        value = self._device.getDac(DacRegisterCodes.VTP_coarse) * 5.0
-        return float((value & 0xFF)) / 1000.0
+        """[0, 255]"""
+        value = self._device.getDac(DacRegisterCodes.VTP_coarse)
+        return float((value & 0xFF))
 
     @VTP_coarse.setter
     def VTP_coarse(self, value):
-        """V"""
-        n = value * 1000.0
-        nint = int(n / 5.0)
+        """[0, 255]"""
+        nint = int(value)
         self._device.setDac(DacRegisterCodes.VTP_coarse, nint & 0xFF)
 
     @property
     def VTP_fine(self):
-        """V"""
-        value = self._device.getDac(DacRegisterCodes.VTP_fine) * 2.5
-        return float((value & 0x1FF)) / 1000.0
+        """[0, 511]"""
+        value = self._device.getDac(DacRegisterCodes.VTP_fine)
+        return float((value & 0x1FF))
 
     @VTP_fine.setter
     def VTP_fine(self, value):
-        """V"""
-        n = value * 1000.0
-        nint = int(n / 2.5)
+        """[0, 511]"""
+        nint = int(value)
         self._device.setDac(DacRegisterCodes.VTP_fine, nint & 0x1FF)
 
     def setDac(self, code, value):

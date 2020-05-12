@@ -34,7 +34,7 @@ class DefaultConfig(TimepixConfig):
                 ,(3,       128)     # TPX3_VPREAMP_NCAS     [0-255]
                 ,(4,         5)     # TPX3_IBIAS_IKRUM      [0-255]
                 ,(5,       128)     # TPX3_VFBK             [0-255]
-                ,(6,       420)     # TPX3_VTHRESH_FINE     [0-512]
+                ,(6,       420)     # TPX3_VTHRESH_FINE     [0-511]
                 ,(7,         6)     # TPX3_VTHRESH_COARSE   [0-15]
                 ,(8,        84)     # TPX3_IBIAS_DISCS1_ON  [0-255]
                 ,(9,         8)     # TPX3_IBIAS_DISCS1_OFF [0- 15]
@@ -44,7 +44,7 @@ class DefaultConfig(TimepixConfig):
                 ,(13 ,     128) # TPX3_IBIAS_TPBUFIN    [0-255]
                 ,(14  ,    128)  # TPX3_IBIAS_TPBUFOUT   [0-255]
                 ,(15   ,   128)   # TPX3_VTP_COARSE       [0-255]
-                ,(16    ,  256)    # TPX3_VTP_FINE         [0-512]
+                ,(16    ,  256)    # TPX3_VTP_FINE         [0-511]
                 ,(17     , 128)     # TPX3_IBIAS_CP_PLL     [0-255]
                 ,(18      ,128)]
         return codes
