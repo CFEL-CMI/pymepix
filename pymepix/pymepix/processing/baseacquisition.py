@@ -148,7 +148,8 @@ class AcquisitionStage(Logger):
             p.start()
             if p.name.find('UdpSampler-') > -1:
                 p.startRaw2Disk()
-                p.startTrainID()
+                # TODO: xfelTrainID
+                #p.startTrainID()
 
     def stop(self, force=False):
         self.info('Stopping stage {}'.format(self.stage))
@@ -171,7 +172,8 @@ class AcquisitionStage(Logger):
                 if p.name.find('UdpSampler-') > -1:
                     self.info(f'stoppping {p.name}')
                     p.stopRaw2Disk()
-                    p.stopTrainID()
+                    # TODO: xfelTrainID
+                    #p.stopTrainID()
                 p.enable = False
                 self.info('Joining thread {}'.format(p))
                 p.join(1.0)

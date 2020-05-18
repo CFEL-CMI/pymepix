@@ -299,6 +299,13 @@ def main():
         logging.info('Opening Sophy file {}'.format(args.spx))
         pymepix[0].loadConfig(args.spx)
 
+    # upload pixel mask
+    '''
+    pymepix._timepix_devices[0].pixelMask = np.zeros(shape=(256, 256), dtype=np.uint8)
+    pymepix._timepix_devices[0].pixelMask[126, 79] = 1
+    pymepix._timepix_devices[0].uploadPixels()
+    '''
+
     # Switch to TOF mode if set
     if args.decode and args.tof:
         pymepix[0].acquisition.enableEvents = True
@@ -343,7 +350,6 @@ def main():
                 store_tof(output_file, data)
 
     pymepix.stop()
-
 
 if __name__ == "__main__":
     main()

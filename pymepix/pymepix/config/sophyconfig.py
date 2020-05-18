@@ -65,6 +65,7 @@ class SophyConfig(TimepixConfig):
                             'Ibias_CP_PLL' : 128,
                             'PLL_Vcntrl' : 128,}
         self.loadFile(filename)
+
     def loadFile(self,filename):
         spx = zipfile.ZipFile(filename)
         names = spx.namelist()
@@ -131,7 +132,8 @@ class SophyConfig(TimepixConfig):
 
 def main():
     import matplotlib.pyplot as plt
-    spx = SophyConfig('E:/W0028_H06/settings/W0028_H06_50V.spx')
+    #spx = SophyConfig('E:/W0028_H06/settings/W0028_H06_50V.spx')
+    spx = SophyConfig('/Users/brombh/PycharmProjects/femtolab/ASI_TPX3CAM_H06/W0028_H06/settings/W0028_H06_50V.spx')
     print(spx.dacCodes())
     # plt.matshow(spx.maskPixels()[::-1,:])
     # plt.show()

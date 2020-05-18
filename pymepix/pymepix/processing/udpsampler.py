@@ -28,7 +28,8 @@ import numpy as np
 from multiprocessing import Queue
 from multiprocessing.sharedctypes import Value
 from pymepix.processing.rawtodisk import raw2Disk
-from pymepix.processing.xfeltrainid import xfelTrainID
+# TODO: xfelTrainID
+#from pymepix.processing.xfeltrainid import xfelTrainID
 import ctypes
 
 
@@ -127,8 +128,9 @@ class UdpSampler(BasePipelineObject):
         self.stopRaw2Disk()
         self.startRaw2Disk()
         # start xfel train ID
-        self.stopTrainID()
-        self.startTrainID()
+        # TODO: xfelTrainID start stop...
+        #self.stopTrainID()
+        #self.startTrainID()
 
     def process(self, data_type=None, data=None):
         start = time.time()
