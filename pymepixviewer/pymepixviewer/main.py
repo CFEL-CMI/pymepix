@@ -119,7 +119,8 @@ class PymepixDAQ(QtGui.QMainWindow, Ui_MainWindow):
                 print(f'parent {j._parent_pid}, {j._log_name}, {j.pid}')
                 if j._log_name.find('UdpSampler') > -1:
                     print(f'parent {j._raw2Disk._parent_pid}, {j._raw2Disk._log_name}, {j._raw2Disk.pid}')
-                    print(f'parent {j._trainIDRec._parent_pid}, {j._trainIDRec._log_name}, {j._trainIDRec.pid}')
+                    # TODO: xfelTrainID
+                    #print(f'parent {j._trainIDRec._parent_pid}, {j._trainIDRec._log_name}, {j._trainIDRec.pid}')
 
     def switchToMode(self):
         self._timepix.stop()
@@ -154,9 +155,26 @@ class PymepixDAQ(QtGui.QMainWindow, Ui_MainWindow):
         # self._timepix.
         self._timepix.dataCallback = self.onData
         # TODO: doesn't work
+        '''
         #self._timepix[0].pixelThreshold = np.zeros(shape=(256, 256), dtype=np.uint8)
-        #self._timepix[0].pixelMask = np.zeros(shape=(256, 256), dtype=np.uint8)
+        print()
+        print(self._timepix[0].pixelMask.min(), self._timepix[0].pixelMask.max())
+        print()
+       
+        mask = np.zeros(shape=(256, 256), dtype=np.uint8)
+        mask[:128, :] = 1
+        self._timepix[0].pixelMask = mask
+        self._timepix[0].uploadPixels()
+        #self._timepix[0].refreshPixels()
+
+        #self._timepix[0].pixelMask = np.load(fname[0])
+        # self._timepix[0].pixelMask[:128] = 1
         #self._timepix[0].uploadPixels()
+
+        print()
+        print(self._timepix[0].pixelMask.min(), self._timepix[0].pixelMask.max())
+        print()
+        '''
 
         logger.info('Fine: {} Coarse: {}'.format(self._timepix[0].Vthreshold_fine, self._timepix[0].Vthreshold_coarse))
 

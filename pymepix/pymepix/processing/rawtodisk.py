@@ -110,8 +110,11 @@ class raw2Disk (multiprocessing.Process, ProcessLogger):
                 store_raw(self._raw_file, (self._buffer, 1))
                 self._buffer = np.array([], dtype=np.uint64)
 
+        # empty buffer before closing
+        if len(self._buffer) > 0:
+            store_raw(self._raw_file, (self._buffer, 1))
         #store_raw(self._raw_file, (self._buffer, 1))
-        # empty queue
+        # empty queue before closing
         if not self._dataq.empty():
             remains = []
             item = self._dataq.get(block=False)
@@ -132,7 +135,8 @@ class raw2Disk (multiprocessing.Process, ProcessLogger):
         if os.path.getsize(self._raw_file.name) > 0:
             from subprocess import Popen
             self.info(f'start process data from: {self._raw_file.name}')
-            Popen(['python', '/home/bl1user/timepix/conversionClient.py', self._raw_file.name])
+            # TODO: FLASH specific
+            #Popen(['python', '/home/bl1user/timepix/conversionClient.py', self._raw_file.name])
 
 
 def main():
