@@ -1,7 +1,8 @@
 # libtimepix
 
 This contains two projects. The first is the Pymepix library that is a python module to interface with SPIDR and Timepix.
-The second is the PymepixViewer which provides a DAQ GUI software using pymepix and pyqtgraph
+The second is the PymepixViewer which provides a DAQ GUI software using pymepix and pyqtgraph.
+A detailed description can be found here https://doi.org/10.1088/1748-0221/14/10/P10003.
 
 
 ## Pymepix
@@ -100,3 +101,11 @@ pymepixviewer
 ```
 
 If the prerequisites are satisfied and timepix is connected then a window should pop up!
+
+## Open construction sites
+
+After using the library in the lab and FELs for quite some time we realized a few issues which we are working on and will continually update the library posted here:
+- the TimePix doesn't get configured correctly and such SoPhy is still required for this (compare branch XFELNov2019) 
+- centroiding is in many cases too slow for long data acquisition and not all data received gets saved to disk (compare branch XFELNov19)
+- we incorporated a dedicated hardware library for matching trainIDs from FLASH and XFEL (compare branch XFELNov19)
+- centroiding is subject to an ongoing improvement process
