@@ -53,7 +53,8 @@ class UdpSampler(BasePipelineObject):
             self._chunk_size = chunk_size * 8192
             self._flush_timeout = flush_timeout
             self._packets_collected = 0
-            self._packet_buffer = None
+            self._bytes_collected = 0
+            self._packet_buffer = []
             self._total_time = 0.0
             self._longtime = longtime
             self._dataq = Queue()
@@ -142,13 +143,14 @@ class UdpSampler(BasePipelineObject):
         except socket.error:
             return None, None
         # self.debug('Read {}'.format(raw_packet))
-        if self._packet_buffer is None:
+        if not self._packet_buffer:
             time_ns = time.time_ns().to_bytes(8, sys.byteorder) # add timestamp
-            self._packet_buffer = time_ns + raw_packet
+            self._packet_buffer.append(time_ns + raw_packet)
         else:
-            self._packet_buffer += raw_packet
+            self._packet_buffer.append(raw_packet)
 
         self._packets_collected += 1
+        self._bytes_collected += len(raw_packet)
         end = time.time()
 
         self._total_time += end - start
@@ -158,12 +160,14 @@ class UdpSampler(BasePipelineObject):
 
         flush_time = end - self._last_update
 
-        if (len(self._packet_buffer) > self._chunk_size) or (flush_time > self._flush_timeout):
-            packet = np.frombuffer(self._packet_buffer, dtype='<u8')
+        if (self._bytes_collected > self._chunk_size) or (flush_time > self._flush_timeout):
+            joinedlist = b''.join(self._packet_buffer) # Join the list of packets
+            packet = np.frombuffer(joinedlist, dtype='<u8')
 
             # tpx_packets = self.get_useful_packets(packet)
 
-            self._packet_buffer = None
+            self._packet_buffer = []
+            self._bytes_collected = 0
             self._last_update = time.time()
             if packet.size > 0:
                 if self.record:
