@@ -324,16 +324,28 @@ def main():
     else:
         logging.info('No decoding selected')
 
-    output_file = open_output_file(args.output, ext)
+    #output_file = open_output_file(args.output, ext)
 
     total_time = args.time
+    pymepix.start()
+
+
+    #self._timepix._spidr.resetTimers()
+    #self._timepix._spidr.restartTimers()
+    #time.sleep(1)  # give camera time to reset timers
+
+    # start raw2disk
+    pymepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0].outfile_name = args.output
+    pymepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0]._raw2Disk.timer = 1
+    pymepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0].record = 1
+
 
     start_time = time.time()
 
     logging.info('------Starting acquisition---------')
     # Start acquisition
-    pymepix.start()
     while time.time() - start_time < total_time:
+        '''
         try:
             data_type, data = pymepix.poll()
         except PollBufferEmpty:
@@ -348,7 +360,7 @@ def main():
         elif data_type is MessageType.PixelData:
             if args.decode and args.tof:
                 store_tof(output_file, data)
-
+        '''
     pymepix.stop()
 
 if __name__ == "__main__":
