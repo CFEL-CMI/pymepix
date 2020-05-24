@@ -53,7 +53,7 @@ class UdpSampler(BasePipelineObject):
             self._chunk_size = chunk_size * 8192
             self._flush_timeout = flush_timeout
             self._packets_collected = 0
-            self._packet_buffer = None
+            self._packet_buffer = bytearray()
             self._total_time = 0.0
             self._longtime = longtime
             self._dataq = Queue()
@@ -136,17 +136,12 @@ class UdpSampler(BasePipelineObject):
         start = time.time()
         # self.debug('Reading')
         try:
-            raw_packet = self._sock.recv(16384)  # buffer size is 1024 bytes
+            self._packet_buffer.extend(self._sock.recv(16384))
         except socket.timeout:
             return None, None
         except socket.error:
             return None, None
         # self.debug('Read {}'.format(raw_packet))
-        if self._packet_buffer is None:
-            time_ns = time.time_ns().to_bytes(8, sys.byteorder) # add timestamp
-            self._packet_buffer = time_ns + raw_packet
-        else:
-            self._packet_buffer += raw_packet
 
         self._packets_collected += 1
         end = time.time()
@@ -163,7 +158,7 @@ class UdpSampler(BasePipelineObject):
 
             # tpx_packets = self.get_useful_packets(packet)
 
-            self._packet_buffer = None
+            self._packet_buffer = bytearray()
             self._last_update = time.time()
             if packet.size > 0:
                 if self.record:
@@ -207,3 +202,13 @@ class UdpSampler(BasePipelineObject):
         self._trainIDRec.join(2.0) # file still needs to be saved
         self._trainIDRec.terminate()
         self._trainIDRec.join()
+
+
+def main():
+    import time
+    sampler = UdpSampler(('127.0.0.1', 50000), longtime=1, create_output=False)
+    sampler._last_update = time.time()
+    print(sampler.process())
+
+if __name__ == '__main__':
+    main()
