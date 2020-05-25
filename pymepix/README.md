@@ -7,15 +7,15 @@ See the accompanying [license](./LICENSE.md) and the [documentation](#documentat
 details.
 
 
-# Getting Started with PymePix
+## Getting Started with PymePix
 
-## Prerequisites
+### Prerequisites
 
 Pymepix has very few dependencies and mostly uses the batteries included in Python 3. Installing
 pymepix should install the prerequisties `numpy` and `sklearn` if not already present.
 
 
-## Installing
+### Installing
 
 Run the installation script through
 ```
