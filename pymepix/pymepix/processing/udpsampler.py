@@ -157,14 +157,7 @@ class UdpSampler(BasePipelineObject):
         flush_time = end - self._last_update
 
         if (self._bufferlength > self._chunk_size) or (flush_time > self._flush_timeout):
-            packet = np.empty(self._bufferlength//8, dtype='<u8')
-            
-            pos = 0
-            for rawpacket in self._packet_buffer:
-                packetlength = len(rawpacket)//8
-                datapacket = np.frombuffer(rawpacket, dtype='<u8')
-                packet[pos:pos+packetlength] = datapacket
-                pos += packetlength
+            packet = np.frombuffer(b''.join(self._packet_buffer), dtype=np.uint64)
 
             # tpx_packets = self.get_useful_packets(packet)
 
