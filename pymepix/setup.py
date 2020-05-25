@@ -20,6 +20,13 @@
 # You should have received a copy of the GNU General Public License along with this program. If not,
 # see <https://www.gnu.org/licenses/>.
 
+author = 'CFEL Controlled Molecule Imaging group'
+copyright = 'Copyright (C) 2018–2020 CFEL-CMI <jochen.kuepper@cfel.de>'
+name = 'pymepix'
+version = '1.1.dev0'
+release = version
+
+
 
 import os
 from setuptools import Distribution
@@ -71,22 +78,32 @@ long_description = None
 with open('README.md') as f:
     long_description = f.read()
 
-setup(name='pymepix',
-      author='Ahmed Al-Refaie and the CFEL-CMI group',
-      author_email='cmidaq@cfel.de',
-      maintainer='CFEL-CMI group',
-      version='1.0',
-      description='Timepix Python library',
-      download_url='https://stash.desy.de/projects/CMIPUBLIC/repos/timepix',
-      classifiers=classifiers,
-      packages=packages,
-      include_package_data=True,
-      entry_points=entry_points,
-      long_description=long_description,
-      long_description_content_type='text/markdown',
-      provides=provides,
-      requires=requires,
-      install_requires=install_requires,
+setup(name=name,
+      # Original author: Ahmed Al Refaie
+      author = author,
+      author_email = 'cmidaq@cfel.de',
+      maintainer = 'Hubertus Bromberger and CFEL-CMI group',
+      maintainer_email = 'cmidaq@cfel.de',
+      version = version,
+      description = 'Timepix Python library',
+      download_url = 'https://stash.desy.de/projects/CMIPUBLIC/repos/timepix',
+      classifiers = classifiers,
+      packages = packages,
+      include_package_data = True,
+      entry_points = entry_points,
+      long_description = long_description,
+      long_description_content_type = 'text/markdown',
+      provides = provides,
+      requires = requires,
+      install_requires = install_requires,
+      command_options = {
+          'build_sphinx': {
+              'project': ('setup.py', name),
+              'version': ('setup.py', version),
+              'release': ('setup.py', release),
+              'source_dir': ('setup.py', 'doc'),
+              'copyright': ('setup.py', copyright)}
+      },
       )
 
 ### Local Variables:

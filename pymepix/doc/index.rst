@@ -5,6 +5,7 @@
 
     doc
     api
+    todolist
 
 Pymepix Documentation
 =============================================

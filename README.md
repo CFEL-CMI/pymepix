@@ -1,7 +1,13 @@
 # PymePix project
 
-Python framework for Timepix (version 3 and later) controls and data acquisition. This framework is
-build for the
+Python framework for Timepix (version 3 and later) controls and data acquisition.
+
+
+## Current status
+
+See the list of ToDos in the [documentation](#documentation) for known issues and planned
+improvements.
+
 
 ## PymePix Python module
 
