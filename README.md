@@ -1,102 +1,107 @@
-# libtimepix
+# PymePix project
 
-This contains two projects. The first is the Pymepix library that is a python module to interface with SPIDR and Timepix.
-The second is the PymepixViewer which provides a DAQ GUI software using pymepix and pyqtgraph
+Python framework for Timepix (version 3 and later) controls and data acquisition. This framework is
+build for the
 
+## PymePix Python module
 
-## Pymepix
+This repository contains the actual `pymepix` framework with the control and data-acquisition (DAQ)
+functionality, which directly interfaces with the Timepix hardware. Currently, it works with the
+SPIDR board.
 
-Pymepix is a python module that provides high level access to timepix as well as low level access to SPIDR.
-
-
-### Getting Started
-
-
-#### Prerequisites
-
-Pymepix has very few dependencies and mostly uses the batteries included in Python 3.
-Installing pymepix should install the prerequisties: numpy and sklearn.
+`pymepix` provides high level access to Timepix settings and data as well as low level access to
+SPIDR.
 
 
-#### Installing
-Clone the directory using:
+## PymepixViewer entrance-level GUI
 
-```
-https://<desy username>@stash.desy.de/scm/cmipublic/timepix.git
-```
+Furthermore, there is the PymepixViewer which provides a simple graphical-user interface (GUI) using
+pymepix and pyqtgraph. The latter is not meant to replace a full DAQ GUI, but to provide easy
+entrance to using Timepix3 with pymepix.
 
-move into the pymepix project folder
 
-```
-cd timepix/pymepix
-```
 
-Then install
+# Getting Started with PymePix
 
+## Prerequisites
+
+Pymepix has very few dependencies and mostly uses the batteries included in Python 3. Installing
+pymepix should install the prerequisties `numpy` and `sklearn` if not already present.
+
+
+## Installing
+
+In the pymepix project folder `./pymepix` run the installation script through
 ```
 pip install .
 ```
+or
+```
+python setup.py install
+```
+Standard `setuptools` options such as `develop` or `--user` are available; see the
+[documentation](#documentation) for details.
 
-To build documentation do
+Try importing pymepix:
+```
+python -c "import pymepix"
+```
+If there are no errors then the installation was, fundamentally, successful.
+
+
+## Documentation
+
+To build the included documentation run
 
 ```
 python setup.py build_sphinx
 ```
 
 
-Try importing pymepix:
-```
-python -c "import pymepix"
-```
+# The Pymepix viewer
 
-If there are no errors then it was successful!
+Pymepix-viewer is a basic graphical user interface for data acquisition using the pymepix library.
+It is not meant as a full-fledged and stable DAQ-GUI, but to demonstrate the capabilities of
+`pymepix`, to provide an initial operational system for easy entrance to Timepix operation, and as a
+reference implementation for `pymepix` use.
 
-## Pymepix Viewer
+## Prerequisites
 
-Pymepix-viewer is a graphical user interface for data acquisition using the pymepix library. It is still in development so expect some instability and bugs
-
-### Getting Started
-
-
-#### Prerequisites
-
-PyQt5 is a requirement. This can be installed (painfully) manually here:
-
-https://www.metachris.com/2016/03/how-to-install-qt56-pyqt5-virtualenv-python3/
-
-or easily using Anaconda3:
-
-```
-conda install pyqt=5
-```
+For the PymePix viewer PyQt5 is a requirement. This can be installed [(painfully)
+manually](https://www.metachris.com/2016/03/how-to-install-qt56-pyqt5-virtualenv-python3) or using
+package managers such as [Anaconda](https://www.anaconda.com) (`conda install pyqt=5`), MacPorts
+(`sudo port install py38-pyqt5`), or similar.
 
 
+## Installing
 
-#### Installing
-Clone the directory using:
-
-```
-https://<desy username>@stash.desy.de/scm/cmipublic/timepix.git
-```
-
-move into the pymepixviewer project folder
-
-```
-cd timepix/pymepixviewer
-```
-
-Then install
-
+In the pymepixviewer project folder `./pymepixviewer` run the installation script through
 ```
 pip install .
 ```
+or
+```
+python setup.py install
+```
+Standard `setuptools` options such as `develop` or `--user` are available; see the
+[documentation](#documentation) for details.
 
-#### Running
 
-To run, open terminal or command prompt and do:
+## Running
 
+To run the gui start it from a terminal as
 ```
 pymepixviewer
 ```
 
-If the prerequisites are satisfied and timepix is connected then a window should pop up!
+If the prerequisites are satisfied and timepix is connected then a window should open. See the
+documentation for further details.
+
+
+
+<!-- Put Emacs local variables into HTML comment
+Local Variables:
+coding: utf-8
+fill-column: 100
+End:
+-->
