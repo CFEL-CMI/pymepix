@@ -1,64 +1,54 @@
 # Pymepix
 
-Pymepix is a python module that provides high level access to timepix as well as low level access to SPIDR.
+The `pymepix` Python module provides the control and data-acquisition (DAQ) functionality. It
+directly interfaces with the Timepix hardware. Currently, it works with the SPIDR board.
+
+See the accompanying [license](./LICENSE.md) and the [documentation](#documentation) for further
+details.
 
 
-## Getting Started
+# Getting Started with PymePix
+
+## Prerequisites
+
+Pymepix has very few dependencies and mostly uses the batteries included in Python 3. Installing
+pymepix should install the prerequisties `numpy` and `sklearn` if not already present.
 
 
-### Prerequisites
+## Installing
 
-Pymepix has very few dependencies and mostly uses the batteries included in Python 3.
-Installing pymepix should install the prerequisties: numpy and sklearn.
-
-
-### Installing from PyPi
-
-To install simply do:
-
-```
-pip install pymepix
-```
-
-Try importing pymepix:
-
-```
-python -c "import pymepix"
-```
-
-If there are no errors then it was successful!
-
-
-### Installing from source
-
-Clone the directory using:
-
-```
-https://<desy username>@stash.desy.de/scm/cmipublic/timepix.git
-```
-
-move into the pymepix project folder
-
-```
-cd timepix/pymepix
-```
-
-Then install
-
+Run the installation script through
 ```
 pip install .
 ```
+or to directly use the setup.py run
+```
+python setup.py install
+```
+Standard `setuptools` options such as `develop` or `--user` are available; see the
+[documentation](#documentation) for details.
 
-To build documentation do
+Try importing pymepix:
+```
+python -c "import pymepix"
+```
+If there are no errors then the installation was, fundamentally, successful.
+
+
+## Documentation
+
+To build the included documentation run
 
 ```
 python setup.py build_sphinx
 ```
+Up-to date documentation will also be available on readthedocs.
 
 
-Try importing pymepix:
-```
-python -c "import pymepix"
-```
 
-If there are no errors then it was successful!
+<!-- Put Emacs local variables into HTML comment
+Local Variables:
+coding: utf-8
+fill-column: 100
+End:
+-->

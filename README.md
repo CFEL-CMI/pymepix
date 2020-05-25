@@ -11,9 +11,9 @@ improvements.
 
 ## PymePix Python module
 
-This repository contains the actual `pymepix` framework with the control and data-acquisition (DAQ)
-functionality, which directly interfaces with the Timepix hardware. Currently, it works with the
-SPIDR board.
+This repository contains the actual `pymepix` framework, in the directory of the same name, with the
+control and data-acquisition (DAQ) functionality, which directly interfaces with the Timepix
+hardware. Currently, it works with the SPIDR board.
 
 `pymepix` provides high level access to Timepix settings and data as well as low level access to
 SPIDR.
@@ -27,41 +27,6 @@ entrance to using Timepix3 with pymepix.
 
 
 
-# Getting Started with PymePix
-
-## Prerequisites
-
-Pymepix has very few dependencies and mostly uses the batteries included in Python 3. Installing
-pymepix should install the prerequisties `numpy` and `sklearn` if not already present.
-
-
-## Installing
-
-In the pymepix project folder `./pymepix` run the installation script through
-```
-pip install .
-```
-or
-```
-python setup.py install
-```
-Standard `setuptools` options such as `develop` or `--user` are available; see the
-[documentation](#documentation) for details.
-
-Try importing pymepix:
-```
-python -c "import pymepix"
-```
-If there are no errors then the installation was, fundamentally, successful.
-
-
-## Documentation
-
-To build the included documentation run
-
-```
-python setup.py build_sphinx
-```
 
 
 # The Pymepix viewer
