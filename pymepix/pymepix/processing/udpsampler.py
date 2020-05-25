@@ -53,7 +53,8 @@ class UdpSampler(BasePipelineObject):
             self._chunk_size = chunk_size * 8192
             self._flush_timeout = flush_timeout
             self._packets_collected = 0
-            self._packet_buffer = bytearray()
+            self._packet_buffer = []
+            self._bufferlength = 0
             self._total_time = 0.0
             self._longtime = longtime
             self._dataq = Queue()
@@ -136,7 +137,9 @@ class UdpSampler(BasePipelineObject):
         start = time.time()
         # self.debug('Reading')
         try:
-            self._packet_buffer.extend(self._sock.recv(16384))
+            newpacket = self._sock.recv(16384)
+            self._bufferlength += len(newpacket)
+            self._packet_buffer.append(newpacket)
         except socket.timeout:
             return None, None
         except socket.error:
@@ -153,12 +156,20 @@ class UdpSampler(BasePipelineObject):
 
         flush_time = end - self._last_update
 
-        if (len(self._packet_buffer) > self._chunk_size) or (flush_time > self._flush_timeout):
-            packet = np.frombuffer(self._packet_buffer, dtype='<u8')
+        if (self._bufferlength > self._chunk_size) or (flush_time > self._flush_timeout):
+            packet = np.empty(self._bufferlength//8, dtype='<u8')
+            
+            pos = 0
+            for rawpacket in self._packet_buffer:
+                packetlength = len(rawpacket)//8
+                datapacket = np.frombuffer(rawpacket, dtype='<u8')
+                packet[pos:pos+packetlength] = datapacket
+                pos += packetlength
 
             # tpx_packets = self.get_useful_packets(packet)
 
-            self._packet_buffer = bytearray()
+            self._packet_buffer = []
+            self._bufferlength = 0
             self._last_update = time.time()
             if packet.size > 0:
                 if self.record:
