@@ -1,4 +1,5 @@
 # Pymepix
+
 The `pymepix` Python module provides the control and data-acquisition (DAQ) functionality. It
 directly interfaces with the Timepix hardware. Currently, it works with the SPIDR board.
 
@@ -26,7 +27,7 @@ python setup.py install
 Standard `setuptools` options such as `develop` or `--user` are available; see the
 [documentation](#documentation) for details.
 
-Try importing pymepix:
+Try importing pymepix outside the actual source code:
 ```
 python -c "import pymepix"
 ```
@@ -34,6 +35,7 @@ If there are no errors then the installation was, fundamentally, successful.
 
 
 ## Documentation
+
 To build the included documentation run
 
 ```
