@@ -106,15 +106,15 @@ class SophyConfig(TimepixConfig):
 
 
     def parsePixelConfig(self,zip_file,file_names):
-        #First is mask
+        # SoPhy config file saves the pixel information row by row,
+        # while timepix expects the information column wise.
         buffer = zip_file.read(file_names[0])
-        self._mask = np.frombuffer(buffer[27:],dtype=np.uint16).reshape(256,256)
+        self._mask = np.frombuffer(buffer[27:],dtype=np.int16).reshape(256,256).transpose()
         buffer = zip_file.read(file_names[1])
-        self._test = np.frombuffer(buffer[27:],dtype=np.uint16).reshape(256,256)
+        self._test = np.frombuffer(buffer[27:],dtype=np.int16).reshape(256,256).transpose()
         buffer = zip_file.read(file_names[2])
-        self._thresh = np.frombuffer(buffer[27:],dtype=np.uint16).reshape(256,256)
+        self._thresh = np.frombuffer(buffer[27:],dtype=np.int16).reshape(256,256).transpose()
 
-    
     def maskPixels(self):
         """Returns mask pixels"""
         return 1-(self._mask//256)
