@@ -104,16 +104,24 @@ class SophyConfig(TimepixConfig):
         pass
 
 
+    def _reverseBits(self, num):
+        bitsize = 4
+        binary = bin(num)
+        reverse = binary[-1:1:-1]
+        reverse = reverse + (bitsize - len(reverse)) * '0'
+        return int(reverse, 2)
 
-    def parsePixelConfig(self,zip_file,file_names):
+    def parsePixelConfig(self,zip_file, file_names):
         # SoPhy config file saves the pixel information row by row,
         # while timepix expects the information column wise.
         buffer = zip_file.read(file_names[0])
-        self._mask = np.frombuffer(buffer[27:],dtype=np.int16).reshape(256,256).transpose()
+        self._mask = np.fliplr(np.frombuffer(buffer[27:], dtype=np.int16).reshape(256, 256).transpose())
         buffer = zip_file.read(file_names[1])
-        self._test = np.frombuffer(buffer[27:],dtype=np.int16).reshape(256,256).transpose()
+        self._test = np.fliplr(np.frombuffer(buffer[27:], dtype=np.int16).reshape(256, 256).transpose())
         buffer = zip_file.read(file_names[2])
-        self._thresh = np.frombuffer(buffer[27:],dtype=np.int16).reshape(256,256).transpose()
+        self._thresh = np.frombuffer(buffer[27:], dtype=np.int16) >> 8
+        self._thresh = np.fliplr(np.array([self._reverseBits(x) for x in self._thresh]).reshape(256, 256).transpose())
+
 
     def maskPixels(self):
         """Returns mask pixels"""
@@ -125,7 +133,7 @@ class SophyConfig(TimepixConfig):
     
     def thresholdPixels(self):
         """Returns threshold pixels"""
-        return self._thresh >> 8
+        return self._thresh
 
 
 
