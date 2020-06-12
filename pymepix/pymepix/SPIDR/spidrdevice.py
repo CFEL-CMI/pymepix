@@ -333,7 +333,7 @@ class SpidrDevice(Logger):
             # self._ctrl.customRequest(request_packet,message_length)
 
         # last row
-        matrix_packet = final_pixels[:, 255:256].reshape(256)
+        matrix_packet = final_pixels[255, :].reshape(256)
         # matrix_packet = np.insert(matrix_packet, 0, 255 & 0xff, axis=0)
         self._ctrl.requestSetIntBytes(SpidrCmds.CMD_SET_PIXCONF, self._dev_num, 255,
                                       self._formatPixelBits(matrix_packet))
