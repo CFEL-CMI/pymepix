@@ -129,6 +129,9 @@ class TimepixDevice(Logger):
         if config.maskPixels() is not None:
             self.pixelMask = config.maskPixels()
 
+        if config.testPixels() is not None:
+            self.pixelTest = config.maskPixels()
+
         self.uploadPixels()
         self.refreshPixels()
         # print(self.pixelThreshold)

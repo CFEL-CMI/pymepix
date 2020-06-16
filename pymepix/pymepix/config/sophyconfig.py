@@ -115,11 +115,11 @@ class SophyConfig(TimepixConfig):
         # SoPhy config file saves the pixel information row by row,
         # while timepix expects the information column wise.
         buffer = zip_file.read(file_names[0])
-        self._mask = np.fliplr(np.frombuffer(buffer[27:], dtype=np.int16).reshape(256, 256).transpose())
+        self._mask = np.fliplr(np.frombuffer(buffer[27:], dtype=np.int16).reshape(256, 256).transpose()).copy()
         buffer = zip_file.read(file_names[1])
-        self._test = np.fliplr(np.frombuffer(buffer[27:], dtype=np.int16).reshape(256, 256).transpose())
+        self._test = np.fliplr(np.frombuffer(buffer[27:], dtype=np.int16).reshape(256, 256).transpose()).copy()
         buffer = zip_file.read(file_names[2])
-        self._thresh = np.frombuffer(buffer[27:], dtype=np.int16) >> 8
+        self._thresh = np.frombuffer(buffer[27:], dtype=np.int16).copy() >> 8
         self._thresh = np.fliplr(np.array([self._reverseBits(x) for x in self._thresh]).reshape(256, 256).transpose())
 
 
