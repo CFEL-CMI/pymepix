@@ -25,6 +25,9 @@ import socket
 from .datatypes import MessageType
 import time
 import numpy as np
+from multiprocessing import Queue
+from multiprocessing.sharedctypes import Value
+import ctypes
 
 
 class UdpSampler(BasePipelineObject):
@@ -39,17 +42,21 @@ class UdpSampler(BasePipelineObject):
 
     def __init__(self, address, longtime, chunk_size=1000, flush_timeout=0.3, input_queue=None, create_output=True,
                  num_outputs=1, shared_output=None):
-        BasePipelineObject.__init__(self, 'UdpSampler', input_queue=input_queue, create_output=create_output, num_outputs=num_outputs,
-                                    shared_output=shared_output)
+        BasePipelineObject.__init__(self, 'UdpSampler', input_queue=input_queue, create_output=create_output,
+                                    num_outputs=num_outputs, shared_output=shared_output)
 
         try:
             self.createConnection(address)
             self._chunk_size = chunk_size * 8192
             self._flush_timeout = flush_timeout
             self._packets_collected = 0
-            self._packet_buffer = None
+            self._packet_buffer = []
+            self._bufferlength = 0
             self._total_time = 0.0
             self._longtime = longtime
+            self._dataq = Queue()
+            self._record = Value(ctypes.c_bool, 0)
+            self._outfile_name = 'test'
         except Exception as e:
             self.error('Exception occured in init!!!')
             self.error(e, exc_info=True)
@@ -76,21 +83,38 @@ class UdpSampler(BasePipelineObject):
         tpx_packets = packet[tpx_filter]
         return tpx_packets
 
-    def process(self, data_type=None, data=None):
+    def record(self):
+        """Enables saving data to disk
 
+        Determines whether the class will perform processing, this has the result of signalling the process to terminate.
+        If there are objects ahead of it then they will stop recieving data
+        if an input queue is required then it will get from the queue before checking processing
+        This is done to prevent the queue from growing when a process behind it is still working
+
+        Parameters
+        -----------
+        value : bool
+            Enable value
+
+        Returns
+        -----------
+        bool:
+            Whether the process should record and write to disk or not
+        """
+        return bool(self._record.value)
+
+    def process(self, data_type=None, data=None):
         start = time.time()
         # self.debug('Reading')
         try:
-            raw_packet = self._sock.recv(16384)  # buffer size is 1024 bytes
+            newpacket = self._sock.recv(16384)
+            self._bufferlength += len(newpacket)
+            self._packet_buffer.append(newpacket)
         except socket.timeout:
             return None, None
         except socket.error:
             return None, None
         # self.debug('Read {}'.format(raw_packet))
-        if self._packet_buffer is None:
-            self._packet_buffer = raw_packet
-        else:
-            self._packet_buffer += raw_packet
 
         self._packets_collected += 1
         end = time.time()
@@ -102,14 +126,17 @@ class UdpSampler(BasePipelineObject):
 
         flush_time = end - self._last_update
 
-        if (len(self._packet_buffer) > self._chunk_size) or (flush_time > self._flush_timeout):
-            packet = np.frombuffer(self._packet_buffer, dtype='<u8')
+        if (self._bufferlength > self._chunk_size) or (flush_time > self._flush_timeout):
+            packet = np.frombuffer(b''.join(self._packet_buffer), dtype=np.uint64)
 
             # tpx_packets = self.get_useful_packets(packet)
 
-            self._packet_buffer = None
+            self._packet_buffer = []
+            self._bufferlength = 0
             self._last_update = time.time()
             if packet.size > 0:
+                if self.record:
+                    self._dataq.put(packet)
                 return MessageType.RawData, (packet, self._longtime.value)
             else:
                 return None, None
