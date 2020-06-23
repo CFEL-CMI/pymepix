@@ -112,8 +112,8 @@ class TimepixDevice(Logger):
             raise ConfigClassException
 
     def loadConfig(self, *args, **kwargs):
-        """Loads dac settings from the Config class
-        
+        """
+        Loads dac settings from the Config class
         """
 
         config = self._config_class(*args, **kwargs)
@@ -137,10 +137,10 @@ class TimepixDevice(Logger):
         # print(self.pixelThreshold)
 
     def setupDevice(self):
-        """Sets up valid paramters for acquisition
+        """
+        Sets up valid paramters for acquisition
 
-        This will be manual when other acqusiiton parameters are working
-
+        This will be manual when other acqusition parameters are working
         """
         self.debug('Setting up acqusition')
         self.polarity = Polarity.Positive

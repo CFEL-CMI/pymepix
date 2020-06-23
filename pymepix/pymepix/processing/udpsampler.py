@@ -19,15 +19,16 @@
 # along with Pymepix.  If not, see <http://www.gnu.org/licenses/>.
 #
 ##############################################################################
-
-from .basepipeline import BasePipelineObject
-import socket
-from .datatypes import MessageType
-import time
-import numpy as np
+import ctypes
 from multiprocessing import Queue
 from multiprocessing.sharedctypes import Value
-import ctypes
+import numpy as np
+import socket
+import time
+
+from .basepipeline import BasePipelineObject
+from .datatypes import MessageType
+from pymepix.processing.rawtodisk import raw2Disk
 
 
 class UdpSampler(BasePipelineObject):
@@ -83,6 +84,7 @@ class UdpSampler(BasePipelineObject):
         tpx_packets = packet[tpx_filter]
         return tpx_packets
 
+    @property
     def record(self):
         """Enables saving data to disk
 
@@ -102,6 +104,23 @@ class UdpSampler(BasePipelineObject):
             Whether the process should record and write to disk or not
         """
         return bool(self._record.value)
+
+    @record.setter
+    def record(self, value):
+        self.debug(f'Setting record flag to {value}')
+        self._record.value = int(value)
+
+    @property
+    def outfile_name(self):
+        return self._outfile_name
+
+    @outfile_name.setter
+    def outfile_name(self, fileN):
+        self.info(f'Setting file name flag to {fileN}')
+        # start raw2Disk
+        self._outfile_name = fileN
+        self.stopRaw2Disk()
+        self.startRaw2Disk()
 
     def process(self, data_type=None, data=None):
         start = time.time()
@@ -142,3 +161,22 @@ class UdpSampler(BasePipelineObject):
                 return None, None
         else:
             return None, None
+
+    def startRaw2Disk(self):
+        self.info(f'start raw2Disk process')
+
+        # generate worker to save the data directly to disk
+        self._raw2Disk = raw2Disk(dataq=self._dataq, fileN=self.outfile_name)
+        self._raw2Disk.enable = True
+        self._raw2Disk.start()
+
+    def stopRaw2Disk(self):
+        self.info(f'stopping raw2Disk process')
+        self._raw2Disk.enable = False
+        self._raw2Disk.join(5.0)  # give it a chance to empty some more of the queue
+        self._raw2Disk.terminate()
+        self._raw2Disk.join()
+
+        while not self._dataq.empty():
+            self._dataq.get()
+        self.info('Process Raw2Disk stop complete')

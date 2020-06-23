@@ -45,8 +45,7 @@ class PacketProcessor(BasePipelineObject):
     """Processes Pixel packets for ToA, ToT,triggers and events
 
     This class, creates a UDP socket connection to SPIDR and recivies the UDP packets from Timepix
-    It them pre-processes them and sends them off for more processing
-
+    It then pre-processes them and sends them off for more processing
     """
 
     def __init__(self,

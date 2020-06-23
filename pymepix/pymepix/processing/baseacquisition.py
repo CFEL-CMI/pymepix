@@ -146,6 +146,8 @@ class AcquisitionStage(Logger):
     def start(self):
         for p in self._pipeline_objects:
             p.start()
+            if p.name.find('UdpSampler-') > -1:
+                p.startRaw2Disk()
 
     def stop(self, force=False):
         self.info('Stopping stage {}'.format(self.stage))
@@ -165,6 +167,9 @@ class AcquisitionStage(Logger):
             self._input_queue.close()
         else:
             for p in self._pipeline_objects:
+                if p.name.find('UdpSampler-') > -1:
+                    self.info(f'stoppping {p.name}')
+                    p.stopRaw2Disk()
                 p.enable = False
                 self.info('Joining thread {}'.format(p))
                 p.join(1.0)

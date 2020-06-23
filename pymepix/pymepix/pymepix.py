@@ -321,11 +321,20 @@ def main():
 
     total_time = args.time
 
-    start_time = time.time()
+    # self._timepix._spidr.resetTimers()
+    # self._timepix._spidr.restartTimers()
+    # time.sleep(1)  # give camera time to reset timers
 
-    logging.info('------Starting acquisition---------')
     # Start acquisition
     pymepix.start()
+    # start raw2disk
+    pymepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0].outfile_name = args.output
+    pymepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0]._raw2Disk.timer = 1
+    pymepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0].record = 1
+
+    start_time = time.time()
+    logging.info('------Starting acquisition---------')
+
     while time.time() - start_time < total_time:
         try:
             data_type, data = pymepix.poll()
