@@ -100,10 +100,10 @@ class BasePipelineObject(multiprocessing.Process, ProcessLogger):
     def enable(self):
         """Enables processing 
         
-        Determines wheter the class will perform processing, this has the result of signalling the process to terminate. 
-        If there are objects ahead of it then they will stop recieving data
+        Determines whether the class will perform processing, this has the result of signalling the process to terminate.
+        If there are objects ahead of it then they will stop receiving data
         if an input queue is required then it will get from the queue before checking processing
-        This is done to prevent the qwueue from growing when a process behind it is still working
+        This is done to prevent the queue from growing when a process behind it is still working
         
         Parameters
         -----------
