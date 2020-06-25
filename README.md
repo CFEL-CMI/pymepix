@@ -1,29 +1,47 @@
-# PymePix project
+# Pymepix
 
-Python framework for Timepix (version 3 and later) controls and data acquisition.
+The `pymepix` Python module provides the control and data-acquisition (DAQ) functionality. It
+directly interfaces with the Timepix hardware. Currently, it works with the SPIDR board.
 
-
-## Current status
-
-See the list of ToDos in the [documentation](#documentation) for known issues and planned
-improvements.
+See the accompanying [license](./LICENSE.md) and the [documentation](#documentation) for further
+details.
 
 
-## PymePix Python module
+## Getting Started with PymePix
+### Prerequisites
 
-The `pymepix/` directory contains the actual `pymepix` framework with the control and
-data-acquisition (DAQ) functionality. `pymepix` directly interfaces with the Timepix hardware.
-Currently, it works with the [SPIDR](https://wiki.nikhef.nl/detector/Main/SpiDr) board.
-
-`pymepix` provides high level access to Timepix settings and data as well as low level access to
-[SPIDR](https://wiki.nikhef.nl/detector/Main/SpiDr).
+Pymepix has very few dependencies and mostly uses the batteries included in Python 3. Installing
+pymepix should install the prerequisties `numpy` and `sklearn` if not already present.
 
 
-## PymepixViewer entrance-level GUI
+### Installing
 
-Furthermore, there is the PymepixViewer in `pymepixviewer/`, which provides a simple graphical-user
-interface (GUI) using pymepix and pyqtgraph. The latter is not meant to replace a full DAQ GUI, but
-to provide easy entrance to using Timepix3 with pymepix.
+Run the installation script through
+```
+pip install .
+```
+or to directly use the setup.py run
+```
+python setup.py install
+```
+Standard `setuptools` options such as `develop` or `--user` are available; see the
+[documentation](#documentation) for details.
+
+Try importing pymepix outside the actual source code:
+```
+python -c "import pymepix"
+```
+If there are no errors then the installation was, fundamentally, successful.
+
+
+## Documentation
+
+To build the included documentation run
+
+```
+python setup.py build_sphinx
+```
+Up-to date documentation will also be available on readthedocs.
 
 
 
