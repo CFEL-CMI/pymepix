@@ -21,8 +21,9 @@
 author = 'CFEL Controlled Molecule Imaging group'
 copyright = '2018–2020 CFEL Controlled Molecule Imaging group <cmidaq@desy.de>'
 name = 'pymepix'
+project = name
 version = '1.1.dev0'
-
+release = version
 
 import os
 import sys
