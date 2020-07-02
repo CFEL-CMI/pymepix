@@ -36,12 +36,12 @@ If there are no errors then the installation was, fundamentally, successful.
 
 ## Documentation
 
-To build the included documentation run
+Documentation is available at [readthedocs](https://pymepix.readthedocs.io); you can locally build
+the included documentation by running
 
 ```
 python setup.py build_sphinx
 ```
-Up-to date documentation will also be available on readthedocs.
 
 
 
