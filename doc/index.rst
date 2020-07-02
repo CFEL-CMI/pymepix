@@ -5,12 +5,19 @@
 
     doc
     api
+    references
     todolist
 
 Pymepix Documentation
 =============================================
 
-Pymepix is a python library for interfacing, controlling and acquiring from SPIDR-Timepix detectors.
+Pymepix_ is a python library for interfacing, controlling and acquiring from SPIDR-Timepix detectors.
+
+See [AlRefaie2019]_ for a scientific description of version 1.0 and as a formal, citeable reference and
+the `online manual`_ for further information on later versions.
+
+.. _C: https://github.com/CFEL-CMI/pymepix
+.. _online manual: https://pymepix.readthedocs.io
 
 
 
