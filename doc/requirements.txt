@@ -1,1 +1,3 @@
+numpy
+sklearn
 sphinx>=2
