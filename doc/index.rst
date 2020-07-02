@@ -16,7 +16,7 @@ Pymepix_ is a python library for interfacing, controlling and acquiring from SPI
 See [AlRefaie2019]_ for a scientific description of version 1.0 and as a formal, citeable reference and
 the `online manual`_ for further information on later versions.
 
-.. _C: https://github.com/CFEL-CMI/pymepix
+.. _Pymepix: https://github.com/CFEL-CMI/pymepix
 .. _online manual: https://pymepix.readthedocs.io
 
 
