@@ -16,7 +16,14 @@
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#
+
+
+author = 'CFEL Controlled Molecule Imaging group'
+copyright = '2018–2020 CFEL Controlled Molecule Imaging group <cmidaq@desy.de>'
+name = 'pymepix'
+version = '1.1.dev0'
+
+
 import os
 import sys
 
@@ -44,7 +51,7 @@ extensions = [
     'sphinx.ext.viewcode']
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ['.templates']
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
