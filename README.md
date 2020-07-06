@@ -10,6 +10,9 @@ details.
 ## Getting Started with PymePix
 ### Prerequisites
 
+Obviously, you need a Timpix3cam with SPIDR board, we are using versions of
+[TPX3CAM](https://www.amscins.com/tpx3cam/) from [ASI](https://www.amscins.com).
+
 Pymepix has very few dependencies and mostly uses the batteries included in Python 3. Installing
 pymepix should install the prerequisties `numpy` and `sklearn` if not already present.
 
