@@ -27,13 +27,16 @@ import ctypes
 import time
 import numpy as np
 from multiprocessing.sharedctypes import Value
+from multiprocessing import Queue
 from pymepix.processing.udpsampler import UdpSampler
+from pymepix.processing.acquisition import AcquisitionPipeline
+
+address = ('127.0.0.1', 50000)
 
 def test_receive():
     '''
     most basic test for receiving functionality done in UdpSampler.process
     '''
-    address = ('127.0.0.1', 50000)
     longtime = Value(ctypes.c_int, 1)
     sampler = UdpSampler(address, longtime=longtime)
 
@@ -99,12 +102,59 @@ def test_receive():
     assert len(data[1][0]) == 1000
     assert data[1][0].sum() == 10000
 
+    # set small chunk size to test receiving data before timer is out
+    sampler._chunk_size = 1
+    sampler.preRun()
+    sock.sendto(np.array(1000 * [10], dtype=np.uint64).tobytes(), address)
+    data = sampler.process()
+    assert sampler._packets_collected == 6
+    assert data[0] == 0  # should return <MessageType.RawData: 0>
+    assert data[1][1] == 1  # provided longtime gets returned
+    assert len(data[1][0]) == 1000
+    assert data[1][0].sum() == 10000
+
 def test_queue():
     '''
-    test functionality of 1st aquisition pipeline step with data been put into queue
+    test functionality of 1st acquisition pipeline step with data been put into queue
     '''
+    from pymepix.processing.packetprocessor import PacketProcessor
+    from multiprocessing.sharedctypes import Value
+    import threading
+    # Create the logger
+    import logging
+    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    end_queue = Queue()
 
+    acqpipline = AcquisitionPipeline('Test', end_queue)
+
+    test_value = Value('I', 0)
+
+    acqpipline.addStage(0, UdpSampler, address, test_value)
+    #acqpipline.addStage(2, PacketProcessor, num_processes=4)
+
+    def get_queue_thread(queue):
+        recieved = []
+        while True:
+            value = queue.get()
+            messType, data = value
+            recieved.append(data[1])
+            print(value)
+            if value is None:
+                break
+
+
+    t = threading.Thread(target=get_queue_thread, args=(end_queue,))
+    t.daemon = True
+    t.start()
+
+    acqpipline.start()
+    time.sleep(10)
+    acqpipline.stop()
+    end_queue.put(None)
+
+    t.join()
+    print('Done')
 
 
 if __name__ == "__main__":
-    test_receive()
+    test_queue()
