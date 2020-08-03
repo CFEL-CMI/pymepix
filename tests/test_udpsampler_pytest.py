@@ -122,7 +122,7 @@ def test_queue():
     import threading
     # Create the logger
     import logging
-    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     end_queue = Queue()
 
     acqpipline = AcquisitionPipeline('Test', end_queue)
@@ -136,11 +136,14 @@ def test_queue():
         recieved = []
         while True:
             value = queue.get()
-            messType, data = value
-            recieved.append(data[1])
             print(value)
             if value is None:
                 break
+            messType, data = value
+            recieved.append(data[0])
+        print(recieved)
+        #print(f'{np.concatenate(recieved).shape} packets received')
+
 
 
     t = threading.Thread(target=get_queue_thread, args=(end_queue,))
@@ -148,7 +151,13 @@ def test_queue():
     t.start()
 
     acqpipline.start()
-    time.sleep(10)
+    # send data
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    test_data = np.arange(0, 10e1, dtype=np.uint64)
+    test_data_view = memoryview(test_data)
+    for i in range(0, len(test_data_view), 1):
+        sock.sendto(test_data_view[i:i+1], ('127.0.0.1', 50000))
+    time.sleep(5)
     acqpipline.stop()
     end_queue.put(None)
 
