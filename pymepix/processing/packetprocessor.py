@@ -107,7 +107,7 @@ class PacketProcessor(BasePipelineObject):
     def _eventWindow(self):
         return self._min_event_window.value, self._max_event_window.value
 
-    def preRun(self):
+    def pre_run(self):
         self.info('Running with triggers? {}'.format(self._handle_events))
 
     def process(self, data_type, data):

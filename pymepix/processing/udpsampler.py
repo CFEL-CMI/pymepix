@@ -51,11 +51,12 @@ class UdpSampler(BasePipelineObject):
             self._chunk_size = chunk_size * 8192
             self._flush_timeout = flush_timeout
             self._packets_collected = 0
-            self._packet_buffer = []
-            self._bufferlength = 0
+            self._packet_buffer = bytearray(2*self._chunk_size)
+            self._packet_buffer_view = memoryview(self._packet_buffer)
+            self._recv_bytes = 0
             self._total_time = 0.0
             self._longtime = longtime
-            self._dataq = Queue()
+            self._dataq = Queue() # queue for raw2Disk
             self._record = Value(ctypes.c_bool, 0)
             self._outfile_name = 'test'
         except Exception as e:
@@ -67,12 +68,25 @@ class UdpSampler(BasePipelineObject):
         """Establishes a UDP connection to spidr"""
         self._sock = socket.socket(socket.AF_INET,  # Internet
                                    socket.SOCK_DGRAM)  # UDP
+        self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 5_500_000) # NIC buffer 5.5Mb?
         self._sock.settimeout(1.0)
         self.info('Establishing connection to : {}'.format(address))
         self._sock.bind(address)
 
-    def preRun(self):
+    def pre_run(self):
         self._last_update = time.time()
+
+    def post_run(self):
+        if len(self._packet_buffer) > 1:
+            packet = np.frombuffer(b''.join(self._packet_buffer), dtype=np.uint64)
+        else:
+            packet = np.frombuffer(self._packet_buffer[0], dtype=np.uint64)
+        if packet.size > 0:
+            if self.record:
+                self._dataq.put(packet)
+            return MessageType.RawData, (packet, self._longtime.value)
+        else:
+            return None, None
 
     def get_useful_packets(self, packet):
         # Get the header
@@ -126,9 +140,7 @@ class UdpSampler(BasePipelineObject):
         start = time.time()
         # self.debug('Reading')
         try:
-            newpacket = self._sock.recv(16384)
-            self._bufferlength += len(newpacket)
-            self._packet_buffer.append(newpacket)
+            self._recv_bytes += self._sock.recv_into(self._packet_buffer_view[self._recv_bytes:])
         except socket.timeout:
             return None, None
         except socket.error:
@@ -145,13 +157,12 @@ class UdpSampler(BasePipelineObject):
 
         flush_time = end - self._last_update
 
-        if (self._bufferlength > self._chunk_size) or (flush_time > self._flush_timeout):
-            packet = np.frombuffer(b''.join(self._packet_buffer), dtype=np.uint64)
+        if (self._recv_bytes > self._chunk_size) or (flush_time > self._flush_timeout):
+            packet = np.frombuffer(self._packet_buffer_view[:self._recv_bytes], dtype=np.uint64)
 
             # tpx_packets = self.get_useful_packets(packet)
 
-            self._packet_buffer = []
-            self._bufferlength = 0
+            self._recv_bytes = 0
             self._last_update = time.time()
             if packet.size > 0:
                 if self.record:

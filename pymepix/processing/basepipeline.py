@@ -156,12 +156,16 @@ class BasePipelineObject(multiprocessing.Process, ProcessLogger):
         time.sleep(0.1)
         return None, None
 
-    def preRun(self):
+    def pre_run(self):
         """Function called before main processing loop, override to """
         pass
 
+    def post_run(self):
+        """Function called after main processing loop, override to """
+        return None, None
+
     def run(self):
-        self.preRun()
+        self.pre_run()
         while True:
             enabled = self.enable
             try:
@@ -192,6 +196,10 @@ class BasePipelineObject(multiprocessing.Process, ProcessLogger):
                 self.error('Exception occured!!!')
                 self.error(e, exc_info=True)
                 break
+        output_type, result = self.post_run()
+        if output_type is not None and result is not None: # not quite sure what happens without "enabled"
+            self.pushOutput(output_type, result)
+
 
         self.info('Job complete')
 
