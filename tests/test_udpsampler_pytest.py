@@ -33,6 +33,7 @@ from pymepix.processing.acquisition import AcquisitionPipeline
 
 address = ('127.0.0.1', 50000)
 
+
 def test_receive():
     '''
     most basic test for receiving functionality done in UdpSampler.process
@@ -42,19 +43,19 @@ def test_receive():
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.sendto(bytes(8), address)
-    #time.sleep(0.1)
+    # time.sleep(0.1)
 
-    sampler.preRun()
-    time.sleep(0.4) # sleep for (flush_time > self._flush_timeout) to become true
+    sampler.pre_run()
+    time.sleep(0.4)  # sleep for (flush_time > self._flush_timeout) to become true
     data = sampler.process()
     assert sampler._packets_collected == 1
-    assert data[0] == 0 # should return <MessageType.RawData: 0>
-    assert data[1][1] == 1 # provided longtime gets returned
+    assert data[0] == 0  # should return <MessageType.RawData: 0>
+    assert data[1][1] == 1  # provided longtime gets returned
     assert len(data[1][0]) == 1
     assert data[1][0].sum() == 0
 
-    # send some more data but due to too short time between last check (preRun), data should not be flushed
-    sampler.preRun()
+    # send some more data but due to too short time between last check (pre_run), data should not be flushed
+    sampler.pre_run()
     sock.sendto(bytes(64), address)
     data = sampler.process()
     assert sampler._packets_collected == 2
@@ -62,7 +63,7 @@ def test_receive():
     assert data[1] == None
 
     # No new packets sent, thus socket should time-out
-    sampler.preRun()
+    sampler.pre_run()
     time.sleep(0.4)
     data = sampler.process()
     assert sampler._packets_collected == 2
@@ -70,29 +71,29 @@ def test_receive():
     assert data[1] == None
 
     # send some more data
-    sampler.preRun()
+    sampler.pre_run()
     time.sleep(0.4)
     sock.sendto(bytes(64), address)
     data = sampler.process()
     assert sampler._packets_collected == 3
-    assert data[0] == 0     # should return <MessageType.RawData: 0>
+    assert data[0] == 0  # should return <MessageType.RawData: 0>
     assert data[1][1] == 1  # provided longtime gets returned
     assert len(data[1][0]) == 16
     assert data[1][0].sum() == 0
 
     # send 10x 1
-    sampler.preRun()
+    sampler.pre_run()
     time.sleep(0.4)
-    sock.sendto(np.array(10*[1], dtype=np.uint64).tobytes(), address)
+    sock.sendto(np.array(10 * [1], dtype=np.uint64).tobytes(), address)
     data = sampler.process()
     assert sampler._packets_collected == 4
-    assert data[0] == 0     # should return <MessageType.RawData: 0>
+    assert data[0] == 0  # should return <MessageType.RawData: 0>
     assert data[1][1] == 1  # provided longtime gets returned
     assert len(data[1][0]) == 10
     assert data[1][0].sum() == 10
 
     # send 1000x 10
-    sampler.preRun()
+    sampler.pre_run()
     time.sleep(0.4)
     sock.sendto(np.array(1000 * [10], dtype=np.uint64).tobytes(), address)
     data = sampler.process()
@@ -104,7 +105,7 @@ def test_receive():
 
     # set small chunk size to test receiving data before timer is out
     sampler._chunk_size = 1
-    sampler.preRun()
+    sampler.pre_run()
     sock.sendto(np.array(1000 * [10], dtype=np.uint64).tobytes(), address)
     data = sampler.process()
     assert sampler._packets_collected == 6
@@ -112,6 +113,7 @@ def test_receive():
     assert data[1][1] == 1  # provided longtime gets returned
     assert len(data[1][0]) == 1000
     assert data[1][0].sum() == 10000
+
 
 def test_queue():
     '''
@@ -130,34 +132,42 @@ def test_queue():
     test_value = Value('I', 0)
 
     acqpipline.addStage(0, UdpSampler, address, test_value)
-    #acqpipline.addStage(2, PacketProcessor, num_processes=4)
+    # acqpipline.addStage(2, PacketProcessor, num_processes=4)
 
-    def get_queue_thread(queue):
+    def get_queue_thread(queue, packets, chunk_size):
         recieved = []
         while True:
-            value = queue.get()
-            print(value)
+            value = queue.get()  # value = (Message.Type, [array, longtime])
+            # print(value)
             if value is None:
                 break
             messType, data = value
             recieved.append(data[0])
-        print(recieved)
-        #print(f'{np.concatenate(recieved).shape} packets received')
 
+        ######
+        # do the testing
+        if len(recieved) > 1:
+            packets_recved = (f'{np.concatenate(recieved).shape} packets received')
+        else:
+            packets_recved = len(recieved[0])
+        assert packets_recved == packets * chunk_size
 
-
-    t = threading.Thread(target=get_queue_thread, args=(end_queue,))
+    chunk_size = 135  # packet size: 135*uint64 = 8640 Byte
+    packets = 7500
+    t = threading.Thread(target=get_queue_thread, args=(end_queue, packets, chunk_size))
     t.daemon = True
     t.start()
 
     acqpipline.start()
     # send data
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    test_data = np.arange(0, 10e1, dtype=np.uint64)
+    test_data = np.arange(0, packets * chunk_size, dtype=np.uint64)  # chunk size 135 -> max number=1_012_500
     test_data_view = memoryview(test_data)
-    for i in range(0, len(test_data_view), 1):
-        sock.sendto(test_data_view[i:i+1], ('127.0.0.1', 50000))
-    time.sleep(5)
+    for i in range(0, len(test_data_view), chunk_size):
+        sock.sendto(test_data_view[i:i + chunk_size], ('127.0.0.1', 50000))
+        time.sleep(0.0000001)  # if there's no sleep, packets get lost
+    print(f'packets sent: {i + chunk_size}')
+    time.sleep(10)  # permit thread time to empty queue
     acqpipline.stop()
     end_queue.put(None)
 
