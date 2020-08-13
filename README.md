@@ -1,3 +1,5 @@
+branch for implementing a ZMQ driven file writer thread called in UDPSampler
+
 # Pymepix
 
 The `pymepix` Python module provides the control and data-acquisition (DAQ) functionality. It
