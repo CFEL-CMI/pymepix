@@ -21,6 +21,7 @@
 import threading
 import zmq
 import time
+import os
 
 
 # Class to write raw data to files using ZMQ and a new thread to prevent IO blocking
@@ -43,43 +44,84 @@ class Raw2Disk():
         close(): Close the file currently in progress
         """
 
-    def __init__(self, context):
-        print(f'init {__name__}')
-
-        self.writing = False  # Keep track of whether we're currently writing a file
+    def __init__(self, context=None):
+        self.writing = True  # Keep track of whether we're currently writing a file
+        self.stop_thr = False
 
         self.sock_addr = f'inproc://filewrite-42'
-        self.my_context = context
+        self.my_context = context or zmq.Context.instance()
         self.my_sock = self.my_context.socket(zmq.PAIR)  # Paired socket allows two-way communication
         self.my_sock.bind(self.sock_addr)
 
         self.write_thr = threading.Thread(target=self._run_filewriter_thr, args=(self.sock_addr, None))
-        self.write_thr.daemon = True
+        #self.write_thr.daemon = True
         self.write_thr.start()
 
         time.sleep(1)
 
-        self.my_sock.send(b'hallo from main')
-        print(self.my_sock.recv())
-
     def _run_filewriter_thr(self, sock_addr, context=None):
         """
-        Private method that gets run in a new thread after initialization.
+        Private method that runs in a new thread after initialization.
 
         Parameters
         ----------
-        context
-            ZMQ context
         sock_addr : str
             socket address for ZMQ to bind to
+        context
+            ZMQ context
         """
-        print("This is where the magic happens...")
         context = context or zmq.Context.instance()
         sock = context.socket(zmq.PAIR)
         sock.connect(sock_addr)
 
-        print(sock.recv())
-        sock.send(b'hallo from thread')
+        # State machine etc.
+        waiting = True
+        writing = False
+        closing = False
+        shutdown = False
+
+        while not shutdown:
+            while waiting:
+                instruction = sock.recv_string()
+                if instruction == "SHUTDOWN":
+                    waiting = False
+                    shutdown = True
+                else:  # Interpret as file name / path
+                    directory, name = os.path.split(instruction)
+                    if (not os.path.exists(instruction)) and os.path.isdir(directory):
+                        # Open filehandle
+                        filehandle = open(instruction, "wb")
+                        sock.send_string("OPENED")
+                        waiting = False
+                        writing = True
+                    else:
+                        sock.send_string("INVALID")
+
+            while writing:
+                # Receive in efficient manner (noncopy with memoryview) and write to file
+                # Check for special message that indicates EOF.
+                dataframe = sock.recv(copy=False)
+                dataview = memoryview(dataframe.buffer)
+                if (len(dataview) == 3):
+                    datastring = (dataview.tobytes()).decode("utf-8")
+                    if datastring == "EOF":
+                        writing = False
+                        closing = True
+
+                if writing == True:
+                    filehandle.write(dataview)
+
+            if closing:
+                print('closing')
+                filehandle.close()
+                sock.send_string("CLOSED")
+                closing = False
+                waiting = True
+
+        # We reach this point only after "SHUTDOWN" command received
+        print("terminating file writer thread")
+        sock.close()
+        print("Goodbye")
 
     def open(self, filename):
         pass
@@ -101,11 +143,25 @@ class Raw2Disk():
         self.my_sock.close()
     """
 
+def spawn_process():
+    '''not strictly necessary, just to double check if this also works with multiprocessing'''
+    write2disk = Raw2Disk()
+    write2disk.my_sock.send_string('hallo 1')
+    print('1', write2disk.my_sock.recv())
+    write2disk.my_sock.send_string('hallo 2')
+    print('2', write2disk.my_sock.recv())
+    write2disk.my_sock.send(b'EOF')
+    print('3', write2disk.my_sock.recv())
+    time.sleep(0.5)
+    write2disk.my_sock.send_string('hallo 3')
+    print('4', write2disk.my_sock.recv())
+    write2disk.my_sock.send_string('SHUTDOWN')
+    #print(write2disk.my_sock.recv())
+    write2disk.write_thr.join()
+
 def main():
-    ctx = zmq.Context.instance()
-    sock = ctx.socket(zmq.PAIR)
-    sock.bind('inproc://test1')
-    write2disk = Raw2Disk(ctx)
+    from multiprocessing import Process
+    Process(target=spawn_process).start()
 
 if __name__ == '__main__':
     main()
