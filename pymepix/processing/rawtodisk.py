@@ -20,6 +20,7 @@
 
 import threading
 import zmq
+import time
 
 
 # Class to write raw data to files using ZMQ and a new thread to prevent IO blocking
@@ -47,18 +48,21 @@ class Raw2Disk():
 
         self.writing = False  # Keep track of whether we're currently writing a file
 
-        self.sock_addr = f'inproc://filewrite-42}'
-
+        self.sock_addr = f'inproc://filewrite-42'
+        self.my_context = context
         self.my_sock = self.my_context.socket(zmq.PAIR)  # Paired socket allows two-way communication
         self.my_sock.bind(self.sock_addr)
 
-        self.write_thr = threading.Thread(target=self._run_filewriter_thr, args=(self.my_context, self.sock_addr))
+        self.write_thr = threading.Thread(target=self._run_filewriter_thr, args=(self.sock_addr, None))
         self.write_thr.daemon = True
         self.write_thr.start()
 
         time.sleep(1)
 
-    def _run_filewriter_thr(self, context, sock_addr):
+        self.my_sock.send(b'hallo from main')
+        print(self.my_sock.recv())
+
+    def _run_filewriter_thr(self, sock_addr, context=None):
         """
         Private method that gets run in a new thread after initialization.
 
@@ -70,6 +74,12 @@ class Raw2Disk():
             socket address for ZMQ to bind to
         """
         print("This is where the magic happens...")
+        context = context or zmq.Context.instance()
+        sock = context.socket(zmq.PAIR)
+        sock.connect(sock_addr)
+
+        print(sock.recv())
+        sock.send(b'hallo from thread')
 
     def open(self, filename):
         pass
@@ -81,6 +91,7 @@ class Raw2Disk():
         pass
 
     # Destructor - called automatically when object garbage collected
+    """
     def __del__(self):
         '''Stuff to make sure sockets and files are closed...'''
         if self.writing == True:
@@ -88,3 +99,13 @@ class Raw2Disk():
         self.my_sock.send_string("SHUTDOWN")
         time.sleep(1)
         self.my_sock.close()
+    """
+
+def main():
+    ctx = zmq.Context.instance()
+    sock = ctx.socket(zmq.PAIR)
+    sock.bind('inproc://test1')
+    write2disk = Raw2Disk(ctx)
+
+if __name__ == '__main__':
+    main()
