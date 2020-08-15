@@ -78,13 +78,15 @@ class Raw2Disk():
         sock = context.socket(zmq.PAIR)
         sock.connect(sock_addr)
 
-        # State machine etc.
+        # State machine etc. local variables
         waiting = True
         writing = False
-        close_file = False
         shutdown = False
 
         while not shutdown:
+            # wait for instructions, valid commands are
+            # "SHUTDOWN": exits this loop and ends thread
+            # "filename" in the form "/filename
             while waiting:
                 instruction = sock.recv_string()
                 if instruction == "SHUTDOWN":
@@ -103,26 +105,25 @@ class Raw2Disk():
                     else:
                         sock.send_string(f"{instruction} in an INVALID command")
 
+            # start writing received data to a file
             while writing:
                 # Receive in efficient manner (noncopy with memoryview) and write to file
                 # Check for special message that indicates EOF.
-                dataframe = sock.recv(copy=False)
-                dataview = memoryview(dataframe.buffer)
+                dataview = memoryview(sock.recv(copy=False).buffer)
+                #logging.debug(dataview.tobytes())
                 if (len(dataview) == 3):
-                    if dataview.tobytes() == "EOF":
+                    if dataview.tobytes() == b'EOF':
                         logging.debug("EOF received")
                         writing = False
-                        close_file = True
 
                 if writing == True:
                     filehandle.write(dataview)
 
-            if close_file:
-                logging.debug('closing file')
-                filehandle.close()
-                sock.send_string("CLOSED")
-                close_file = False
-                waiting = True
+            # close file
+            logging.debug('closing file')
+            filehandle.close()
+            sock.send_string("CLOSED")
+            waiting = True
 
         # We reach this point only after "SHUTDOWN" command received
         logging.debug("Thread is finishing")
@@ -132,32 +133,35 @@ class Raw2Disk():
     def open_file(self, filename):
         if self.writing == False:
             self.my_sock.send_string(filename)
-            response = self.mysock.recv()  # Check reply from thread
-            if response.decode("utf-8") == "OPENED":
+            response = self.my_sock.recv_string()  # Check reply from thread
+            if response == "OPENED":
                 self.writing = True
                 return True
             else:
                 logging.WARN("File name not valid")
                 return False
         else:
-            logging.info("Already writing file!")
+            logging.warn("Already writing file!")
             return False
 
     def close(self):
         if self.writing == True:
-            self.mysock.send(b'EOF')
-            response = self.mysock.recv_string()
-            self.writing = False
+            self.my_sock.send(b'EOF')
+            response = self.my_sock.recv_string()
             if response != "CLOSED":
                 logging.WARN("Didn't get expected response when closing file")
                 return False
             else:
                 return True
         else:
-            print("Cannot close file - we are not writing anything!")
+            logging.info("Cannot close file - we are not writing anything!")
             return False
 
     def write(self, data):
+        '''Not sure how useful this function actually is...
+           It completes the interface for this class but from a performance point of view it doesn't improve things.
+           How could this be benchmarked?
+        '''
         if self.writing == True:
             self.my_sock.send(data, copy=False)
         else:
@@ -179,14 +183,75 @@ class Raw2Disk():
             logging.debug('thread already closed')
 
 
-def spawn_process():
+def main_process():
     '''not strictly necessary, just to double check if this also works with multiprocessing'''
     write2disk = Raw2Disk()
-    write2disk.my_sock.send_string('hallo 2')
+
+    ######
+    # test 0
+    write2disk.my_sock.send_string('hallo echo')
     logging.info(write2disk.my_sock.recv_string())
 
+    '''
+    these example only work if thread uses self.writing directly
+    ######
+    # test 1
+    filename = './test1.raw'
+    write2disk.my_sock.send_string(filename)
+    if write2disk.my_sock.recv_string() != 'OPENED':
+        logging.error("Huston, here's a problem, file cannot be created.")
+
+    text = b'Hallo, heute ist ein guter Tag.'
+    write2disk.my_sock.send(text)
     write2disk.my_sock.send(b'EOF')
-    logging.info(write2disk.my_sock.recv())
+    assert write2disk.my_sock.recv_string() == "CLOSED"
+    logging.debug("File closed")
+
+    with open(filename, 'rb') as f:
+        file_content = f.read()
+    assert file_content == text
+
+    ######
+    # test 2
+    filename = './test2.raw'
+    write2disk.my_sock.send_string(filename)
+    if write2disk.my_sock.recv_string() != 'OPENED':
+        logging.error("Huston, here's a problem, file cannot be created.")
+
+    text = b'Hallo, heute ist immer noch ein guter Tag.'
+    write2disk.my_sock.send(text)
+    if write2disk.close():
+        logging.debug('file closed')
+    else:
+        logging.error('something went wrong closing the file')
+
+    with open(filename, 'rb') as f:
+        file_content = f.read()
+    assert file_content == text
+    '''
+
+    ######
+    # test 3
+    filename = './test3.raw'
+
+    if write2disk.open_file(filename):
+        logging.info(f"file {filename} opened")
+    else:
+        logging.error("Huston, here's a problem, file cannot be created.")
+
+    text = b'What a nice day!'
+    write2disk.my_sock.send(text, copy=False)
+    write2disk.write(text)
+    if write2disk.close():
+        logging.info(f"File {filename} closed.")
+    else:
+        logging.error(f"File {filename} could not be closed.")
+
+    # check actual file content
+    with open(filename, 'rb') as f:
+        file_content = f.read()
+    assert file_content == text + text
+
 
     write2disk.my_sock.send_string('SHUTDOWN')
     # print(write2disk.my_sock.recv())
@@ -195,7 +260,7 @@ def spawn_process():
 
 def main():
     from multiprocessing import Process
-    Process(target=spawn_process).start()
+    Process(target=main_process).start()
 
 
 if __name__ == '__main__':
