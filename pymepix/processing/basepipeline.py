@@ -197,7 +197,7 @@ class BasePipelineObject(multiprocessing.Process, ProcessLogger):
                 self.error(e, exc_info=True)
                 break
         output_type, result = self.post_run()
-        if output_type is not None and result is not None: # not quite sure what happens without "enabled"
+        if output_type is not None and result is not None: # TODO: not quite sure what happens without "enabled"
             self.pushOutput(output_type, result)
 
 

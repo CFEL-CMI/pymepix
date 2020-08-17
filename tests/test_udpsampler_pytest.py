@@ -174,6 +174,101 @@ def test_queue():
     t.join()
     print('Done')
 
+def test_zmq():
+    '''
+    test functionality of 1st acquisition pipeline step with data been put into Queue for pixelprocesor and thread to Raw2Disk
+    '''
+    from pymepix.processing.packetprocessor import PacketProcessor
+    from multiprocessing.sharedctypes import Value
+    import time
+    import threading
+    import zmq
+    # Create the logger
+    import logging
+    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    end_queue = Queue() # queue for PacketProcessor
+
+    acqpipline = AcquisitionPipeline('Test', end_queue)
+
+    test_value = Value('I', 0)
+
+    acqpipline.addStage(0, UdpSampler, address, test_value)
+    # acqpipline.addStage(2, PacketProcessor, num_processes=4)
+
+    # take data form Queue where PacketProcessor would be sitting
+    ctx = zmq.Context.instance()
+    z_sock = ctx.socket(zmq.PAIR)
+    z_sock.bind('inproc://queueThread')
+    def get_queue_thread(queue):
+        ctx = zmq.Context.instance()
+        sock = ctx.socket(zmq.PAIR)
+        sock.connect('inproc://queueThread')
+        sock.recv_string() # receive estabishing message
+
+        received = []
+        while True:
+            value = queue.get()  # value = (Message.Type, [array, longtime])
+            # print(value)
+            if value is None:
+                break
+            messType, data = value
+            received.append(data[0])
+            time.sleep(0.01) # seems to be necessary so putting thread can place data
+        sock.send_pyobj(received)
+        time.sleep(5) # give zmq thread time to send data
+
+    chunk_size = 135  # packet size: 135*uint64 = 8640 Byte
+    packets = 3000#7500
+    t = threading.Thread(target=get_queue_thread, args=(end_queue,))
+    #t.daemon = True
+    t.start()
+    z_sock.send_string('hallo') # establish connection, seems to be necessary to first send something from binding code....
+
+    acqpipline.start()
+    fname = f'./test-{time.strftime("%Y%M%d-%H%m%S")}.raw'
+    acqpipline._stages[0]._pipeline_objects[0].outfile_name = fname
+    #acqpipline._stages[0]._pipeline_objects[0].record = 1
+
+    # send data
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    test_data = np.arange(0, packets * chunk_size, dtype=np.uint64)  # chunk size 135 -> max number=1_012_500
+    test_data_view = memoryview(test_data)
+    # first packet 0...134, second packet 135...269 and so on
+    start = time.time()
+    for i in range(0, len(test_data_view), chunk_size):
+        sock.sendto(test_data_view[i:i + chunk_size], ('127.0.0.1', 50000))
+        time.sleep(0.001)  # if there's no sleep, packets get lost
+    stop = time.time()
+    dt = stop - start
+    print(f'packets sent: {packets}, '
+          f'bytes: {len(test_data_view.tobytes())}, '
+          f'{len(test_data_view.tobytes())*1e-6/dt:.2f} MByte/s')
+
+    # finish acquisition
+    time.sleep(5)  # permit thread time to empty queue
+    acqpipline.stop()
+    end_queue.put(None)
+
+    # get data from thread and finish thread
+    received = z_sock.recv_pyobj()
+
+    ######
+    # do the testing
+    if len(received) > 1:
+        data = np.concatenate(received)
+    elif len(received) == 1:
+        data = np.asarray(received[0])
+    else:
+        print('No packets received!!!')
+        data = np.asarray([])
+
+    print(test_data)
+    # check for Queue content
+    assert np.frombuffer(data, dtype=np.uint64).all() == test_data.all()
+    assert np.frombuffer(data, dtype=np.uint64).sum() == test_data.sum()
+
+    t.join()
+    print('Done and done')
 
 if __name__ == "__main__":
-    test_queue()
+    test_zmq()

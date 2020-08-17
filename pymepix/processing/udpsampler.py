@@ -25,10 +25,11 @@ from multiprocessing.sharedctypes import Value
 import numpy as np
 import socket
 import time
+import zmq
 
 from .basepipeline import BasePipelineObject
 from .datatypes import MessageType
-from pymepix.processing.rawtodisk import raw2Disk
+from pymepix.processing.rawtodisk import Raw2Disk
 
 
 class UdpSampler(BasePipelineObject):
@@ -36,8 +37,6 @@ class UdpSampler(BasePipelineObject):
 
     This class, creates a UDP socket connection to SPIDR and recivies the UDP packets from Timepix
     It them pre-processes them and sends them off for more processing
-
-
 
     """
 
@@ -51,14 +50,17 @@ class UdpSampler(BasePipelineObject):
             self._chunk_size = chunk_size * 8192
             self._flush_timeout = flush_timeout
             self._packets_collected = 0
-            self._packet_buffer = bytearray(2*self._chunk_size)
-            self._packet_buffer_view = memoryview(self._packet_buffer)
+            self._packet_buffer_list = [bytearray(2*self._chunk_size) for i in range(10)] # ring buffer to put received data in
+            self._buffer_list_idx = 0
+            self._packet_buffer_view = memoryview(self._packet_buffer_list[self._buffer_list_idx])
             self._recv_bytes = 0
             self._total_time = 0.0
             self._longtime = longtime
-            self._dataq = Queue() # queue for raw2Disk
+
+            #self._zmq_context = zmq.context()
+            self.write2disk = Raw2Disk()
             self._record = Value(ctypes.c_bool, 0)
-            self._outfile_name = 'test'
+            #self._outfile_name = None
         except Exception as e:
             self.error('Exception occured in init!!!')
             self.error(e, exc_info=True)
@@ -68,7 +70,7 @@ class UdpSampler(BasePipelineObject):
         """Establishes a UDP connection to spidr"""
         self._sock = socket.socket(socket.AF_INET,  # Internet
                                    socket.SOCK_DGRAM)  # UDP
-        self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 5_500_000) # NIC buffer 5.5Mb?
+        self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 5_500_000) # TODO: change for BT NIC buffer 5.5Mb?
         self._sock.settimeout(1.0)
         self.info('Establishing connection to : {}'.format(address))
         self._sock.bind(address)
@@ -77,14 +79,11 @@ class UdpSampler(BasePipelineObject):
         self._last_update = time.time()
 
     def post_run(self):
-        if len(self._packet_buffer) > 1:
-            packet = np.frombuffer(b''.join(self._packet_buffer), dtype=np.uint64)
-        else:
-            packet = np.frombuffer(self._packet_buffer[0], dtype=np.uint64)
-        if packet.size > 0:
-            if self.record:
-                self._dataq.put(packet)
-            return MessageType.RawData, (packet, self._longtime.value)
+        if self._recv_bytes > 1:
+            #if self.record:
+            #    self.write2disk.my_sock.send(self._packet_buffer_view[:self._recv_bytes], copy=False)
+            return MessageType.RawData, (self._packet_buffer_list[self._buffer_list_idx][:self._recv_bytes], self._longtime.value)
+            #return MessageType.RawData, (self._packet_buffer_view[:self._recv_bytes].tobytes(), self._longtime.value)
         else:
             return None, None
 
@@ -131,10 +130,10 @@ class UdpSampler(BasePipelineObject):
     @outfile_name.setter
     def outfile_name(self, fileN):
         self.info(f'Setting file name flag to {fileN}')
-        # start raw2Disk
-        self._outfile_name = fileN
-        self.stopRaw2Disk()
-        self.startRaw2Disk()
+        if self.write2disk.open_file(fileN):
+            self.info(f"file {fileN} opened")
+        else:
+            self.error("Huston, here's a problem, file cannot be created.")
 
     def process(self, data_type=None, data=None):
         start = time.time()
@@ -158,36 +157,32 @@ class UdpSampler(BasePipelineObject):
         flush_time = end - self._last_update
 
         if (self._recv_bytes > self._chunk_size) or (flush_time > self._flush_timeout):
-            packet = np.frombuffer(self._packet_buffer_view[:self._recv_bytes], dtype=np.uint64)
+            #packet = np.frombuffer(self._packet_buffer_view[:self._recv_bytes], dtype=np.uint64) # TODO: put this in packet processor
+            #print(packet)
 
             # tpx_packets = self.get_useful_packets(packet)
 
+            bytes_to_send = self._recv_bytes
             self._recv_bytes = 0
+            curr_list_idx = self._buffer_list_idx
+            print(curr_list_idx)
+            self._buffer_list_idx = (self._buffer_list_idx + 1) % len(self._packet_buffer_list)
+            self._packet_buffer_view = memoryview(self._packet_buffer_list[self._buffer_list_idx])
             self._last_update = time.time()
-            if packet.size > 0:
-                if self.record:
-                    self._dataq.put(packet)
-                return MessageType.RawData, (packet, self._longtime.value)
-            else:
-                return None, None
+            #if len(packet) > 1:
+            #if self.record:
+            #    self.write2disk.my_sock.send(self._packet_buffer[:bytes_to_send], copy=False)
+            return MessageType.RawData, (self._packet_buffer_list[curr_list_idx][:bytes_to_send], self._longtime.value)
+            #else:
+            #    return None, None
         else:
             return None, None
 
-    def startRaw2Disk(self):
-        self.info(f'start raw2Disk process')
-
-        # generate worker to save the data directly to disk
-        self._raw2Disk = raw2Disk(dataq=self._dataq, fileN=self.outfile_name)
-        self._raw2Disk.enable = True
-        self._raw2Disk.start()
 
     def stopRaw2Disk(self):
-        self.info(f'stopping raw2Disk process')
-        self._raw2Disk.enable = False
-        self._raw2Disk.join(5.0)  # give it a chance to empty some more of the queue
-        self._raw2Disk.terminate()
-        self._raw2Disk.join()
-
-        while not self._dataq.empty():
-            self._dataq.get()
-        self.info('Process Raw2Disk stop complete')
+        self.debug('Stopping Raw2Disk')
+        self.write2disk.close()
+        self.write2disk.my_sock.send_string('SHUTDOWN')
+        # print(write2disk.my_sock.recv())
+        self.write2disk.write_thr.join()
+        self.debug('Raw2Disk stopped')

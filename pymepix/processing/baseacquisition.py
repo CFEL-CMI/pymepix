@@ -146,8 +146,6 @@ class AcquisitionStage(Logger):
     def start(self):
         for p in self._pipeline_objects:
             p.start()
-            if p.name.find('UdpSampler-') > -1:
-                p.startRaw2Disk()
 
     def stop(self, force=False):
         self.info('Stopping stage {}'.format(self.stage))
