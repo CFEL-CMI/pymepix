@@ -18,22 +18,29 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 
 
-author = 'CFEL Controlled Molecule Imaging group'
-copyright = '2018–2020 CFEL Controlled Molecule Imaging group <cmidaq@desy.de>'
-name = 'pymepix'
-project = name
-version = '1.1.dev0'
-release = version
-
 import os
 import sys
+import pathlib
+
+# accessing the setup.py file to get current information about the project
+# first crude way to get insight. importlib.util.spec_from_file_location didn't work as I hoped
+current_path = pathlib.Path(__file__).parent.absolute()
+path = current_path.parent.joinpath("setup.py")
+name, project, version, release, author, copyright = [None] * 6
+desired = ['copyright', 'project', 'name', 'version', 'release', 'author']
+
+with open(path, 'r') as f:
+    for i, line in enumerate(f):
+        line = line.strip()
+        line_list = line.split()
+        if len(line_list) > 0 and line_list[0] in desired:
+            exec(line)
+            desired.remove(line_list[0])
 
 sys.path.insert(0, os.path.abspath('../../lib/'))
 print(sys.path)
 
 # -- General configuration ------------------------------------------------
-
-author = 'CFEL Controlled Molecule Imaging group'
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #
