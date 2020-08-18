@@ -48,6 +48,7 @@ class Raw2Disk(Logger):
         Logger.__init__(self, 'Raw2Disk')
 
         self.writing = False  # Keep track of whether we're currently writing a file
+        print(f'init {id(self.writing)}')
         self.stop_thr = False
 
         self.sock_addr = f'inproc://filewrite-42'
@@ -103,7 +104,7 @@ class Raw2Disk(Logger):
                     else:
                         sock.send_string(f"{instruction} in an INVALID command")
 
-            # start writing received data to a file
+            # start writing received data to a file)
             while writing:
                 # Receive in efficient manner (noncopy with memoryview) and write to file
                 # Check for special message that indicates EOF.
@@ -129,17 +130,25 @@ class Raw2Disk(Logger):
         self.debug("Thread is finished")
 
     def open_file(self, filename):
+        a = True
+        print('id a ', id(a))
+        a = False
+        print('id b ', id(a))
+        print('id true ', id(True))
+        print('id false ', id(False))
+        print(f'open_file 1 {id(self.writing)}')
         if self.writing == False:
             self.my_sock.send_string(filename)
             response = self.my_sock.recv_string()  # Check reply from thread
             if response == "OPENED":
                 self.writing = True
+                print(f'open_file 2 {id(self.writing)}')
                 return True
             else:
-                self.warn("File name not valid")
+                self.warning("File name not valid")
                 return False
         else:
-            self.warn("Already writing file!")
+            self.warning("Already writing file!")
             return False
 
     def close(self):
@@ -147,7 +156,7 @@ class Raw2Disk(Logger):
             self.my_sock.send(b'EOF')
             response = self.my_sock.recv_string()
             if response != "CLOSED":
-                self.warn("Didn't get expected response when closing file")
+                self.warning("Didn't get expected response when closing file")
                 return False
             else:
                 return True
@@ -163,7 +172,7 @@ class Raw2Disk(Logger):
         if self.writing == True:
             self.my_sock.send(data, copy=False)
         else:
-            self.warn("Cannot write data - file not open")
+            self.warning("Cannot write data - file not open")
             return False
 
     # Destructor - called automatically when object garbage collected
