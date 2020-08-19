@@ -195,6 +195,7 @@ def test_zmq():
     acqpipline.addStage(0, UdpSampler, address, test_value)
     # acqpipline.addStage(2, PacketProcessor, num_processes=4)
 
+    ###############
     # take data form Queue where PacketProcessor would be sitting
     ctx = zmq.Context.instance()
     z_sock = ctx.socket(zmq.PAIR)
@@ -213,12 +214,12 @@ def test_zmq():
                 break
             messType, data = value
             received.append(data[0])
-            time.sleep(0.01) # seems to be necessary so putting thread can place data
+            time.sleep(0.001)  # seems to be necessary so putting thread can place data
         sock.send_pyobj(received)
         time.sleep(5) # give zmq thread time to send data
 
     chunk_size = 135  # packet size: 135*uint64 = 8640 Byte
-    packets = 1#7500
+    packets = 10000#7500
     t = threading.Thread(target=get_queue_thread, args=(end_queue,))
     #t.daemon = True
     t.start()
@@ -234,9 +235,11 @@ def test_zmq():
         print(f'file {fname} opened')
     else:
         print(f'did not open {res}')
+    time.sleep(1)  # give pipeline time to get started
 
     #acqpipline._stages[0]._pipeline_objects[0].record = 1
 
+    ############
     # send data
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     test_data = np.arange(0, packets * chunk_size, dtype=np.uint64)  # chunk size 135 -> max number=1_012_500
@@ -245,13 +248,14 @@ def test_zmq():
     start = time.time()
     for i in range(0, len(test_data_view), chunk_size):
         sock.sendto(test_data_view[i:i + chunk_size], ('127.0.0.1', 50000))
-        time.sleep(0.001)  # if there's no sleep, packets get lost
+        time.sleep(0.0001)  # if there's no sleep, packets get lost
     stop = time.time()
     dt = stop - start
     print(f'packets sent: {packets}, '
           f'bytes: {len(test_data_view.tobytes())}, '
           f'{len(test_data_view.tobytes())*1e-6/dt:.2f} MByte/s')
 
+    ###########
     # finish acquisition
     time.sleep(5)  # permit thread time to empty queue
     acqpipline._stages[0]._pipeline_objects[0].record = 0
@@ -261,6 +265,7 @@ def test_zmq():
     end_queue.put(None)
 
     # get data from thread and finish thread
+    print('waiting for queue thread')
     received = z_sock.recv_pyobj()
 
     ######
@@ -273,10 +278,14 @@ def test_zmq():
         print('No packets received!!!')
         data = np.asarray([])
 
-    print(test_data)
+    print('data we got:')
+    print(np.frombuffer(data, dtype=np.uint64).shape, test_data.shape)
     # check for Queue content
     assert np.frombuffer(data, dtype=np.uint64).all() == test_data.all()
     assert np.frombuffer(data, dtype=np.uint64).sum() == test_data.sum()
+    assert np.frombuffer(data, dtype=np.uint64).shape == test_data.shape
+    # check for data in file
+    assert np.fromfile(fname, dtype=np.uint64).all() == test_data.all()
 
     t.join()
     print('Done and done')

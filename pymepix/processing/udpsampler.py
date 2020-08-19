@@ -129,23 +129,22 @@ class UdpSampler(BasePipelineObject):
         self.write2disk = Raw2Disk()
 
     def post_run(self):
-        print('\n\npost_run\n\n')
         if self._recv_bytes > 1:
-            self.debug('sending data from post_run...')
             self.write2disk.my_sock.send(
                 self._packet_buffer_list[self._buffer_list_idx][:self._recv_bytes], copy=False)
-            self.write2disk.close()
-            self.debug('post_run: close file')
-            #if self.record:
-            #    self.write2disk.my_sock.send(self._packet_buffer_view[:self._recv_bytes], copy=False)
+            if self.write2disk.writing:
+                self.write2disk.my_sock.send(b'EOF')  # we should get a response here, this ends up in nirvana at this point
+                self.debug('post_run: closed file')
             return MessageType.RawData, (
                 self._packet_buffer_list[self._buffer_list_idx][:self._recv_bytes], self._longtime.value)
             #return MessageType.RawData, (self._packet_buffer_view[:self._recv_bytes].tobytes(), self._longtime.value)
         else:
-            self.debug('post_run: close file')
-            self.write2disk.my_sock.send(b'EOF') # we should get a response here, but the socket is elsewhere...
-            self.debug('post_run: closed file')
+            if self.write2disk.writing:
+                self.debug('post_run: close file')
+                self.write2disk.my_sock.send(b'EOF')  # we should get a response here, but the socket is elsewhere...
+                self.debug('post_run: closed file')
             return None, None
+
 
     def process(self, data_type=None, data=None):
         start = time.time()

@@ -120,22 +120,20 @@ class Raw2Disk(Logger):
                     if data_view.tobytes() == b'EOF':
                         self.debug("EOF received")
                         writing = False
+                        self.writing = False
 
                 if writing == True:
-                    print('writing to file:')
                     #print(np.frombuffer(data_view, dtype=np.uint64))
                     filehandle.write(data_view)
 
             # close file
             if filehandle is not None:
-                print('\n\n closing file\n\n')
                 self.debug('closing file')
                 filehandle.flush()
                 filehandle.close()
                 self.debug('file closed')
                 z_sock.send_string("CLOSED")
                 filehandle = None
-            print('back to waiting')
             waiting = True
 
         # We reach this point only after "SHUTDOWN" command received
