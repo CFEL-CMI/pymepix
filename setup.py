@@ -20,10 +20,10 @@
 # You should have received a copy of the GNU General Public License along with this program. If not,
 # see <https://www.gnu.org/licenses/>.
 
-author = 'CFEL Controlled Molecule Imaging group'
-copyright = '2018–2020 CFEL-CMI <cmidaq@desy.de>'
-name = 'pymepix'
-version = '1.1.dev0'
+author = 'CFEL Controlled Molecule Imaging group FooBar'
+copyright = '2018–2020 CFEL-CMI <cmidaq@desy.de> FooBar'
+name = 'pymepix FooBar'
+version = '1.1.dev0 FooBar'
 release = version
 
 

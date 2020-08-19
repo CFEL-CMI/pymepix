@@ -22,8 +22,9 @@ import os
 import sys
 import pathlib
 
+# somewhat helpful for debugging: https://readthedocs.org/projects/pymepix/builds
 # accessing the setup.py file to get current information about the project
-name, project, version, release, author, copyright = [None] * 6
+name, project, version, release, author, copyright = [''] * 6
 desired = ['copyright', 'project', 'name', 'version', 'release', 'author']
 
 # importlib.util.spec_from_file_location didn't work as I hoped it would
@@ -37,8 +38,13 @@ with open(setup_path, 'r') as f:
         line = line.strip()
         line_list = line.split()
         if len(line_list) > 0 and line_list[0] in desired:
-            exec(line)
+            try:
+                exec(line)
+            except Exception:
+                print(i, line)
+                print(type(line))
             desired.remove(line_list[0])
+project = name
 
 sys.path.insert(0, os.path.abspath('../../lib/'))
 print(sys.path)
