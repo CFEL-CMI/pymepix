@@ -23,13 +23,16 @@ import sys
 import pathlib
 
 # accessing the setup.py file to get current information about the project
-# first crude way to get insight. importlib.util.spec_from_file_location didn't work as I hoped
-current_path = pathlib.Path(__file__).parent.absolute()
-path = current_path.parent.joinpath("setup.py")
 name, project, version, release, author, copyright = [None] * 6
 desired = ['copyright', 'project', 'name', 'version', 'release', 'author']
 
-with open(path, 'r') as f:
+# importlib.util.spec_from_file_location didn't work as I hoped it would
+# first get the path of the setup.py file
+current_path = pathlib.Path(__file__).parent.absolute()
+setup_path = current_path.parent.joinpath("setup.py")
+
+#  access setup.py as text file to find the necessary lines, then execute those
+with open(setup_path, 'r') as f:
     for i, line in enumerate(f):
         line = line.strip()
         line_list = line.split()
