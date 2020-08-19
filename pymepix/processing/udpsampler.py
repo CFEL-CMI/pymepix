@@ -20,12 +20,10 @@
 #
 ##############################################################################
 import ctypes
-from multiprocessing import Queue
 from multiprocessing.sharedctypes import Value
-import numpy as np
+from multiprocessing import Array
 import socket
 import time
-import zmq
 
 from .basepipeline import BasePipelineObject
 from .datatypes import MessageType
@@ -62,6 +60,9 @@ class UdpSampler(BasePipelineObject):
             print(f'init {__name__} id write2disk {id(self.write2disk)} '
                   f'id writing {id(self.write2disk.writing)}={self.write2disk.writing}')
             self._record = Value(ctypes.c_bool, 0)
+            # https://stackoverflow.com/questions/16484764/multiprocessing-value-clear-syntax/16485061#16485061
+            self._out_file = Array(ctypes.c_wchar, './run0001_20200819-092334.raw')
+            #Value(ctypes.c_wchar_p, 'init value') # didn't work
             #self._outfile_name = None
         except Exception as e:
             self.error('Exception occured in init!!!')
@@ -78,9 +79,11 @@ class UdpSampler(BasePipelineObject):
         self._sock.bind(address)
 
     def pre_run(self):
+        #self.write2disk = Raw2Disk()
         print(f'pre_run {__name__} id write2disk {id(self.write2disk)} '
               f'id writing {id(self.write2disk.writing)}={self.write2disk.writing}')
         self._last_update = time.time()
+        self.debug(f'pre-run {__name__} {self._out_file[:]}')
 
     def post_run(self):
         if self._recv_bytes > 1:
@@ -132,14 +135,18 @@ class UdpSampler(BasePipelineObject):
         return self._outfile_name
 
     @outfile_name.setter
-    def outfile_name(self, fileN):
-        self.info(f'Setting file name flag to {fileN}')
+    def outfile_name(self, filename):
+        self.info(f'Setting file name flag to {filename}')
+        self.debug(f'currently {self._out_file[:]}')
+        self._out_file[:] = filename
+        '''
         if self.write2disk.open_file(fileN):
             self.info(f"file {fileN} opened")
         else:
             self.error("Huston, here's a problem, file cannot be created.")
         print(f'outfile_name {__name__} id write2disk {id(self.write2disk)} '
               f'id writing {id(self.write2disk.writing)}={self.write2disk.writing}')
+        '''
 
     def process(self, data_type=None, data=None):
         start = time.time()

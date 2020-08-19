@@ -218,14 +218,14 @@ def test_zmq():
         time.sleep(5) # give zmq thread time to send data
 
     chunk_size = 135  # packet size: 135*uint64 = 8640 Byte
-    packets = 3000#7500
+    packets = 1#7500
     t = threading.Thread(target=get_queue_thread, args=(end_queue,))
     #t.daemon = True
     t.start()
     z_sock.send_string('hallo') # establish connection, seems to be necessary to first send something from binding code....
 
     acqpipline.start()
-    fname = f'./test-{time.strftime("%Y%M%d-%H%m%S")}.raw'
+    fname = f'./run0003-{time.strftime("%Y%M%d-%H%m%S")}.raw'
     acqpipline._stages[0]._pipeline_objects[0].outfile_name = fname
     print(f'test is {__name__} {id(acqpipline._stages[0]._pipeline_objects[0].write2disk.writing)}:',
           acqpipline._stages[0]._pipeline_objects[0].write2disk.writing)

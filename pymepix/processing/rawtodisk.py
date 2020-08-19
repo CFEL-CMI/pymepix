@@ -60,6 +60,9 @@ class Raw2Disk(Logger):
         # self.write_thr.daemon = True
         self.write_thr.start()
 
+        print(f'init {__name__} id write2disk {id(self)} '
+              f'id writing {id(self.writing)}={self.writing}')
+
         time.sleep(1)
 
     def _run_filewriter_thr(self, sock_addr, context=None):
@@ -81,6 +84,7 @@ class Raw2Disk(Logger):
         waiting = True
         writing = False
         shutdown = False
+        filehandle = None
 
         while not shutdown:
             # wait for instructions, valid commands are
@@ -116,13 +120,14 @@ class Raw2Disk(Logger):
                         writing = False
 
                 if writing == True:
-                    filehandle.write(data_view)
+                    filehandel.write(data_view)
 
             # close file
-            self.debug('closing file')
-            filehandle.close()
-            sock.send_string("CLOSED")
-            waiting = True
+            if filehandle is not None:
+                self.debug('closing file')
+                filehandel.close()
+                sock.send_string("CLOSED")
+                waiting = True
 
         # We reach this point only after "SHUTDOWN" command received
         self.debug("Thread is finishing")
@@ -130,13 +135,8 @@ class Raw2Disk(Logger):
         self.debug("Thread is finished")
 
     def open_file(self, filename):
-        a = True
-        print('id a ', id(a))
-        a = False
-        print('id b ', id(a))
-        print('id true ', id(True))
-        print('id false ', id(False))
-        print(f'open_file 1 {id(self.writing)}')
+        print(f'open_file {__name__} id write2disk {id(self)} '
+              f'id writing {id(self.writing)}={self.writing}')
         if self.writing == False:
             self.my_sock.send_string(filename)
             response = self.my_sock.recv_string()  # Check reply from thread
