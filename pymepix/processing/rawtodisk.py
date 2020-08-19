@@ -23,6 +23,7 @@ import zmq
 import time
 import os
 from pymepix.core.log import Logger
+import numpy as np
 
 # Class to write raw data to files using ZMQ and a new thread to prevent IO blocking
 class Raw2Disk(Logger):
@@ -50,7 +51,7 @@ class Raw2Disk(Logger):
         self.writing = False  # Keep track of whether we're currently writing a file
         self.stop_thr = False
 
-        self.sock_addr = f'inproc://filewrite-42'
+        self.sock_addr = f'inproc://filewrite-43'
         self.my_context = context or zmq.Context.instance()
         self.my_sock = self.my_context.socket(zmq.PAIR)  # Paired socket allows two-way communication
         self.my_sock.bind(self.sock_addr)
@@ -73,20 +74,25 @@ class Raw2Disk(Logger):
             ZMQ context
         """
         context = context or zmq.Context.instance()
-        sock = context.socket(zmq.PAIR)
-        sock.connect(sock_addr)
+        # socket for communication with UDPSampler
+        inproc_sock = context.socket(zmq.PAIR)
+        inproc_sock.connect(sock_addr)
+        # socket for cummunication with main
+        z_sock = context.socket(zmq.PAIR)
+        z_sock.connect('tcp://127.0.0.1:40000')
 
         # State machine etc. local variables
         waiting = True
         writing = False
         shutdown = False
+        filehandle = None
 
         while not shutdown:
             # wait for instructions, valid commands are
             # "SHUTDOWN": exits this loop and ends thread
             # "filename" in the form "/filename
             while waiting:
-                instruction = sock.recv_string()
+                instruction = z_sock.recv_string()
                 if instruction == "SHUTDOWN":
                     self.debug("SHUTDOWN received")
                     waiting = False
@@ -97,57 +103,72 @@ class Raw2Disk(Logger):
                         self.debug(f"File {instruction} opening")
                         # Open filehandle
                         filehandle = open(instruction, "wb")
-                        sock.send_string("OPENED")
+                        z_sock.send_string("OPENED")
                         waiting = False
                         writing = True
+                        self.writing = True
                     else:
-                        sock.send_string(f"{instruction} in an INVALID command")
+                        z_sock.send_string(f"{instruction} in an INVALID command")
 
             # start writing received data to a file
             while writing:
                 # Receive in efficient manner (noncopy with memoryview) and write to file
                 # Check for special message that indicates EOF.
-                data_view = memoryview(sock.recv(copy=False).buffer)
-                self.debug(data_view.tobytes())
+                data_view = memoryview(inproc_sock.recv(copy=False).buffer)
+                #self.debug(f'got {data_view.tobytes()}')
                 if (len(data_view) == 3):
                     if data_view.tobytes() == b'EOF':
                         self.debug("EOF received")
                         writing = False
 
                 if writing == True:
+                    print('writing to file:')
+                    #print(np.frombuffer(data_view, dtype=np.uint64))
                     filehandle.write(data_view)
 
             # close file
-            self.debug('closing file')
-            filehandle.close()
-            sock.send_string("CLOSED")
+            if filehandle is not None:
+                print('\n\n closing file\n\n')
+                self.debug('closing file')
+                filehandle.flush()
+                filehandle.close()
+                self.debug('file closed')
+                z_sock.send_string("CLOSED")
+                filehandle = None
+            print('back to waiting')
             waiting = True
 
         # We reach this point only after "SHUTDOWN" command received
         self.debug("Thread is finishing")
-        sock.close()
+        z_sock.close()
+        inproc_sock.close()
         self.debug("Thread is finished")
 
-    def open_file(self, filename):
+    def open_file(self, socket, filename):
+        '''
+        this doesn't work anylonger using 2 sockets for the communication
+        functionality needs to be put outside where you have access to the socket
+        '''
         if self.writing == False:
-            self.my_sock.send_string(filename)
-            response = self.my_sock.recv_string()  # Check reply from thread
+            socket.send_string(filename)
+            response = socket.recv_string()  # Check reply from thread
             if response == "OPENED":
                 self.writing = True
                 return True
             else:
-                self.warn("File name not valid")
+                self.warning("File name not valid")
                 return False
         else:
-            self.warn("Already writing file!")
+            self.warning("Already writing file!")
             return False
 
-    def close(self):
+    def close(self, socket):
+        '''call in main below'''
         if self.writing == True:
             self.my_sock.send(b'EOF')
-            response = self.my_sock.recv_string()
+            response = socket.recv_string()
             if response != "CLOSED":
-                self.warn("Didn't get expected response when closing file")
+                self.warning("Didn't get expected response when closing file")
                 return False
             else:
                 return True
@@ -163,7 +184,7 @@ class Raw2Disk(Logger):
         if self.writing == True:
             self.my_sock.send(data, copy=False)
         else:
-            self.warn("Cannot write data - file not open")
+            self.warning("Cannot write data - file not open")
             return False
 
     # Destructor - called automatically when object garbage collected
@@ -182,19 +203,27 @@ class Raw2Disk(Logger):
 
 
 def main_process():
+    '''
+    seperate process not strictly necessary, just to double check if this also works with multiprocessing
+    doesn't work for debugging
+    '''
     # Create the logger
     import logging
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-    '''not strictly necessary, just to double check if this also works with multiprocessing'''
-    write2disk = Raw2Disk()
+    # zmq socket for communication with write2disk thread
+    ctx = zmq.Context.instance()
+    z_sock = ctx.socket(zmq.PAIR)
+    z_sock.bind('tcp://127.0.0.1:40000')
 
+    write2disk = Raw2Disk()
+    '''
     ######
     # test 0
     write2disk.my_sock.send_string('hallo echo')
     logging.info(write2disk.my_sock.recv_string())
 
-    '''
+    
     these example only work if thread uses self.writing directly
     ######
     # test 1
@@ -234,17 +263,18 @@ def main_process():
 
     ######
     # test 3
-    filename = './test3.raw'
+    print('test 3')
 
-    if write2disk.open_file(filename):
-        logging.info(f"file {filename} opened")
+    filename = './test3.raw'
+    if write2disk.open_file(z_sock, filename):
+        print(f"file {filename} opened")
     else:
-        logging.error("Huston, here's a problem, file cannot be created.")
+        print("Huston, here's a problem, file cannot be created.")
 
     text = b'What a nice day!'
     write2disk.my_sock.send(text, copy=False)
     write2disk.write(text)
-    if write2disk.close():
+    if write2disk.close(z_sock):
         logging.info(f"File {filename} closed.")
     else:
         logging.error(f"File {filename} could not be closed.")
@@ -255,14 +285,15 @@ def main_process():
     assert file_content == text + text
 
 
-    write2disk.my_sock.send_string('SHUTDOWN')
+    z_sock.send_string('SHUTDOWN')
     # print(write2disk.my_sock.recv())
     write2disk.write_thr.join()
 
 
 def main():
-    from multiprocessing import Process
-    Process(target=main_process).start()
+    #from multiprocessing import Process
+    #Process(target=main_process).start()
+    main_process()
 
 
 if __name__ == '__main__':

@@ -218,15 +218,23 @@ def test_zmq():
         time.sleep(5) # give zmq thread time to send data
 
     chunk_size = 135  # packet size: 135*uint64 = 8640 Byte
-    packets = 3000#7500
+    packets = 1#7500
     t = threading.Thread(target=get_queue_thread, args=(end_queue,))
     #t.daemon = True
     t.start()
     z_sock.send_string('hallo') # establish connection, seems to be necessary to first send something from binding code....
 
     acqpipline.start()
-    fname = f'./test-{time.strftime("%Y%M%d-%H%m%S")}.raw'
-    acqpipline._stages[0]._pipeline_objects[0].outfile_name = fname
+    fname = f'./test-{time.strftime("%Y%m%d-%H%M%S")}.raw'
+    #acqpipline._stages[0]._pipeline_objects[0].outfile_name = fname
+    acqpipline._stages[0]._pipeline_objects[0].record = 1
+    acqpipline._stages[0].z_sock.send_string(fname)
+    res = acqpipline._stages[0].z_sock.recv_string()
+    if res == 'OPENED':
+        print(f'file {fname} opened')
+    else:
+        print(f'did not open {res}')
+
     #acqpipline._stages[0]._pipeline_objects[0].record = 1
 
     # send data
@@ -246,6 +254,9 @@ def test_zmq():
 
     # finish acquisition
     time.sleep(5)  # permit thread time to empty queue
+    acqpipline._stages[0]._pipeline_objects[0].record = 0
+    res = acqpipline._stages[0].z_sock.send_string("SHUTDOWN")
+    time.sleep(1)
     acqpipline.stop()
     end_queue.put(None)
 

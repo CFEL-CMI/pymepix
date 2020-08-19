@@ -26,6 +26,7 @@ import numpy as np
 import socket
 import time
 import zmq
+import os
 
 from .basepipeline import BasePipelineObject
 from .datatypes import MessageType
@@ -58,7 +59,7 @@ class UdpSampler(BasePipelineObject):
             self._longtime = longtime
 
             #self._zmq_context = zmq.context()
-            self.write2disk = Raw2Disk()
+            #self.write2disk = Raw2Disk()
             self._record = Value(ctypes.c_bool, 0)
             #self._outfile_name = None
         except Exception as e:
@@ -74,18 +75,6 @@ class UdpSampler(BasePipelineObject):
         self._sock.settimeout(1.0)
         self.info('Establishing connection to : {}'.format(address))
         self._sock.bind(address)
-
-    def pre_run(self):
-        self._last_update = time.time()
-
-    def post_run(self):
-        if self._recv_bytes > 1:
-            #if self.record:
-            #    self.write2disk.my_sock.send(self._packet_buffer_view[:self._recv_bytes], copy=False)
-            return MessageType.RawData, (self._packet_buffer_list[self._buffer_list_idx][:self._recv_bytes], self._longtime.value)
-            #return MessageType.RawData, (self._packet_buffer_view[:self._recv_bytes].tobytes(), self._longtime.value)
-        else:
-            return None, None
 
     def get_useful_packets(self, packet):
         # Get the header
@@ -135,6 +124,29 @@ class UdpSampler(BasePipelineObject):
         else:
             self.error("Huston, here's a problem, file cannot be created.")
 
+    def pre_run(self):
+        self._last_update = time.time()
+        self.write2disk = Raw2Disk()
+
+    def post_run(self):
+        print('\n\npost_run\n\n')
+        if self._recv_bytes > 1:
+            self.debug('sending data from post_run...')
+            self.write2disk.my_sock.send(
+                self._packet_buffer_list[self._buffer_list_idx][:self._recv_bytes], copy=False)
+            self.write2disk.close()
+            self.debug('post_run: close file')
+            #if self.record:
+            #    self.write2disk.my_sock.send(self._packet_buffer_view[:self._recv_bytes], copy=False)
+            return MessageType.RawData, (
+                self._packet_buffer_list[self._buffer_list_idx][:self._recv_bytes], self._longtime.value)
+            #return MessageType.RawData, (self._packet_buffer_view[:self._recv_bytes].tobytes(), self._longtime.value)
+        else:
+            self.debug('post_run: close file')
+            self.write2disk.my_sock.send(b'EOF') # we should get a response here, but the socket is elsewhere...
+            self.debug('post_run: closed file')
+            return None, None
+
     def process(self, data_type=None, data=None):
         start = time.time()
         # self.debug('Reading')
@@ -170,8 +182,12 @@ class UdpSampler(BasePipelineObject):
             self._packet_buffer_view = memoryview(self._packet_buffer_list[self._buffer_list_idx])
             self._last_update = time.time()
             #if len(packet) > 1:
-            #if self.record:
-            #    self.write2disk.my_sock.send(self._packet_buffer[:bytes_to_send], copy=False)
+            if self.record:
+                print('send from processing')
+                self.write2disk.my_sock.send(self._packet_buffer_list[curr_list_idx][:bytes_to_send], copy=False)
+            else:
+                print('close file')
+                self.write2disk.close()
             return MessageType.RawData, (self._packet_buffer_list[curr_list_idx][:bytes_to_send], self._longtime.value)
             #else:
             #    return None, None
@@ -180,9 +196,12 @@ class UdpSampler(BasePipelineObject):
 
 
     def stopRaw2Disk(self):
+        # TODO: this doesn't work for now. should probably go to post_run
+        '''
         self.debug('Stopping Raw2Disk')
         self.write2disk.close()
         self.write2disk.my_sock.send_string('SHUTDOWN')
         # print(write2disk.my_sock.recv())
         self.write2disk.write_thr.join()
         self.debug('Raw2Disk stopped')
+        '''

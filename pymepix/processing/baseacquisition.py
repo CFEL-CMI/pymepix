@@ -24,7 +24,7 @@
 
 from pymepix.core.log import Logger
 from multiprocessing import Queue
-
+import zmq
 
 class AcquisitionStage(Logger):
     """Defines a single acquisition stage
@@ -55,6 +55,11 @@ class AcquisitionStage(Logger):
 
         self._args = []
         self._kwargs = {}
+
+        # zmq socket for communication with write2disk thread
+        ctx = zmq.Context.instance()
+        self.z_sock = ctx.socket(zmq.PAIR)
+        self.z_sock.bind('tcp://127.0.0.1:40000')
 
     @property
     def stage(self):
