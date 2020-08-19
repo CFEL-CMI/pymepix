@@ -227,10 +227,7 @@ def test_zmq():
     acqpipline.start()
     fname = f'./test-{time.strftime("%Y%M%d-%H%m%S")}.raw'
     acqpipline._stages[0]._pipeline_objects[0].outfile_name = fname
-    print(f'test is {__name__} {id(acqpipline._stages[0]._pipeline_objects[0].write2disk.writing)}:',
-          acqpipline._stages[0]._pipeline_objects[0].write2disk.writing)
     #acqpipline._stages[0]._pipeline_objects[0].record = 1
-    time.sleep(1)
 
     # send data
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

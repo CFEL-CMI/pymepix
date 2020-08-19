@@ -35,7 +35,7 @@ from pymepix.processing.rawtodisk import Raw2Disk
 class UdpSampler(BasePipelineObject):
     """Recieves udp packets from SPDIR
 
-    This class, creates a UDP socket connection to SPIDR and receives the UDP packets from Timepix
+    This class, creates a UDP socket connection to SPIDR and recivies the UDP packets from Timepix
     It them pre-processes them and sends them off for more processing
 
     """
@@ -59,8 +59,6 @@ class UdpSampler(BasePipelineObject):
 
             #self._zmq_context = zmq.context()
             self.write2disk = Raw2Disk()
-            print(f'init {__name__} id write2disk {id(self.write2disk)} '
-                  f'id writing {id(self.write2disk.writing)}={self.write2disk.writing}')
             self._record = Value(ctypes.c_bool, 0)
             #self._outfile_name = None
         except Exception as e:
@@ -78,8 +76,6 @@ class UdpSampler(BasePipelineObject):
         self._sock.bind(address)
 
     def pre_run(self):
-        print(f'pre_run {__name__} id write2disk {id(self.write2disk)} '
-              f'id writing {id(self.write2disk.writing)}={self.write2disk.writing}')
         self._last_update = time.time()
 
     def post_run(self):
@@ -138,8 +134,6 @@ class UdpSampler(BasePipelineObject):
             self.info(f"file {fileN} opened")
         else:
             self.error("Huston, here's a problem, file cannot be created.")
-        print(f'outfile_name {__name__} id write2disk {id(self.write2disk)} '
-              f'id writing {id(self.write2disk.writing)}={self.write2disk.writing}')
 
     def process(self, data_type=None, data=None):
         start = time.time()
@@ -171,19 +165,13 @@ class UdpSampler(BasePipelineObject):
             bytes_to_send = self._recv_bytes
             self._recv_bytes = 0
             curr_list_idx = self._buffer_list_idx
-            print(f'curr_idx: {curr_list_idx}')
+            print(curr_list_idx)
             self._buffer_list_idx = (self._buffer_list_idx + 1) % len(self._packet_buffer_list)
             self._packet_buffer_view = memoryview(self._packet_buffer_list[self._buffer_list_idx])
             self._last_update = time.time()
             #if len(packet) > 1:
             #if self.record:
             #    self.write2disk.my_sock.send(self._packet_buffer[:bytes_to_send], copy=False)
-            #self.write2disk.writing = True
-            #self.write2disk.write(b'hallo')
-            #self.write2disk.my_sock.send(data)
-            print(f'pre_run {__name__} id write2disk {id(self.write2disk)} '
-                  f'id writing {id(self.write2disk.writing)}={self.write2disk.writing}')
-
             return MessageType.RawData, (self._packet_buffer_list[curr_list_idx][:bytes_to_send], self._longtime.value)
             #else:
             #    return None, None
