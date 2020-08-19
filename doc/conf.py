@@ -17,32 +17,29 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 
+# Helpful for debugging RTD: https://readthedocs.org/projects/pymepix/builds
 
 import os
 import sys
 import pathlib
 
-# somewhat helpful for debugging: https://readthedocs.org/projects/pymepix/builds
+
 # accessing the setup.py file to get current information about the project
 name, project, version, release, author, copyright = [''] * 6
 desired = ['copyright', 'project', 'name', 'version', 'release', 'author']
 
-# importlib.util.spec_from_file_location didn't work as I hoped it would
 # first get the path of the setup.py file
 current_path = pathlib.Path(__file__).parent.absolute()
 setup_path = current_path.parent.joinpath("setup.py")
 
 #  access setup.py as text file to find the necessary lines, then execute those
+# importlib.util.spec_from_file_location didn't work
 with open(setup_path, 'r') as f:
-    for i, line in enumerate(f):
+    for line in f:
         line = line.strip()
         line_list = line.split()
         if len(line_list) > 0 and line_list[0] in desired:
-            try:
-                exec(line)
-            except Exception:
-                print(i, line)
-                print(type(line))
+            exec(line)
             desired.remove(line_list[0])
 project = name
 
