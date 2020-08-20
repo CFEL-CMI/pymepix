@@ -61,6 +61,7 @@ class UdpSampler(BasePipelineObject):
             #self._zmq_context = zmq.context()
             #self.write2disk = Raw2Disk()
             self._record = Value(ctypes.c_bool, 0)
+            self._close_file = Value(ctypes.c_bool, 0)
             #self._outfile_name = None
         except Exception as e:
             self.error('Exception occured in init!!!')
@@ -113,6 +114,15 @@ class UdpSampler(BasePipelineObject):
         self._record.value = int(value)
 
     @property
+    def close_file(self):
+        return bool(self._close_file.value)
+
+    @close_file.setter
+    def close_file(self, value):
+        self.debug(f'Setting close_file to {value}')
+        self._close_file.value = value
+
+    @property
     def outfile_name(self):
         return self._outfile_name
 
@@ -148,6 +158,11 @@ class UdpSampler(BasePipelineObject):
 
     def process(self, data_type=None, data=None):
         start = time.time()
+        if self.close_file:
+            self.debug('received close file')
+            self.post_run()
+            self.close_file = 0
+
         # self.debug('Reading')
         try:
             self._recv_bytes += self._sock.recv_into(self._packet_buffer_view[self._recv_bytes:])
@@ -184,9 +199,6 @@ class UdpSampler(BasePipelineObject):
             if self.record:
                 print('send from processing')
                 self.write2disk.my_sock.send(self._packet_buffer_list[curr_list_idx][:bytes_to_send], copy=False)
-            else:
-                print('close file')
-                self.write2disk.close()
             return MessageType.RawData, (self._packet_buffer_list[curr_list_idx][:bytes_to_send], self._longtime.value)
             #else:
             #    return None, None
