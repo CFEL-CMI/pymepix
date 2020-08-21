@@ -300,6 +300,7 @@ def send_data(packets, chunk_size, start = 0, sleep=0.0001):
     dt = stop - start
     print(f'packets sent: {packets}, '
           f'bytes: {len(test_data_view.tobytes())}, '
+          f'MBytes: {len(test_data_view.tobytes())*1e-6:.1f}, '
           f'{len(test_data_view.tobytes()) * 1e-6 / dt:.2f} MByte/s')
     return test_data
 
@@ -639,7 +640,7 @@ def test_zmq_multifile():
 
     ############
     # send data
-    packets = 50_000
+    packets = 60_000
     chunk_size = 135
     test_data = np.arange(0, packets * chunk_size, dtype=np.uint64)
     #test_data = send_data(packets=10_000, chunk_size=135, start=15000, sleep=1e-4)
