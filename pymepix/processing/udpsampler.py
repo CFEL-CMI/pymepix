@@ -41,7 +41,7 @@ class UdpSampler(BasePipelineObject):
 
     """
 
-    def __init__(self, address, longtime, chunk_size=1000, flush_timeout=0.3, input_queue=None, create_output=True,
+    def __init__(self, address, longtime, chunk_size=10_000, flush_timeout=0.3, input_queue=None, create_output=True,
                  num_outputs=1, shared_output=None):
         BasePipelineObject.__init__(self, 'UdpSampler', input_queue=input_queue, create_output=create_output,
                                     num_outputs=num_outputs, shared_output=shared_output)
@@ -60,7 +60,7 @@ class UdpSampler(BasePipelineObject):
             self._flush_timeout = self.init_param['flush_timeout']
             self._packets_collected = 0
             self._packet_buffer_list = [bytearray(2 * self._chunk_size) for i in
-                                        range(10)]  # ring buffer to put received data in
+                                        range(5)]  # ring buffer to put received data in
             self._buffer_list_idx = 0
             self._packet_buffer_view = memoryview(self._packet_buffer_list[self._buffer_list_idx])
             self._recv_bytes = 0
@@ -154,9 +154,9 @@ class UdpSampler(BasePipelineObject):
             if self.write2disk.writing:
                 self.write2disk.my_sock.send(b'EOF')  # we should get a response here, this ends up in nirvana at this point
                 self.debug('post_run: closed file')
-            return MessageType.RawData, (
-                self._packet_buffer_list[curr_list_idx][:bytes_to_send], self._longtime.value)
-            #return MessageType.RawData, (self._packet_buffer_view[:self._recv_bytes].tobytes(), self._longtime.value)
+            #return MessageType.RawData, (
+            #    self._packet_buffer_list[curr_list_idx][:bytes_to_send], self._longtime.value)
+            return None, None
         else:
             if self.write2disk.writing:
                 self.debug('post_run: close file')
@@ -172,6 +172,7 @@ class UdpSampler(BasePipelineObject):
             self._recv_bytes += self._sock.recv_into(self._packet_buffer_view[self._recv_bytes:])
         except socket.timeout:
             # put close file here to get the cases where there's no data coming and file should be closed
+            # mainly there for test to succeed
             if self.close_file:
                 self.close_file = 0
                 return self.post_run()
@@ -200,21 +201,22 @@ class UdpSampler(BasePipelineObject):
             bytes_to_send = self._recv_bytes
             self._recv_bytes = 0
             curr_list_idx = self._buffer_list_idx
-            print(f'current index {curr_list_idx}')
+            print('curr idx', curr_list_idx)
             self._buffer_list_idx = (self._buffer_list_idx + 1) % len(self._packet_buffer_list)
             self._packet_buffer_view = memoryview(self._packet_buffer_list[self._buffer_list_idx])
             self._last_update = time.time()
             #if len(packet) > 1:
             if self.record:
-                print('sent from processing')
                 self.write2disk.my_sock.send(self._packet_buffer_list[curr_list_idx][:bytes_to_send], copy=False)
             elif self.close_file:
                 self.close_file = 0
                 self.debug('received close file')
-                self.write2disk.my_sock.send(
-                    self._packet_buffer_list[self.curr_list_idx][:bytes_to_send], copy=False)
+                self.write2disk.my_sock.send(self._packet_buffer_list[curr_list_idx][:bytes_to_send], copy=False)
                 self.write2disk.my_sock.send(b'EOF')
-            return MessageType.RawData, (self._packet_buffer_list[curr_list_idx][:bytes_to_send], self._longtime.value)
+            #if not curr_list_idx % 20:
+            #   return MessageType.RawData, (self._packet_buffer_list[curr_list_idx][:bytes_to_send], self._longtime.value)
+            #else:
+            return None, None
             #else:
             #    return None, None
         else:
