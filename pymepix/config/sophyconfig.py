@@ -22,85 +22,83 @@ from .timepixconfig import TimepixConfig
 import xml.etree.ElementTree as et
 import zipfile
 import numpy as np
+
+
 class SophyConfig(TimepixConfig):
 
     def __init__(self,filename):        
-        self._dac_codes = {'Ibias_Preamp_ON' : 1,
-                            'Ibias_Preamp_OFF' : 2,
-                            'VPreamp_NCAS' : 3,
-                            'Ibias_Ikrum' : 4,
-                            'Vfbk' : 5,
-                            'Vthreshold_fine' : 6,
-                            'Vthreshold_coarse' : 7,
-                            'Ibias_DiscS1_ON' : 8,
-                            'Ibias_DiscS1_OFF' : 9,
-                            'Ibias_DiscS2_ON' : 10,
-                            'Ibias_DiscS2_OFF' : 11,
-                            'Ibias_PixelDAC' : 12,
-                            'Ibias_TPbufferIn' : 13,
-                            'Ibias_TPbufferOut' : 14,
-                            'VTP_coarse' : 15,
-                            'VTP_fine' : 16,
-                            'Ibias_CP_PLL' : 17,
-                            'PLL_Vcntrl' : 18,}
+        self._dac_codes = {'Ibias_Preamp_ON': 1,
+                            'Ibias_Preamp_OFF': 2,
+                            'VPreamp_NCAS': 3,
+                            'Ibias_Ikrum': 4,
+                            'Vfbk': 5,
+                            'Vthreshold_fine': 6,
+                            'Vthreshold_coarse': 7,
+                            'Ibias_DiscS1_ON': 8,
+                            'Ibias_DiscS1_OFF': 9,
+                            'Ibias_DiscS2_ON': 10,
+                            'Ibias_DiscS2_OFF': 11,
+                            'Ibias_PixelDAC': 12,
+                            'Ibias_TPbufferIn': 13,
+                            'Ibias_TPbufferOut': 14,
+                            'VTP_coarse': 15,
+                            'VTP_fine': 16,
+                            'Ibias_CP_PLL': 17,
+                            'PLL_Vcntrl': 18, }
 
-        self._dac_values = {'Ibias_Preamp_ON' : 128,
-                            'Ibias_Preamp_OFF' : 8,
-                            'VPreamp_NCAS' : 128,
-                            'Ibias_Ikrum' : 10,
-                            'Vfbk' : 128,
-                            'Vthreshold_fine' : 150,
-                            'Vthreshold_coarse' : 6,
-                            'Ibias_DiscS1_ON' : 128,
-                            'Ibias_DiscS1_OFF' : 8,
-                            'Ibias_DiscS2_ON' : 128,
-                            'Ibias_DiscS2_OFF' : 8,
-                            'Ibias_PixelDAC' : 150,
-                            'Ibias_TPbufferIn' : 128,
-                            'Ibias_TPbufferOut' : 128,
-                            'VTP_coarse' : 128,
-                            'VTP_fine' : 256,
-                            'Ibias_CP_PLL' : 128,
-                            'PLL_Vcntrl' : 128,}
+        self._dac_values = {'Ibias_Preamp_ON': 128,
+                            'Ibias_Preamp_OFF': 8,
+                            'VPreamp_NCAS': 128,
+                            'Ibias_Ikrum': 10,
+                            'Vfbk': 128,
+                            'Vthreshold_fine': 150,
+                            'Vthreshold_coarse': 6,
+                            'Ibias_DiscS1_ON': 128,
+                            'Ibias_DiscS1_OFF': 8,
+                            'Ibias_DiscS2_ON': 128,
+                            'Ibias_DiscS2_OFF': 8,
+                            'Ibias_PixelDAC': 150,
+                            'Ibias_TPbufferIn': 128,
+                            'Ibias_TPbufferOut': 128,
+                            'VTP_coarse': 128,
+                            'VTP_fine': 256,
+                            'Ibias_CP_PLL': 128,
+                            'PLL_Vcntrl': 128, }
         self.loadFile(filename)
-    def loadFile(self,filename):
+
+    def loadFile(self, filename):
         spx = zipfile.ZipFile(filename)
         names = spx.namelist()
         xml_string = spx.read(names[0])
 
         self.parseDAC(xml_string)
 
-        self.parsePixelConfig(spx,names[-3:])
-
-
-
+        self.parsePixelConfig(spx, names[-3:])
     
-    def parseDAC(self,xmlstring):
+    def parseDAC(self, xmlstring):
         root = et.fromstring(xmlstring)
         dac_setting = root.findall(".//entry[@class='sophy.medipix.SPMPXDACCollection']")
         dac_setting = dac_setting[0][0]
 
         for element in dac_setting.findall(".//element[@class='java.util.Map.Entry']"):
-            key=element.find('key')
+            key = element.find('key')
             
-            entry=element.find('entry')
+            entry = element.find('entry')
             data = entry.find('data')
             dac_key = key.items()[-1][-1]
             dac_value = int(data.items()[-1][-1])
 
-            self._dac_values[dac_key]= dac_value
-
+            self._dac_values[dac_key] = dac_value
 
     def dacCodes(self):
         dac_codes = []
-        for key,value in self._dac_values.items():
+        for key, value in self._dac_values.items():
             code = self._dac_codes[key]
-            dac_codes.append((code,value))
+            dac_codes.append((code, value))
         return dac_codes
 
     def biasVoltage(self):
         pass
-
 
     def _reverseBits(self, num):
         bitsize = 4
@@ -109,7 +107,7 @@ class SophyConfig(TimepixConfig):
         reverse = reverse + (bitsize - len(reverse)) * '0'
         return int(reverse, 2)
 
-    def parsePixelConfig(self,zip_file, file_names):
+    def parsePixelConfig(self, zip_file, file_names):
         # SoPhy config file saves the pixel information row by row,
         # while timepix expects the information column wise.
         buffer = zip_file.read(file_names[0])
@@ -120,10 +118,9 @@ class SophyConfig(TimepixConfig):
         self._thresh = np.frombuffer(buffer[27:], dtype=np.int16).copy() >> 8
         self._thresh = np.fliplr(np.array([self._reverseBits(x) for x in self._thresh]).reshape(256, 256).transpose())
 
-
     def maskPixels(self):
         """Returns mask pixels"""
-        return 1-(self._mask//256)
+        return 1 - (self._mask // 256)
     
     def testPixels(self):
         """Returns test pixels"""
@@ -132,7 +129,6 @@ class SophyConfig(TimepixConfig):
     def thresholdPixels(self):
         """Returns threshold pixels"""
         return self._thresh
-
 
 
 def main():
