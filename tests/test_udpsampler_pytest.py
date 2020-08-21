@@ -558,7 +558,7 @@ def test_zmq_multifile():
     else:
         print(f'did not open {res}')
 
-    test_data = send_data(packets=20000, chunk_size=135, start=15000, sleep=0.000001)
+    test_data = send_data(packets=100_000, chunk_size=135, start=15000, sleep=0)
 
     # finish acquisition 4th file
     time.sleep(5)  # permit thread time to empty queue
@@ -593,6 +593,8 @@ def test_zmq_multifile():
     assert np.frombuffer(data, dtype=np.uint64).shape == test_data.shape
     # check for data in file
     assert np.fromfile(fname, dtype=np.uint64).all() == test_data.all()
+    assert np.fromfile(fname, dtype=np.uint64).sum() == test_data.sum()
+    assert np.fromfile(fname, dtype=np.uint64).shape == test_data.shape
 
     print('waiting for queue thread')
     t.join()
