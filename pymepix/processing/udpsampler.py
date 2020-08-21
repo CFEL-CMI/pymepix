@@ -25,11 +25,9 @@ from multiprocessing.sharedctypes import Value
 import numpy as np
 import socket
 import time
-import zmq
-import os
 
-from .basepipeline import BasePipelineObject
-from .datatypes import MessageType
+from pymepix.processing.basepipeline import BasePipelineObject
+from pymepix.processing.datatypes import MessageType
 from pymepix.processing.rawtodisk import Raw2Disk
 
 
@@ -52,6 +50,7 @@ class UdpSampler(BasePipelineObject):
                            'longtime': longtime}
         self._record = Value(ctypes.c_bool, 0)
         self._close_file = Value(ctypes.c_bool, 0)
+        self.loop_count = 0
 
     def init_new_process(self):
         try:
@@ -166,6 +165,10 @@ class UdpSampler(BasePipelineObject):
 
 
     def process(self, data_type=None, data=None):
+        if self.loop_count > 1_000_000:
+            self.enable = False
+        self.loop_count += 1
+
         start = time.time()
         # self.debug('Reading')
         try:
@@ -201,7 +204,7 @@ class UdpSampler(BasePipelineObject):
             bytes_to_send = self._recv_bytes
             self._recv_bytes = 0
             curr_list_idx = self._buffer_list_idx
-            print('curr idx', curr_list_idx)
+            #print('curr idx', curr_list_idx)
             self._buffer_list_idx = (self._buffer_list_idx + 1) % len(self._packet_buffer_list)
             self._packet_buffer_view = memoryview(self._packet_buffer_list[self._buffer_list_idx])
             self._last_update = time.time()
@@ -233,3 +236,55 @@ class UdpSampler(BasePipelineObject):
         self.write2disk.write_thr.join()
         self.debug('Raw2Disk stopped')
         '''
+
+def main():
+    from multiprocessing import Process
+    import zmq
+    import time
+    import numpy as np
+    # Create the logger
+    import logging
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    def send_data(packets, chunk_size, start=0, sleep=0.0001):
+        ############
+        # send data
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        test_data = np.arange(start, start + packets * chunk_size,
+                              dtype=np.uint64)  # chunk size 135 -> max number=1_012_500
+        test_data_view = memoryview(test_data)
+        time.sleep(1)  # seems to be necessary if this function get called as a Process
+        # first packet 0...134, second packet 135...269 and so on
+        start = time.time()
+        for i in range(0, len(test_data_view), chunk_size):
+            sock.sendto(test_data_view[i:i + chunk_size], ('127.0.0.1', 50000))
+            time.sleep(sleep)  # if there's no sleep, packets get lost
+        stop = time.time()
+        dt = stop - start
+        print(f'packets sent: {packets}, '
+              f'bytes: {len(test_data_view.tobytes())}, '
+              f'MBytes: {len(test_data_view.tobytes()) * 1e-6:.1f}, '
+              f'{len(test_data_view.tobytes()) * 1e-6 / dt:.2f} MByte/s')
+        return test_data
+
+    ctx = zmq.Context.instance()
+    z_sock = ctx.socket(zmq.PAIR)
+    z_sock.bind('tcp://127.0.0.1:40000')
+
+    sampler = UdpSampler(('127.0.0.1', 50000), 1)
+    # send data
+    packets = 2_500_000
+    chunk_size = 135
+    #test_data = np.arange(0, packets * chunk_size, dtype=np.uint64)
+    # test_data = send_data(packets=10_000, chunk_size=135, start=15000, sleep=1e-4)
+    p = Process(target=send_data, args=(packets, chunk_size, 0, 0))
+    p.start()
+
+    sampler.run()
+    z_sock.send_string('SHUTDOWN')
+    z_sock.close()
+    p.join()
+
+
+if __name__ == "__main__":
+    main()
