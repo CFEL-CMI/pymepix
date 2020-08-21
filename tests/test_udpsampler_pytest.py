@@ -282,11 +282,11 @@ def test_zmq_singlefile():
     t.join()
     print('Done and done')
 
-def send_data(packets, chunk_size, sleep=0.0001):
+def send_data(packets, chunk_size, start = 0, sleep=0.0001):
     ############
     # send data
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    test_data = np.arange(0, packets * chunk_size, dtype=np.uint64)  # chunk size 135 -> max number=1_012_500
+    test_data = np.arange(start, start + packets * chunk_size, dtype=np.uint64)  # chunk size 135 -> max number=1_012_500
     test_data_view = memoryview(test_data)
     # first packet 0...134, second packet 135...269 and so on
     start = time.time()
@@ -313,7 +313,7 @@ def test_zmq_multifile():
     # Create the logger
     import logging
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    end_queue = Queue() # queue for PacketProcessor
+    end_queue = Queue()  # queue for PacketProcessor
 
     acqpipline = AcquisitionPipeline('Test', end_queue)
 
@@ -370,9 +370,9 @@ def test_zmq_multifile():
         print(f'did not open {res}')
     time.sleep(1)  # give pipeline time to get started
 
-    test_data = send_data(packets=10, chunk_size=135, sleep=0.001)
+    test_data = send_data(packets=10, chunk_size=10, sleep=0.001)
 
-    ###########
+    ###
     # finish acquisition 1st file
     time.sleep(5)  # permit thread time to empty queue
     acqpipline._stages[0]._pipeline_objects[0].record = 0
@@ -396,26 +396,29 @@ def test_zmq_multifile():
         data = np.asarray([])
 
     print('data we got:')
-    print(data)
-    print(np.frombuffer(data, dtype=np.uint64).shape, test_data.shape)
+    print(#np.frombuffer(data, dtype=np.uint64),
+          #test_data,
+          np.unique(np.frombuffer(data, dtype=np.uint64)).shape,
+          np.frombuffer(data, dtype=np.uint64).shape,
+          test_data.shape)
     # check for Queue content
-    '''
     assert np.frombuffer(data, dtype=np.uint64).all() == test_data.all()
     assert np.frombuffer(data, dtype=np.uint64).sum() == test_data.sum()
     assert np.frombuffer(data, dtype=np.uint64).shape == test_data.shape
-    '''
     # check for data in file
     assert np.fromfile(fname, dtype=np.uint64).all() == test_data.all()
 
     t.join()
     z_sock.close()
 
+    if end_queue.empty():
+        print('queue ist leer')
 
     ############
     # start 2nd file
     ############
     # start thread
-    print('######### 2nd file ##############')
+    print('\n######### 2nd file ##############')
     z_sock = ctx.socket(zmq.PAIR)
     z_sock.bind('inproc://queueThread')
     t = threading.Thread(target=get_queue_thread, args=(end_queue,))
@@ -425,7 +428,6 @@ def test_zmq_multifile():
     fname = f'./test-{time.strftime("%Y%m%d-%H%M%S")}.raw'
     # acqpipline._stages[0]._pipeline_objects[0].outfile_name = fname
     acqpipline._stages[0]._pipeline_objects[0].record = 1
-    acqpipline._stages[0]._pipeline_objects[0].close_file = 0
     acqpipline._stages[0].z_sock.send_string(fname)
     res = acqpipline._stages[0].z_sock.recv_string()
     if res == 'OPENED':
@@ -433,9 +435,8 @@ def test_zmq_multifile():
     else:
         print(f'did not open {res}')
 
-    test_data = send_data(packets=10, chunk_size=135, sleep=0.001)
+    test_data = send_data(packets=100, chunk_size=12, start=233, sleep=0.001)
 
-    ###########
     # finish acquisition 2nd file
     time.sleep(5)  # permit thread time to empty queue
     acqpipline._stages[0]._pipeline_objects[0].record = 0
@@ -458,7 +459,73 @@ def test_zmq_multifile():
         data = np.asarray([])
 
     print('data we got:')
-    print(np.frombuffer(data, dtype=np.uint64).shape, test_data.shape)
+    print(#np.frombuffer(data, dtype=np.uint64),
+          #test_data,
+          np.frombuffer(data, dtype=np.uint64).shape,
+          np.unique(np.frombuffer(data, dtype=np.uint64)).shape,
+          test_data.shape)
+    # check for Queue content
+    '''
+    assert np.frombuffer(data, dtype=np.uint64).all() == test_data.all()
+    assert np.frombuffer(data, dtype=np.uint64).sum() == test_data.sum()
+    assert np.frombuffer(data, dtype=np.uint64).shape == test_data.shape
+    # check for data in file
+    assert np.fromfile(fname, dtype=np.uint64).all() == test_data.all()
+    '''
+    print('waiting for queue thread')
+    t.join()
+    z_sock.close()
+
+    ############
+    # start 3rd file
+    ############
+    # start thread
+    print('\n######### 3rd file ##############')
+    z_sock = ctx.socket(zmq.PAIR)
+    z_sock.bind('inproc://queueThread')
+    t = threading.Thread(target=get_queue_thread, args=(end_queue,))
+    t.start()
+    z_sock.send_string('hallo')
+
+    fname = f'./test-{time.strftime("%Y%m%d-%H%M%S")}.raw'
+    # acqpipline._stages[0]._pipeline_objects[0].outfile_name = fname
+    acqpipline._stages[0]._pipeline_objects[0].record = 1
+    acqpipline._stages[0].z_sock.send_string(fname)
+    res = acqpipline._stages[0].z_sock.recv_string()
+    if res == 'OPENED':
+        print(f'file {fname} opened')
+    else:
+        print(f'did not open {res}')
+
+    test_data = send_data(packets=300, chunk_size=135, start=4003, sleep=0.001)
+
+    # finish acquisition 3rd file
+    time.sleep(5)  # permit thread time to empty queue
+    acqpipline._stages[0]._pipeline_objects[0].record = 0
+    acqpipline._stages[0]._pipeline_objects[0].close_file = 1
+    res = acqpipline._stages[0].z_sock.recv_string()
+    if res == 'CLOSED':
+        print(f'file {fname} closed')
+    else:
+        print(f'problem, {res}')
+    end_queue.put(None)
+    received = z_sock.recv_pyobj()
+
+    # do the testing
+    if len(received) > 1:
+        data = np.concatenate(received)
+    elif len(received) == 1:
+        data = np.asarray(received[0])
+    else:
+        print('No packets received!!!')
+        data = np.asarray([])
+
+    print('data we got:')
+    print(#np.frombuffer(data, dtype=np.uint64),
+          #test_data,
+          np.frombuffer(data, dtype=np.uint64).shape,
+          np.unique(np.frombuffer(data, dtype=np.uint64)).shape,
+          test_data.shape)
     # check for Queue content
     assert np.frombuffer(data, dtype=np.uint64).all() == test_data.all()
     assert np.frombuffer(data, dtype=np.uint64).sum() == test_data.sum()
@@ -468,7 +535,70 @@ def test_zmq_multifile():
 
     print('waiting for queue thread')
     t.join()
+    z_sock.close()
 
+    ############
+    # start 4th file
+    ############
+    # start thread
+    print('\n######### 4th file ##############')
+    z_sock = ctx.socket(zmq.PAIR)
+    z_sock.bind('inproc://queueThread')
+    t = threading.Thread(target=get_queue_thread, args=(end_queue,))
+    t.start()
+    z_sock.send_string('hallo')
+
+    fname = f'./test-{time.strftime("%Y%m%d-%H%M%S")}.raw'
+    # acqpipline._stages[0]._pipeline_objects[0].outfile_name = fname
+    acqpipline._stages[0]._pipeline_objects[0].record = 1
+    acqpipline._stages[0].z_sock.send_string(fname)
+    res = acqpipline._stages[0].z_sock.recv_string()
+    if res == 'OPENED':
+        print(f'file {fname} opened')
+    else:
+        print(f'did not open {res}')
+
+    test_data = send_data(packets=20000, chunk_size=135, start=15000, sleep=0.000001)
+
+    # finish acquisition 4th file
+    time.sleep(5)  # permit thread time to empty queue
+    acqpipline._stages[0]._pipeline_objects[0].record = 0
+    acqpipline._stages[0]._pipeline_objects[0].close_file = 1
+    res = acqpipline._stages[0].z_sock.recv_string()
+    if res == 'CLOSED':
+        print(f'file {fname} closed')
+    else:
+        print(f'problem, {res}')
+    end_queue.put(None)
+    received = z_sock.recv_pyobj()
+
+    # do the testing
+    if len(received) > 1:
+        data = np.concatenate(received)
+    elif len(received) == 1:
+        data = np.asarray(received[0])
+    else:
+        print('No packets received!!!')
+        data = np.asarray([])
+
+    print('data we got:')
+    print(#np.frombuffer(data, dtype=np.uint64),
+          #test_data,
+          np.frombuffer(data, dtype=np.uint64).shape,
+          np.unique(np.frombuffer(data, dtype=np.uint64)).shape,
+          test_data.shape)
+    # check for Queue content
+    assert np.frombuffer(data, dtype=np.uint64).all() == test_data.all()
+    assert np.frombuffer(data, dtype=np.uint64).sum() == test_data.sum()
+    assert np.frombuffer(data, dtype=np.uint64).shape == test_data.shape
+    # check for data in file
+    assert np.fromfile(fname, dtype=np.uint64).all() == test_data.all()
+
+    print('waiting for queue thread')
+    t.join()
+    z_sock.close()
+
+    ############
     # shut everything down
     res = acqpipline._stages[0].z_sock.send_string("SHUTDOWN")
     acqpipline.stop()

@@ -46,23 +46,26 @@ class UdpSampler(BasePipelineObject):
         BasePipelineObject.__init__(self, 'UdpSampler', input_queue=input_queue, create_output=create_output,
                                     num_outputs=num_outputs, shared_output=shared_output)
 
+        self.init_param = {'address': address,
+                           'chunk_size': chunk_size,
+                           'flush_timeout': flush_timeout,
+                           'longtime': longtime}
+        self._record = Value(ctypes.c_bool, 0)
+        self._close_file = Value(ctypes.c_bool, 0)
+
+    def init_new_process(self):
         try:
-            self.createConnection(address)
-            self._chunk_size = chunk_size * 8192
-            self._flush_timeout = flush_timeout
+            self.createConnection(self.init_param['address'])
+            self._chunk_size = self.init_param['chunk_size'] * 8192
+            self._flush_timeout = self.init_param['flush_timeout']
             self._packets_collected = 0
-            self._packet_buffer_list = [bytearray(2*self._chunk_size) for i in range(10)] # ring buffer to put received data in
+            self._packet_buffer_list = [bytearray(2 * self._chunk_size) for i in
+                                        range(10)]  # ring buffer to put received data in
             self._buffer_list_idx = 0
             self._packet_buffer_view = memoryview(self._packet_buffer_list[self._buffer_list_idx])
             self._recv_bytes = 0
             self._total_time = 0.0
-            self._longtime = longtime
-
-            #self._zmq_context = zmq.context()
-            #self.write2disk = Raw2Disk()
-            self._record = Value(ctypes.c_bool, 0)
-            self._close_file = Value(ctypes.c_bool, 0)
-            #self._outfile_name = None
+            self._longtime = self.init_param['longtime']
         except Exception as e:
             self.error('Exception occured in init!!!')
             self.error(e, exc_info=True)
@@ -135,18 +138,24 @@ class UdpSampler(BasePipelineObject):
             self.error("Huston, here's a problem, file cannot be created.")
 
     def pre_run(self):
-        self._last_update = time.time()
+        self.init_new_process()
         self.write2disk = Raw2Disk()
+        self._last_update = time.time()
 
     def post_run(self):
         if self._recv_bytes > 1:
+            bytes_to_send = self._recv_bytes
+            self._recv_bytes = 0
+            curr_list_idx = self._buffer_list_idx
+            self._buffer_list_idx = (self._buffer_list_idx + 1) % len(self._packet_buffer_list)
+            self._packet_buffer_view = memoryview(self._packet_buffer_list[self._buffer_list_idx])
             self.write2disk.my_sock.send(
-                self._packet_buffer_list[self._buffer_list_idx][:self._recv_bytes], copy=False)
+                self._packet_buffer_list[curr_list_idx][:bytes_to_send], copy=False)
             if self.write2disk.writing:
                 self.write2disk.my_sock.send(b'EOF')  # we should get a response here, this ends up in nirvana at this point
                 self.debug('post_run: closed file')
             return MessageType.RawData, (
-                self._packet_buffer_list[self._buffer_list_idx][:self._recv_bytes], self._longtime.value)
+                self._packet_buffer_list[curr_list_idx][:bytes_to_send], self._longtime.value)
             #return MessageType.RawData, (self._packet_buffer_view[:self._recv_bytes].tobytes(), self._longtime.value)
         else:
             if self.write2disk.writing:
@@ -158,16 +167,16 @@ class UdpSampler(BasePipelineObject):
 
     def process(self, data_type=None, data=None):
         start = time.time()
-        if self.close_file:
-            self.debug('received close file')
-            self.post_run()
-            self.close_file = 0
-
         # self.debug('Reading')
         try:
             self._recv_bytes += self._sock.recv_into(self._packet_buffer_view[self._recv_bytes:])
         except socket.timeout:
-            return None, None
+            # put close file here to get the cases where there's no data coming and file should be closed
+            if self.close_file:
+                self.close_file = 0
+                return self.post_run()
+            else:
+                return None, None
         except socket.error:
             return None, None
         # self.debug('Read {}'.format(raw_packet))
@@ -191,14 +200,20 @@ class UdpSampler(BasePipelineObject):
             bytes_to_send = self._recv_bytes
             self._recv_bytes = 0
             curr_list_idx = self._buffer_list_idx
-            print(curr_list_idx)
+            print(f'current index {curr_list_idx}')
             self._buffer_list_idx = (self._buffer_list_idx + 1) % len(self._packet_buffer_list)
             self._packet_buffer_view = memoryview(self._packet_buffer_list[self._buffer_list_idx])
             self._last_update = time.time()
             #if len(packet) > 1:
             if self.record:
-                print('send from processing')
+                print('sent from processing')
                 self.write2disk.my_sock.send(self._packet_buffer_list[curr_list_idx][:bytes_to_send], copy=False)
+            elif self.close_file:
+                self.close_file = 0
+                self.debug('received close file')
+                self.write2disk.my_sock.send(
+                    self._packet_buffer_list[self.curr_list_idx][:bytes_to_send], copy=False)
+                self.write2disk.my_sock.send(b'EOF')
             return MessageType.RawData, (self._packet_buffer_list[curr_list_idx][:bytes_to_send], self._longtime.value)
             #else:
             #    return None, None
