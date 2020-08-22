@@ -165,10 +165,6 @@ class UdpSampler(BasePipelineObject):
 
 
     def process(self, data_type=None, data=None):
-        if self.loop_count > 1_000_000:
-            self.enable = False
-        self.loop_count += 1
-
         start = time.time()
         # self.debug('Reading')
         try:
@@ -280,10 +276,13 @@ def main():
     p = Process(target=send_data, args=(packets, chunk_size, 0, 0))
     p.start()
 
+    start = time.time()
     sampler.run()
+    stop = time.time()
     z_sock.send_string('SHUTDOWN')
     z_sock.close()
     p.join()
+    print(f'took {stop - start}s')
 
 
 if __name__ == "__main__":
