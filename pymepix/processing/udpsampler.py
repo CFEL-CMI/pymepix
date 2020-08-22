@@ -22,16 +22,18 @@
 import ctypes
 from multiprocessing import Queue
 from multiprocessing.sharedctypes import Value
+from pymepix.core.log import ProcessLogger
+import multiprocessing
 import numpy as np
 import socket
 import time
 
-from pymepix.processing.basepipeline import BasePipelineObject
+#from pymepix.processing.basepipeline import BasePipelineObject
 from pymepix.processing.datatypes import MessageType
 from pymepix.processing.rawtodisk import Raw2Disk
 
 
-class UdpSampler(BasePipelineObject):
+class UdpSampler(multiprocessing.Process, ProcessLogger):
     """Recieves udp packets from SPDIR
 
     This class, creates a UDP socket connection to SPIDR and recivies the UDP packets from Timepix
@@ -41,14 +43,19 @@ class UdpSampler(BasePipelineObject):
 
     def __init__(self, address, longtime, chunk_size=10_000, flush_timeout=0.3, input_queue=None, create_output=True,
                  num_outputs=1, shared_output=None):
-        BasePipelineObject.__init__(self, 'UdpSampler', input_queue=input_queue, create_output=create_output,
-                                    num_outputs=num_outputs, shared_output=shared_output)
+        #BasePipelineObject.__init__(self, 'UdpSampler', input_queue=input_queue, create_output=create_output,
+        #                            num_outputs=num_outputs, shared_output=shared_output)
+        name = 'UdpSampler'
+        ProcessLogger.__init__(self, name)
+        multiprocessing.Process.__init__(self)
+
 
         self.init_param = {'address': address,
                            'chunk_size': chunk_size,
                            'flush_timeout': flush_timeout,
                            'longtime': longtime}
         self._record = Value(ctypes.c_bool, 0)
+        self._enable = Value('I', 1)
         self._close_file = Value(ctypes.c_bool, 0)
         self.loop_count = 0
 
@@ -88,6 +95,35 @@ class UdpSampler(BasePipelineObject):
         tpx_filter = pix_filter | trig_filter
         tpx_packets = packet[tpx_filter]
         return tpx_packets
+
+    @property
+    def enable(self):
+        """Enables processing
+
+        Determines whether the class will perform processing, this has the result of signalling the process to terminate.
+        If there are objects ahead of it then they will stop receiving data
+        if an input queue is required then it will get from the queue before checking processing
+        This is done to prevent the queue from growing when a process behind it is still working
+
+        Parameters
+        -----------
+        value : bool
+            Enable value
+
+
+        Returns
+        -----------
+        bool:
+            Whether the process is enabled or not
+
+
+        """
+        return bool(self._enable.value)
+
+    @enable.setter
+    def enable(self, value):
+        self.debug('Setting enabled flag to {}'.format(value))
+        self._enable.value = int(value)
 
     @property
     def record(self):
@@ -164,62 +200,73 @@ class UdpSampler(BasePipelineObject):
             return None, None
 
 
-    def process(self, data_type=None, data=None):
+    def run(self, data_type=None, data=None):
+        self.pre_run()
         start = time.time()
-        # self.debug('Reading')
-        try:
-            self._recv_bytes += self._sock.recv_into(self._packet_buffer_view[self._recv_bytes:])
-        except socket.timeout:
-            # put close file here to get the cases where there's no data coming and file should be closed
-            # mainly there for test to succeed
-            if self.close_file:
-                self.close_file = 0
-                return self.post_run()
+        enabled = self.enable
+        while True:
+            if self.loop_count > 1_000_000:
+                enabled = False
+            self.loop_count += 1
+
+            if enabled:
+                try:
+                    self._recv_bytes += self._sock.recv_into(self._packet_buffer_view[self._recv_bytes:])
+                except socket.timeout:
+                    # put close file here to get the cases where there's no data coming and file should be closed
+                    # mainly there for test to succeed
+                    if self.close_file:
+                        self.close_file = 0
+                        return self.post_run()
+                    else:
+                        return None, None
+                except socket.error:
+                    return None, None
+                # self.debug('Read {}'.format(raw_packet))
+
+                self._packets_collected += 1
+                end = time.time()
+
+                self._total_time += end - start
+                if self._packets_collected % 1000 == 0:
+                    self.debug('Packets collected {}'.format(self._packets_collected))
+                    self.debug('Total time {} s'.format(self._total_time))
+
+                flush_time = end - self._last_update
+
+                if (self._recv_bytes > self._chunk_size) or (flush_time > self._flush_timeout):
+                    #packet = np.frombuffer(self._packet_buffer_view[:self._recv_bytes], dtype=np.uint64) # TODO: put this in packet processor
+                    #print(packet)
+
+                    # tpx_packets = self.get_useful_packets(packet)
+
+                    bytes_to_send = self._recv_bytes
+                    self._recv_bytes = 0
+                    curr_list_idx = self._buffer_list_idx
+                    #print('curr idx', curr_list_idx)
+                    self._buffer_list_idx = (self._buffer_list_idx + 1) % len(self._packet_buffer_list)
+                    self._packet_buffer_view = memoryview(self._packet_buffer_list[self._buffer_list_idx])
+                    self._last_update = time.time()
+                    #if len(packet) > 1:
+                    if self.record:
+                        self.write2disk.my_sock.send(self._packet_buffer_list[curr_list_idx][:bytes_to_send], copy=False)
+                    elif self.close_file:
+                        self.close_file = 0
+                        self.debug('received close file')
+                        self.write2disk.my_sock.send(self._packet_buffer_list[curr_list_idx][:bytes_to_send], copy=False)
+                        self.write2disk.my_sock.send(b'EOF')
+                    #if not curr_list_idx % 20:
+                    #   return MessageType.RawData, (self._packet_buffer_list[curr_list_idx][:bytes_to_send], self._longtime.value)
+                    #else:
+                    #return None, None
+                    #else:
+                    #    return None, None
+                #else:
+                #    return None, None
             else:
-                return None, None
-        except socket.error:
-            return None, None
-        # self.debug('Read {}'.format(raw_packet))
+                self.debug('I AM LEAVING')
+                break
 
-        self._packets_collected += 1
-        end = time.time()
-
-        self._total_time += end - start
-        if self._packets_collected % 1000 == 0:
-            self.debug('Packets collected {}'.format(self._packets_collected))
-            self.debug('Total time {} s'.format(self._total_time))
-
-        flush_time = end - self._last_update
-
-        if (self._recv_bytes > self._chunk_size) or (flush_time > self._flush_timeout):
-            #packet = np.frombuffer(self._packet_buffer_view[:self._recv_bytes], dtype=np.uint64) # TODO: put this in packet processor
-            #print(packet)
-
-            # tpx_packets = self.get_useful_packets(packet)
-
-            bytes_to_send = self._recv_bytes
-            self._recv_bytes = 0
-            curr_list_idx = self._buffer_list_idx
-            #print('curr idx', curr_list_idx)
-            self._buffer_list_idx = (self._buffer_list_idx + 1) % len(self._packet_buffer_list)
-            self._packet_buffer_view = memoryview(self._packet_buffer_list[self._buffer_list_idx])
-            self._last_update = time.time()
-            #if len(packet) > 1:
-            if self.record:
-                self.write2disk.my_sock.send(self._packet_buffer_list[curr_list_idx][:bytes_to_send], copy=False)
-            elif self.close_file:
-                self.close_file = 0
-                self.debug('received close file')
-                self.write2disk.my_sock.send(self._packet_buffer_list[curr_list_idx][:bytes_to_send], copy=False)
-                self.write2disk.my_sock.send(b'EOF')
-            #if not curr_list_idx % 20:
-            #   return MessageType.RawData, (self._packet_buffer_list[curr_list_idx][:bytes_to_send], self._longtime.value)
-            #else:
-            return None, None
-            #else:
-            #    return None, None
-        else:
-            return None, None
 
 
     def stopRaw2Disk(self):
