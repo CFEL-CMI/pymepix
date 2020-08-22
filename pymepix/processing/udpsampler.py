@@ -203,7 +203,7 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
     def run(self, data_type=None, data=None):
         self.pre_run()
         start = time.time()
-        enabled = self.enable
+        enabled = True
         while True:
             if self.loop_count > 1_000_000:
                 enabled = False
@@ -219,9 +219,9 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
                         self.close_file = 0
                         return self.post_run()
                     else:
-                        return None, None
+                        self.debug('Socket timeout')
                 except socket.error:
-                    return None, None
+                    self.debug('socket error')
                 # self.debug('Read {}'.format(raw_packet))
 
                 self._packets_collected += 1
@@ -267,6 +267,8 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
                 self.debug('I AM LEAVING')
                 break
 
+        print(f'loop count {self.loop_count}')
+
 
 
     def stopRaw2Disk(self):
@@ -300,12 +302,13 @@ def main():
         # first packet 0...134, second packet 135...269 and so on
         start = time.time()
         for i in range(0, len(test_data_view), chunk_size):
-            sock.sendto(test_data_view[i:i + chunk_size], ('127.0.0.1', 50000))
-            time.sleep(sleep)  # if there's no sleep, packets get lost
+            sock.sendto(test_data_view[0:0 + chunk_size], ('127.0.0.1', 50000))
+            #time.sleep(sleep)  # if there's no sleep, packets get lost
         stop = time.time()
         dt = stop - start
-        print(f'packets sent: {packets}, '
-              f'bytes: {len(test_data_view.tobytes())}, '
+        print(f'time to send {dt:.2f}',
+              f'time to send 1M: {dt/packets*1_000_002:.2f}s, '
+              #f'bytes: {len(test_data_view.tobytes())}, '
               f'MBytes: {len(test_data_view.tobytes()) * 1e-6:.1f}, '
               f'{len(test_data_view.tobytes()) * 1e-6 / dt:.2f} MByte/s')
         return test_data
@@ -313,22 +316,25 @@ def main():
     ctx = zmq.Context.instance()
     z_sock = ctx.socket(zmq.PAIR)
     z_sock.bind('tcp://127.0.0.1:40000')
+    #z_sock.send_string('hallo')
+    #print(z_sock.recv_string())
 
     sampler = UdpSampler(('127.0.0.1', 50000), 1)
+    time.sleep(1)  # give thread time to start
     # send data
     packets = 2_500_000
     chunk_size = 135
     #test_data = np.arange(0, packets * chunk_size, dtype=np.uint64)
     # test_data = send_data(packets=10_000, chunk_size=135, start=15000, sleep=1e-4)
-    p = Process(target=send_data, args=(packets, chunk_size, 0, 0))
-    p.start()
+    #p = Process(target=send_data, args=(packets, chunk_size, 0, 0))
+    #p.start()
 
     start = time.time()
     sampler.run()
     stop = time.time()
     z_sock.send_string('SHUTDOWN')
     z_sock.close()
-    p.join()
+    #p.join()
     print(f'took {stop - start}s')
 
 
