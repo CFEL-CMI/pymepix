@@ -65,8 +65,8 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
             self._chunk_size = self.init_param['chunk_size'] * 8192
             self._flush_timeout = self.init_param['flush_timeout']
             self._packets_collected = 0
-            self._packet_buffer_list = [bytearray(2 * self._chunk_size) for i in
-                                        range(5)]  # ring buffer to put received data in
+            self._packet_buffer_list = [bytearray(2 * self._chunk_size)
+                                        for i in range(5)]  # ring buffer to put received data in
             self._buffer_list_idx = 0
             self._packet_buffer_view = memoryview(self._packet_buffer_list[self._buffer_list_idx])
             self._recv_bytes = 0
@@ -200,10 +200,11 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
             return None, None
 
 
-    def run(self, data_type=None, data=None):
+    def run(self):
         self.pre_run()
-        start = time.time()
         enabled = True
+        start = time.time()
+        total_bytes_received = 0
         while True:
             if self.loop_count > 1_000_000:
                 enabled = False
@@ -224,13 +225,13 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
                     self.debug('socket error')
                 # self.debug('Read {}'.format(raw_packet))
 
-                self._packets_collected += 1
+                #self._packets_collected += 1
                 end = time.time()
 
                 self._total_time += end - start
-                if self._packets_collected % 1000 == 0:
-                    self.debug('Packets collected {}'.format(self._packets_collected))
-                    self.debug('Total time {} s'.format(self._total_time))
+                #if self._packets_collected % 1000 == 0:
+                #    self.debug('Packets collected {}'.format(self._packets_collected))
+                #    self.debug('Total time {} s'.format(self._total_time))
 
                 flush_time = end - self._last_update
 
@@ -240,7 +241,8 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
 
                     # tpx_packets = self.get_useful_packets(packet)
 
-                    bytes_to_send = self._recv_bytes
+                    #bytes_to_send = self._recv_bytes
+                    total_bytes_received += self._recv_bytes
                     self._recv_bytes = 0
                     curr_list_idx = self._buffer_list_idx
                     #print('curr idx', curr_list_idx)
@@ -248,6 +250,7 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
                     self._packet_buffer_view = memoryview(self._packet_buffer_list[self._buffer_list_idx])
                     self._last_update = time.time()
                     #if len(packet) > 1:
+                    '''
                     if self.record:
                         self.write2disk.my_sock.send(self._packet_buffer_list[curr_list_idx][:bytes_to_send], copy=False)
                     elif self.close_file:
@@ -255,6 +258,7 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
                         self.debug('received close file')
                         self.write2disk.my_sock.send(self._packet_buffer_list[curr_list_idx][:bytes_to_send], copy=False)
                         self.write2disk.my_sock.send(b'EOF')
+                    '''
                     #if not curr_list_idx % 20:
                     #   return MessageType.RawData, (self._packet_buffer_list[curr_list_idx][:bytes_to_send], self._longtime.value)
                     #else:
@@ -266,8 +270,10 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
             else:
                 self.debug('I AM LEAVING')
                 break
-
+        stop = time.time()
+        dt = stop - start
         print(f'loop count {self.loop_count}')
+        print(f'time for 1M packets: {dt:.2f}, MByte/s {total_bytes_received*1e-6/dt}')
 
 
 
