@@ -22,11 +22,11 @@ import threading
 import zmq
 import time
 import os
-from pymepix.core.log import Logger
+from pymepix.core.log import ProcessLogger
 import numpy as np
 
 # Class to write raw data to files using ZMQ and a new thread to prevent IO blocking
-class Raw2Disk(Logger):
+class Raw2Disk(ProcessLogger):
     """
         Class for asynchronously writing raw files
         Intended to allow writing of raw data while minimizing impact on UDP reception reliability
@@ -46,7 +46,9 @@ class Raw2Disk(Logger):
         """
 
     def __init__(self, context=None):
-        Logger.__init__(self, 'Raw2Disk')
+        ProcessLogger.__init__(self, 'Raw2Disk')
+
+        self.debug("init raw2disk")
 
         self.writing = False  # Keep track of whether we're currently writing a file
         self.stop_thr = False
@@ -59,6 +61,7 @@ class Raw2Disk(Logger):
         self.write_thr = threading.Thread(target=self._run_filewriter_thr, args=(self.sock_addr, None))
         # self.write_thr.daemon = True
         self.write_thr.start()
+        self.debug(f'{__name__} thread started')
 
         time.sleep(1)
 
@@ -108,6 +111,7 @@ class Raw2Disk(Logger):
                         writing = True
                         self.writing = True
                     else:
+                        self.debug(f'{instruction} not a valid command')
                         z_sock.send_string(f"{instruction} in an INVALID command")
 
             # start writing received data to a file
