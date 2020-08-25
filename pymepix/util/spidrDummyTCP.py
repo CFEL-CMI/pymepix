@@ -44,7 +44,7 @@ class TPX3Handler(socketserver.BaseRequestHandler, Logger):
             # self.data = struct.unpack('IIIII', self.data)
             self.cmd = socket.htonl(int(self.data[0]))
             cmdStr = next(name for name, value in vars(SpidrCmds).items() if value == self.cmd)
-            print(f'{self.requestIndex} cmd: {cmdStr} {hex(self.cmd)}')
+            #print(f'{self.requestIndex} cmd: {cmdStr} {hex(self.cmd)}')
             # print(f"{self.requestIndex} {self.client_address[0]} wrote:", flush=True)
             self.data = [socket.htonl(int(i)) for i in self.data]
             # print(f'{self.requestIndex}\trecieved: {self.data}', flush=True)
