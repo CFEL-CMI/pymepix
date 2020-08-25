@@ -27,25 +27,23 @@ import multiprocessing
 import numpy as np
 import socket
 import time
+import zmq
 
 #from pymepix.processing.basepipeline import BasePipelineObject
 from pymepix.processing.datatypes import MessageType
 from pymepix.processing.rawtodisk import Raw2Disk
 
 
-class UdpSampler(multiprocessing.Process, ProcessLogger):
-    """Recieves udp packets from SPDIR
+class TcpSampler(multiprocessing.Process, ProcessLogger):
+    """Recieves tcp packets
 
-    This class, creates a UDP socket connection to SPIDR and recivies the UDP packets from Timepix
-    It them pre-processes them and sends them off for more processing
+    The same as UdpSampler just with TCP
 
     """
 
     def __init__(self, address, longtime, chunk_size=10_000, flush_timeout=0.3, input_queue=None, create_output=True,
                  num_outputs=1, shared_output=None):
-        #BasePipelineObject.__init__(self, 'UdpSampler', input_queue=input_queue, create_output=create_output,
-        #                            num_outputs=num_outputs, shared_output=shared_output)
-        name = 'UdpSampler'
+        name = 'TcpSampler'
         ProcessLogger.__init__(self, name)
         multiprocessing.Process.__init__(self)
 
@@ -58,6 +56,9 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
         self._enable = Value('I', 1)
         self._close_file = Value(ctypes.c_bool, 0)
         self.loop_count = 0
+        self._sock = self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._conn, self._addr = None, None
+        #self.init_new_process()
 
     def init_new_process(self):
         try:
@@ -72,19 +73,19 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
             self._recv_bytes = 0
             self._total_time = 0.0
             self._longtime = self.init_param['longtime']
+
         except Exception as e:
             self.error('Exception occured in init!!!')
             self.error(e, exc_info=True)
             raise
 
     def createConnection(self, address):
-        """Establishes a UDP connection to spidr"""
-        self._sock = socket.socket(socket.AF_INET,  # Internet
-                                   socket.SOCK_DGRAM)  # UDP
-        self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 5_500_000) # TODO: change for BT NIC buffer 5.5Mb?
-        self._sock.settimeout(1.0)
+        """Establishes a TCP connection"""
         self.info('Establishing connection to : {}'.format(address))
         self._sock.bind(address)
+        self._sock.listen(1)
+        self._conn, self._addr = self._sock.accept()
+        print("dort")
 
     def get_useful_packets(self, packet):
         # Get the header
@@ -174,6 +175,7 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
 
     def pre_run(self):
         self.init_new_process()
+        print('pre-run create raw2disk')
         self.write2disk = Raw2Disk()
         self._last_update = time.time()
 
@@ -213,7 +215,7 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
 
             if enabled:
                 try:
-                    self._recv_bytes += self._sock.recv_into(self._packet_buffer_view[self._recv_bytes:])
+                    self._recv_bytes += self._conn.recv_into(self._packet_buffer_view[self._recv_bytes:])
                 except socket.timeout:
                     # put close file here to get the cases where there's no data coming and file should be closed
                     # mainly there for test to succeed
@@ -276,6 +278,8 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
         print(f'time for 1M packets: {dt:.2f}, MByte/s {total_bytes_received*1e-6/dt}')
         self.post_run()
 
+        self._conn.close()
+
 
 
     def stopRaw2Disk(self):
@@ -296,12 +300,13 @@ def main():
     import numpy as np
     # Create the logger
     import logging
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
     def send_data(packets, chunk_size, start=0, sleep=0.0001):
         ############
         # send data
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect(('127.0.0.1', 50000))
         test_data = np.arange(start, start + packets * chunk_size,
                               dtype=np.uint64)  # chunk size 135 -> max number=1_012_500
         test_data_view = memoryview(test_data)
@@ -309,7 +314,7 @@ def main():
         # first packet 0...134, second packet 135...269 and so on
         start = time.time()
         for i in range(0, len(test_data_view), chunk_size):
-            sock.sendto(test_data_view[0:0 + chunk_size], ('127.0.0.1', 50000))
+            sock.send(test_data_view[0:0 + chunk_size])
             #time.sleep(sleep)  # if there's no sleep, packets get lost
         stop = time.time()
         dt = stop - start
@@ -326,7 +331,7 @@ def main():
     #z_sock.send_string('hallo')
     #print(z_sock.recv_string())
 
-    sampler = UdpSampler(('127.0.0.1', 50000), 1)
+    sampler = TcpSampler(('127.0.0.1', 50000), 1)
     time.sleep(1)  # give thread time to start
     # send data
     packets = 2_500_000
@@ -334,15 +339,17 @@ def main():
     #test_data = np.arange(0, packets * chunk_size, dtype=np.uint64)
     # test_data = send_data(packets=10_000, chunk_size=135, start=15000, sleep=1e-4)
     p = Process(target=send_data, args=(packets, chunk_size, 0, 0))
-    p.start()
 
     start = time.time()
-    sampler.run()
+    sampler.start()
+    p.start()
+    p.join()
     stop = time.time()
     z_sock.send_string('SHUTDOWN')
     z_sock.close()
-    p.join()
-    print(f'took {stop - start}s')
+    sampler.join()
+
+    print(f'took {stop - start:.2f}s')
 
 
 if __name__ == "__main__":
