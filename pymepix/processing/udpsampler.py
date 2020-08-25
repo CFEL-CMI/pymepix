@@ -20,16 +20,13 @@
 #
 ##############################################################################
 import ctypes
-from multiprocessing import Queue
-from multiprocessing.sharedctypes import Value
-from pymepix.core.log import ProcessLogger
 import multiprocessing
-import numpy as np
 import socket
 import time
 
-#from pymepix.processing.basepipeline import BasePipelineObject
-from pymepix.processing.datatypes import MessageType
+from multiprocessing.sharedctypes import Value
+from pymepix.core.log import ProcessLogger
+# from pymepix.processing.basepipeline import BasePipelineObject
 from pymepix.processing.rawtodisk import Raw2Disk
 
 
@@ -204,7 +201,7 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
         self.pre_run()
         #enabled = True
         start = time.time()
-        #total_bytes_received = 0
+        total_bytes_received = 0
         while True:
             enabled = self.enable
             #if self.loop_count > 1_000_000:
@@ -250,7 +247,7 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
                         self.write2disk.my_sock.send(b'EOF')
 
                     #bytes_to_send = self._recv_bytes
-                    #total_bytes_received += self._recv_bytes
+                    total_bytes_received += self._recv_bytes
                     self._recv_bytes = 0
                     curr_list_idx = self._buffer_list_idx
                     # print('curr idx', curr_list_idx)
@@ -261,20 +258,21 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
 
                     #if not curr_list_idx % 20:
                     #   return MessageType.RawData, (self._packet_buffer_list[curr_list_idx][:bytes_to_send], self._longtime.value)
-                    #else:
-                    #return None, None
-                    #else:
+                    # else:
+                    # return None, None
+                    # else:
                     #    return None, None
-                #else:
+                # else:
                 #    return None, None
             else:
                 self.debug('I AM LEAVING')
                 break
-        #stop = time.time()
-        #dt = stop - start
-        #print(f'loop count {self.loop_count}')
-        #print(f'time for 1M packets: {dt:.2f}s, MByte/s {total_bytes_received*1e-6/dt}')
+        stop = time.time()
+        dt = stop - start
+        print(f'packets collected: {self._packets_collected}')
+        print(f'udpsampler MByte/s {total_bytes_received * 1e-6 / dt:.2f}')
         self.post_run()
+        self.write2disk.my_sock.close()
 
 
 
@@ -296,7 +294,7 @@ def main():
     import numpy as np
     # Create the logger
     import logging
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
     def send_data(packets, chunk_size, start=0, sleep=0.0001):
         ############
@@ -307,6 +305,7 @@ def main():
         test_data_view = memoryview(test_data)
         time.sleep(1)  # seems to be necessary if this function get called as a Process
         # first packet 0...134, second packet 135...269 and so on
+        print('sending process')
         start = time.time()
         for i in range(0, len(test_data_view), chunk_size):
             sock.sendto(test_data_view[0:0 + chunk_size], ('127.0.0.1', 50000))
@@ -318,32 +317,35 @@ def main():
               #f'bytes: {len(test_data_view.tobytes())}, '
               f'MBytes: {len(test_data_view.tobytes()) * 1e-6:.1f}, '
               f'{len(test_data_view.tobytes()) * 1e-6 / dt:.2f} MByte/s')
-        return test_data
+        #return test_data
 
     ctx = zmq.Context.instance()
     z_sock = ctx.socket(zmq.PAIR)
     z_sock.bind('tcp://127.0.0.1:40000')
-    #z_sock.send_string('hallo')
-    #print(z_sock.recv_string())
+    # z_sock.send_string('hallo')
+    # print(z_sock.recv_string())
 
     sampler = UdpSampler(('127.0.0.1', 50000), 1)
     time.sleep(1)  # give thread time to start
     # send data
-    packets = 2_500_000
-    chunk_size = 135
-    #test_data = np.arange(0, packets * chunk_size, dtype=np.uint64)
+    packets = 3_500_000
+    chunk_size = 139
+    # test_data = np.arange(0, packets * chunk_size, dtype=np.uint64)
     # test_data = send_data(packets=10_000, chunk_size=135, start=15000, sleep=1e-4)
     p = Process(target=send_data, args=(packets, chunk_size, 0, 0))
+    start = time.time()
     p.start()
 
-    start = time.time()
-    sampler.run()
+    sampler.start()
+    p.join()
+    print('sending finished')
     stop = time.time()
     z_sock.send_string('SHUTDOWN')
+    time.sleep(1)
     z_sock.close()
-    p.join()
-    print(f'took {stop - start}s')
+    sampler.enable = False
 
+    print(f'took {stop - start}s')
 
 if __name__ == "__main__":
     main()

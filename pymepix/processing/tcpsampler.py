@@ -20,17 +20,13 @@
 #
 ##############################################################################
 import ctypes
-from multiprocessing import Queue
-from multiprocessing.sharedctypes import Value
-from pymepix.core.log import ProcessLogger
 import multiprocessing
-import numpy as np
 import socket
 import time
-import zmq
 
-#from pymepix.processing.basepipeline import BasePipelineObject
-from pymepix.processing.datatypes import MessageType
+from multiprocessing.sharedctypes import Value
+from pymepix.core.log import ProcessLogger
+# from pymepix.processing.basepipeline import BasePipelineObject
 from pymepix.processing.rawtodisk import Raw2Disk
 
 
@@ -47,18 +43,15 @@ class TcpSampler(multiprocessing.Process, ProcessLogger):
         ProcessLogger.__init__(self, name)
         multiprocessing.Process.__init__(self)
 
-
         self.init_param = {'address': address,
                            'chunk_size': chunk_size,
                            'flush_timeout': flush_timeout,
                            'longtime': longtime}
-        self._record = Value(ctypes.c_bool, 0)
-        self._enable = Value('I', 1)
-        self._close_file = Value(ctypes.c_bool, 0)
+        self._record = Value(ctypes.c_bool, False)
+        self._enable = Value(ctypes.c_bool, True)
+        self._close_file = Value(ctypes.c_bool, False)
         self.loop_count = 0
-        self._sock = self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._conn, self._addr = None, None
-        #self.init_new_process()
+        self._sock, self._conn, self._addr = None, None, None
 
     def init_new_process(self):
         try:
@@ -82,10 +75,9 @@ class TcpSampler(multiprocessing.Process, ProcessLogger):
     def createConnection(self, address):
         """Establishes a TCP connection"""
         self.info('Establishing connection to : {}'.format(address))
+        self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._sock.bind(address)
         self._sock.listen(1)
-        self._conn, self._addr = self._sock.accept()
-        print("dort")
 
     def get_useful_packets(self, packet):
         # Get the header
@@ -124,7 +116,7 @@ class TcpSampler(multiprocessing.Process, ProcessLogger):
     @enable.setter
     def enable(self, value):
         self.debug('Setting enabled flag to {}'.format(value))
-        self._enable.value = int(value)
+        self._enable.value = bool(value)
 
     @property
     def record(self):
@@ -150,7 +142,7 @@ class TcpSampler(multiprocessing.Process, ProcessLogger):
     @record.setter
     def record(self, value):
         self.debug(f'Setting record flag to {value}')
-        self._record.value = int(value)
+        self._record.value = bool(value)
 
     @property
     def close_file(self):
@@ -159,7 +151,7 @@ class TcpSampler(multiprocessing.Process, ProcessLogger):
     @close_file.setter
     def close_file(self, value):
         self.debug(f'Setting close_file to {value}')
-        self._close_file.value = value
+        self._close_file.value = bool(value)
 
     @property
     def outfile_name(self):
@@ -207,6 +199,7 @@ class TcpSampler(multiprocessing.Process, ProcessLogger):
         enabled = True
         start = time.time()
         total_bytes_received = 0
+        self._conn, self._addr = self._sock.accept()
         while True:
             #enabled = self.enable
             if self.loop_count > 1_000_000:
@@ -221,7 +214,7 @@ class TcpSampler(multiprocessing.Process, ProcessLogger):
                     # mainly there for test to succeed
                     if self.close_file:
                         self.close_file = 0
-                        return self.post_run()
+                        self.post_run()
                     else:
                         self.debug('Socket timeout')
                 except socket.error:
@@ -342,6 +335,7 @@ def main():
 
     start = time.time()
     sampler.start()
+    time.sleep(1)
     p.start()
     p.join()
     stop = time.time()

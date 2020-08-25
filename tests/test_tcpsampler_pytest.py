@@ -24,17 +24,17 @@ run: pytest test_tcpsampler_pytest.py
 '''
 import os
 import socket
-import ctypes
 import time
-import numpy as np
-from multiprocessing.sharedctypes import Value
 from multiprocessing import Queue
-from pymepix.processing.tcpsampler import TcpSampler
+
+import numpy as np
 from pymepix.processing.acquisition import AcquisitionPipeline
+from pymepix.processing.tcpsampler import TcpSampler
 
 address = ('127.0.0.1', 50000)
 
-def send_data_TCP(packets, chunk_size, start = 0, sleep=0.0001):
+
+def send_data_TCP(packets, chunk_size, start=0, sleep=0.0001):
     ############
     # send data
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -59,7 +59,6 @@ def test_zmq_multifile():
     '''
     test functionality of 1st acquisition pipeline step with data been put into Queue for pixelprocesor and thread to Raw2Disk
     '''
-    from pymepix.processing.packetprocessor import PacketProcessor
     from multiprocessing.sharedctypes import Value
     from multiprocessing import Process
     import queue
@@ -379,7 +378,7 @@ def test_zmq_multifile():
     t.start()
     z_sock.send_string('hallo')
 
-    """
+
     fname = f'./test-{time.strftime("%Y%m%d-%H%M%S")}.raw'
     # acqpipline._stages[0]._pipeline_objects[0].outfile_name = fname
     acqpipline._stages[0]._pipeline_objects[0].record = 1
@@ -393,7 +392,7 @@ def test_zmq_multifile():
     ############
     # send data
     packets = 60_000
-    chunk_size = 135
+    chunk_size = 138
     test_data = np.arange(0, packets * chunk_size, dtype=np.uint64)
     #test_data = send_data(packets=10_000, chunk_size=135, start=15000, sleep=1e-4)
     p = Process(target=send_data_TCP, args=(packets, chunk_size, 0, 0))
@@ -442,7 +441,7 @@ def test_zmq_multifile():
     assert np.fromfile(fname, dtype=np.uint64).sum() == test_data.sum()
     assert np.fromfile(fname, dtype=np.uint64).shape == test_data.shape
     '''
-    """
+
     if t.is_alive():
         end_queue.put(None)
         print('waiting for queue thread')
@@ -462,59 +461,57 @@ def test_zmq_multifile():
 
 
 def test_real_data_packetprocessor():
-    '''send actual data from TPX'''
+    '''receive actual data from TPX'''
     from multiprocessing.sharedctypes import Value
-    import queue
     import time
-    import threading
-    import zmq
+
     # Create the logger
     import logging
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
     end_queue = Queue()  # queue for PacketProcessor
-
-    acqpipline = AcquisitionPipeline('Test', end_queue)
-
     test_value = Value('I', 0)
-
-    acqpipline.addStage(0, UdpSampler, address, test_value)
+    acqpipline = AcquisitionPipeline('Test', end_queue)
+    acqpipline.addStage(0, TcpSampler, address, test_value)
     # acqpipline.addStage(2, PacketProcessor, num_processes=4)
-
-    ###############
-    # take data form Queue where PacketProcessor would be sitting
-    ctx = zmq.Context.instance()
-    z_sock = ctx.socket(zmq.PAIR)
-    z_sock.bind('inproc://queueThread')
-    def get_queue_thread(q):
-        ctx = zmq.Context.instance()
-        sock = ctx.socket(zmq.PAIR)
-        sock.connect('inproc://queueThread')
-        sock.recv_string() # receive estabishing message
-
-        received = []
-        while True:
-            try:
-                value = q.get(block=False, timeout=0.5)  # value = (Message.Type, [array, longtime])
-                if value is None:
-                    break
-                messType, data = value
-                received.append(data[0])
-            except queue.Empty:
-                pass
-            # print(value)
-        sock.send_pyobj(received)
-        time.sleep(5)  # give zmq thread time to send data
-
-    t = threading.Thread(target=get_queue_thread, args=(end_queue,))
-    #t.daemon = True
-    t.start()
-    z_sock.send_string('hallo') # establish connection, seems to be necessary to first send something from binding code....
 
     ##########
     # start acquisition pipeline
     acqpipline.start()
 
+    fname = f'./test-{time.strftime("%Y%m%d-%H%M%S")}.raw'
+    start = time.time()
+    acqpipline._stages[0]._pipeline_objects[0].record = True
+    acqpipline._stages[0].z_sock.send_string(fname)
+    res = acqpipline._stages[0].z_sock.recv_string()
+    if res == 'OPENED':
+        print(f'file {fname} opened')
+    else:
+        print(f'did not open {res}')
+    time.sleep(40)  # record for n seconds
+
+    acqpipline._stages[0]._pipeline_objects[0].record = False
+    stop = time.time()
+    acqpipline._stages[0]._pipeline_objects[0].close_file = True
+    res = acqpipline._stages[0].z_sock.recv_string()
+    if res == 'CLOSED':
+        print(f'file {fname} closed')
+    else:
+        print(f'problem, {res}')
+        print('data we got from raw2disk:')
+    dt = stop - start
+    print(f'received MByte/s: {np.fromfile(fname, dtype=np.uint8).shape[0] / dt * 1e-6:.2f}')
+
+    # close everything
+    os.remove(fname)
+    acqpipline._stages[0]._pipeline_objects[0].enable = False
+    res = acqpipline._stages[0].z_sock.send_string("SHUTDOWN")
+    acqpipline.stop()
+
+    print('Done and done')
+
 
 if __name__ == "__main__":
-    test_zmq_multifile()
-    #test_zmq_singlefile()
+    # test_zmq_multifile()
+    # test_zmq_singlefile()
+    test_real_data_packetprocessor()

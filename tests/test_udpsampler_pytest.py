@@ -22,15 +22,16 @@
 module to test udpsampler functionality
 run: pytest test_udpsampler_pytest.py
 '''
+import ctypes
 import os
 import socket
-import ctypes
 import time
+from multiprocessing import Queue
+
 import numpy as np
 from multiprocessing.sharedctypes import Value
-from multiprocessing import Queue
-from pymepix.processing.udpsampler import UdpSampler
 from pymepix.processing.acquisition import AcquisitionPipeline
+from pymepix.processing.udpsampler import UdpSampler
 
 # address at with the UDP sampler listens
 address = ('127.0.0.1', 50000)
@@ -121,7 +122,6 @@ def test_queue():
     '''
     test functionality of 1st acquisition pipeline step with data been put into queue
     '''
-    from pymepix.processing.packetprocessor import PacketProcessor
     from multiprocessing.sharedctypes import Value
     import threading
     # Create the logger
@@ -182,7 +182,6 @@ def test_zmq_singlefile():
     '''
     test functionality of 1st acquisition pipeline step with data been put into Queue for pixelprocesor and thread to Raw2Disk
     '''
-    from pymepix.processing.packetprocessor import PacketProcessor
     from multiprocessing.sharedctypes import Value
     import queue
     import time
@@ -316,7 +315,6 @@ def test_zmq_multifile():
     test functionality of 1st acquisition pipeline step with data been put into Queue for pixelprocesor
     and thread to Raw2Disk
     '''
-    from pymepix.processing.packetprocessor import PacketProcessor
     from multiprocessing.sharedctypes import Value
     from multiprocessing import Process
     import queue
@@ -722,10 +720,7 @@ def test_zmq_multifile():
 def test_real_data_packetprocessor():
     '''receive actual data from TPX'''
     from multiprocessing.sharedctypes import Value
-    import queue
     import time
-    import threading
-    import zmq
     # Create the logger
     import logging
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -749,7 +744,7 @@ def test_real_data_packetprocessor():
         print(f'file {fname} opened')
     else:
         print(f'did not open {res}')
-    time.sleep(40)  # record for 10s
+    time.sleep(40)  # record for n seconds
 
     acqpipline._stages[0]._pipeline_objects[0].record = False
     stop = time.time()
@@ -761,7 +756,7 @@ def test_real_data_packetprocessor():
         print(f'problem, {res}')
         print('data we got from raw2disk:')
     dt = stop - start
-    print('received MByte/s:', np.fromfile(fname, dtype=np.uint8).shape[0]/dt*1e-6)
+    print(f'received MByte/s: {np.fromfile(fname, dtype=np.uint8).shape[0] / dt * 1e-6:.2f}')
 
     # close everything
     os.remove(fname)
@@ -773,6 +768,6 @@ def test_real_data_packetprocessor():
 
 
 if __name__ == "__main__":
-    #test_zmq_multifile()
+    test_zmq_multifile()
     # test_zmq_singlefile()
-    test_real_data_packetprocessor()
+    # test_real_data_packetprocessor()
