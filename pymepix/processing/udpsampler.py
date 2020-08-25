@@ -54,9 +54,9 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
                            'chunk_size': chunk_size,
                            'flush_timeout': flush_timeout,
                            'longtime': longtime}
-        self._record = Value(ctypes.c_bool, 0)
-        self._enable = Value('I', 1)
-        self._close_file = Value(ctypes.c_bool, 0)
+        self._record = Value(ctypes.c_bool, False)
+        self._enable = Value(ctypes.c_bool, True)
+        self._close_file = Value(ctypes.c_bool, False)
         self.loop_count = 0
 
     def init_new_process(self):
@@ -123,7 +123,7 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
     @enable.setter
     def enable(self, value):
         self.debug('Setting enabled flag to {}'.format(value))
-        self._enable.value = int(value)
+        self._enable.value = bool(value)
 
     @property
     def record(self):
@@ -149,7 +149,7 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
     @record.setter
     def record(self, value):
         self.debug(f'Setting record flag to {value}')
-        self._record.value = int(value)
+        self._record.value = bool(value)
 
     @property
     def close_file(self):
@@ -158,7 +158,7 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
     @close_file.setter
     def close_file(self, value):
         self.debug(f'Setting close_file to {value}')
-        self._close_file.value = value
+        self._close_file.value = bool(value)
 
     @property
     def outfile_name(self):
@@ -202,14 +202,14 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
 
     def run(self):
         self.pre_run()
-        enabled = True
+        #enabled = True
         start = time.time()
-        total_bytes_received = 0
+        #total_bytes_received = 0
         while True:
-            #enabled = self.enable
-            if self.loop_count > 1_000_000:
-                enabled = False
-            self.loop_count += 1
+            enabled = self.enable
+            #if self.loop_count > 1_000_000:
+            #    enabled = False
+            #self.loop_count += 1
 
             if enabled:
                 try:
@@ -218,15 +218,15 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
                     # put close file here to get the cases where there's no data coming and file should be closed
                     # mainly there for test to succeed
                     if self.close_file:
-                        self.close_file = 0
-                        return self.post_run()
+                        self.close_file = False
+                        self.post_run()
                     else:
                         self.debug('Socket timeout')
                 except socket.error:
                     self.debug('socket error')
                 # self.debug('Read {}'.format(raw_packet))
 
-                #self._packets_collected += 1
+                self._packets_collected += 1
                 end = time.time()
 
                 self._total_time += end - start
@@ -244,13 +244,13 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
                     if self.record:
                         self.write2disk.my_sock.send(self._packet_buffer_list[self._buffer_list_idx][:self._recv_bytes], copy=False)
                     elif self.close_file:
-                        self.close_file = 0
+                        self.close_file = False
                         self.debug('received close file')
                         self.write2disk.my_sock.send(self._packet_buffer_list[self._buffer_list_idx][:self._recv_bytes], copy=False)
                         self.write2disk.my_sock.send(b'EOF')
 
                     #bytes_to_send = self._recv_bytes
-                    total_bytes_received += self._recv_bytes
+                    #total_bytes_received += self._recv_bytes
                     self._recv_bytes = 0
                     curr_list_idx = self._buffer_list_idx
                     # print('curr idx', curr_list_idx)
@@ -270,10 +270,10 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
             else:
                 self.debug('I AM LEAVING')
                 break
-        stop = time.time()
-        dt = stop - start
-        print(f'loop count {self.loop_count}')
-        print(f'time for 1M packets: {dt:.2f}, MByte/s {total_bytes_received*1e-6/dt}')
+        #stop = time.time()
+        #dt = stop - start
+        #print(f'loop count {self.loop_count}')
+        #print(f'time for 1M packets: {dt:.2f}s, MByte/s {total_bytes_received*1e-6/dt}')
         self.post_run()
 
 

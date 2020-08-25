@@ -304,9 +304,31 @@ def send_data(packets, chunk_size, start = 0, sleep=0.0001):
           f'{len(test_data_view.tobytes()) * 1e-6 / dt:.2f} MByte/s')
     return test_data
 
+def send_data_TCP(packets, chunk_size, start = 0, sleep=0.0001):
+    ############
+    # send data
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.connect(('127.0.0.1', 50000))
+    test_data = np.arange(start, start + packets * chunk_size, dtype=np.uint64)  # chunk size 135 -> max number=1_012_500
+    test_data_view = memoryview(test_data)
+    time.sleep(1)  # seems to be necessary if this function get called as a Process
+    # first packet 0...134, second packet 135...269 and so on
+    start = time.time()
+    for i in range(0, len(test_data_view), chunk_size):
+        sock.send(test_data_view[i:i + chunk_size])
+        #time.sleep(sleep)  # if there's no sleep, packets get lost
+    stop = time.time()
+    dt = stop - start
+    print(f'packets sent: {packets}, '
+          f'bytes: {len(test_data_view.tobytes())}, '
+          f'MBytes: {len(test_data_view.tobytes())*1e-6:.1f}, '
+          f'{len(test_data_view.tobytes()) * 1e-6 / dt:.2f} MByte/s')
+    return test_data
+
 def test_zmq_multifile():
     '''
-    test functionality of 1st acquisition pipeline step with data been put into Queue for pixelprocesor and thread to Raw2Disk
+    test functionality of 1st acquisition pipeline step with data been put into Queue for pixelprocesor
+    and thread to Raw2Disk
     '''
     from pymepix.processing.packetprocessor import PacketProcessor
     from multiprocessing.sharedctypes import Value
@@ -317,7 +339,7 @@ def test_zmq_multifile():
     import zmq
     # Create the logger
     import logging
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     end_queue = Queue()  # queue for PacketProcessor
 
     acqpipline = AcquisitionPipeline('Test', end_queue)
@@ -549,6 +571,7 @@ def test_zmq_multifile():
     t.join()
     z_sock.close()
     os.remove(fname)
+    """
 
     ############
     # start 4th file
@@ -563,7 +586,7 @@ def test_zmq_multifile():
 
     fname = f'./test-{time.strftime("%Y%m%d-%H%M%S")}.raw'
     # acqpipline._stages[0]._pipeline_objects[0].outfile_name = fname
-    acqpipline._stages[0]._pipeline_objects[0].record = 1
+    acqpipline._stages[0]._pipeline_objects[0].record = True
     acqpipline._stages[0].z_sock.send_string(fname)
     res = acqpipline._stages[0].z_sock.recv_string()
     if res == 'OPENED':
@@ -571,12 +594,12 @@ def test_zmq_multifile():
     else:
         print(f'did not open {res}')
 
-    test_data = send_data(packets=100_000, chunk_size=135, start=15000, sleep=0)
+    test_data = send_data(packets=100_000, chunk_size=139, start=15000, sleep=0)
 
     # finish acquisition 4th file
     time.sleep(5)  # permit thread time to empty queue
-    acqpipline._stages[0]._pipeline_objects[0].record = 0
-    acqpipline._stages[0]._pipeline_objects[0].close_file = 1
+    acqpipline._stages[0]._pipeline_objects[0].record = False
+    acqpipline._stages[0]._pipeline_objects[0].close_file = True
     res = acqpipline._stages[0].z_sock.recv_string()
     if res == 'CLOSED':
         print(f'file {fname} closed')
@@ -594,7 +617,7 @@ def test_zmq_multifile():
         print('No packets received!!!')
         data = np.asarray([])
 
-    print('data we got:')
+    print('data we got from queue:')
     print(#np.frombuffer(data, dtype=np.uint64),
           #test_data,
           np.frombuffer(data, dtype=np.uint64).shape,
@@ -607,18 +630,22 @@ def test_zmq_multifile():
     assert np.frombuffer(data, dtype=np.uint64).shape == test_data.shape
     '''
     # check for data in file
+    print('data we got from file:')
+    print(np.fromfile(fname, dtype=np.uint64).shape, test_data.shape,
+          np.fromfile(fname, dtype=np.uint64).shape[0] / test_data.shape[0])
+    '''
     assert np.fromfile(fname, dtype=np.uint64).all() == test_data.all()
     assert np.fromfile(fname, dtype=np.uint64).sum() == test_data.sum()
     assert np.fromfile(fname, dtype=np.uint64).shape == test_data.shape
+    '''
 
     print('waiting for queue thread')
     t.join()
     z_sock.close()
     os.remove(fname)
-    """
 
     ############
-    # send data as fast as possible
+    # send data as fast as possible, 5th file
     ############
     # start thread
     print('\n######### 5th file ##############')
@@ -641,7 +668,7 @@ def test_zmq_multifile():
     ############
     # send data
     packets = 60_000
-    chunk_size = 135
+    chunk_size = 139
     test_data = np.arange(0, packets * chunk_size, dtype=np.uint64)
     #test_data = send_data(packets=10_000, chunk_size=135, start=15000, sleep=1e-4)
     p = Process(target=send_data, args=(packets, chunk_size, 0, 0))
@@ -650,8 +677,9 @@ def test_zmq_multifile():
 
     # finish acquisition 5th file
     time.sleep(5)  # permit thread time to empty queue
-    acqpipline._stages[0]._pipeline_objects[0].record = 0
-    acqpipline._stages[0]._pipeline_objects[0].close_file = 1
+    acqpipline._stages[0]._pipeline_objects[0].record = False
+    acqpipline._stages[0]._pipeline_objects[0].close_file = True
+    acqpipline._stages[0]._pipeline_objects[0].enable = False
     res = acqpipline._stages[0].z_sock.recv_string()
     if res == 'CLOSED':
         print(f'file {fname} closed')
@@ -669,7 +697,7 @@ def test_zmq_multifile():
         print('No packets received!!!')
         data = np.asarray([])
 
-    print('data we got:')
+    print('data we got from queue:')
     print(  # np.frombuffer(data, dtype=np.uint64),
         # test_data,
         np.frombuffer(data, dtype=np.uint64).shape,
@@ -682,6 +710,7 @@ def test_zmq_multifile():
     assert np.frombuffer(data, dtype=np.uint64).shape == test_data.shape
     '''
     # check for data in file
+    print('data we got from raw2disk:')
     print(np.fromfile(fname, dtype=np.uint64).shape, test_data.shape,
           np.fromfile(fname, dtype=np.uint64).shape[0]/test_data.shape[0])
     '''
