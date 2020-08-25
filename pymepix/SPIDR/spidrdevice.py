@@ -263,10 +263,12 @@ class SpidrDevice(Logger):
         raise NotImplementedError
 
     def _formatPixelBits(self, matrix_packet):
-        '''
+        """
         Formats pixel information according to spidr's needs.
-        6 bit for each pixel, so 3 bytes every 4 pixels
-        '''
+
+        6 bits are needed for each pixel, (1 4 1)
+        so we pack the information for 4 pixels in 3 bytes.
+        """
         size = matrix_packet.size * 3 // 4
         formatted = np.zeros((size,), dtype=np.uint8)
 
@@ -283,59 +285,31 @@ class SpidrDevice(Logger):
         return formatted
 
     def _uploadFormatted(self, columns_per_packet):
-        '''
-        Packs the pixel config informtation for each pixel as testbit - threshold - masking bit.
-        A pixel is masked if the according last bit is 1.
-        '''
+        """
+        Packs and sends pixel config.
 
-        # TIMEPIX_BITS=6
-        # nbytes = columns_per_packet*(256*TIMEPIX_BITS)//8
-
-        # for x in range(0,256,columns_per_packet):
-        #     for col in range(0,columns_per_packet):
-        #         to_write = self._pixel_config[self._pixel_idx][x+col,:]
-        #         offset = 0
-        #         packet = np.packbits(np.unpackbits(to_write).reshape(-1,8)[:,2:8].reshape(-1))
-
-        #     self._ctrl.req
+        Packs the pixel config information for each pixel as testbit (1b) - threshold (4b) - masking bit (1b).
+        A pixel is masked if the according bit is 1.
+        """
         self.resetPixels()
 
-        final_pixels = (self._pixel_mask) | (self._pixel_threshold & 0xf) << 1 | (self._pixel_test & 1) << 5
-        self.debug('FINAL_PIXELS {}'.format(final_pixels))
         # Flatten and unpack the bits of the matrix selecting only the necessary bits
+        final_pixels = self._pixel_mask | (self._pixel_threshold & 0xf) << 1 | (self._pixel_test & 1) << 5
+        self.debug('FINAL_PIXELS {}'.format(final_pixels))
 
-        for x in range(0, 255, 3):  # create 85 packets of 3 rows and a last one of one row
+        # create 85 packets of 3 rows and a last one of one row
+        for x in range(0, 255, 3):
             start_col = x
             end_col = x + 3
-            matrix_packet = final_pixels[start_col:end_col,:].reshape(768)
-            # @print (matrix_packet.shape,matrix_packet.dtype)
-            # print ('Sending packet with columns {}-{}'.format(start_col,end_col))
+            matrix_packet = final_pixels[start_col:end_col, :].reshape(768)
             self._ctrl.requestSetIntBytes(SpidrCmds.CMD_SET_PIXCONF, self._dev_num, x,
                                           self._formatPixelBits(matrix_packet))
 
-            # self._ctrl.request(self.CMD_SET_PIXCONF, self._dev_num, )
-
-            # request_packet = np.ndarray(shape=(512,),dtype=np.int32)
-
-            # request_packet[0] = socket.htonl(SpidrCmds.CMD_SET_PIXCONF)
-            # message_length = (4+1+matrix_packet_int.shape[0])*4
-            # request_packet[1] = socket.htonl(message_length)
-            # request_packet[2]=0
-            # request_packet[3] = socket.htonl(self._dev_num)
-            # request_packet[4] = 0
-            # #request_packet[4:4+column_mask.shape[0]] = column_mask[:]
-            # start= 5
-            # end = start + matrix_packet_int.shape[0]
-            # request_packet[start:end] = matrix_packet_int[:]
-
-            # self._ctrl.customRequest(request_packet,message_length)
-
         # last row
         matrix_packet = final_pixels[255, :].reshape(256)
-        # matrix_packet = np.insert(matrix_packet, 0, 255 & 0xff, axis=0)
+
         self._ctrl.requestSetIntBytes(SpidrCmds.CMD_SET_PIXCONF, self._dev_num, 255,
                                       self._formatPixelBits(matrix_packet))
-
         # Should be length 393216
 
     @property
