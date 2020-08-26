@@ -199,12 +199,12 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
 
     def run(self):
         self.pre_run()
-        #enabled = True
+        enabled = True
         start = time.time()
         total_bytes_received = 0
         while True:
-            enabled = self.enable
-            #if self.loop_count > 1_000_000:
+            # enabled = self.enable
+            # if self.loop_count > 1_000_000:
             #    enabled = False
             #self.loop_count += 1
 
@@ -254,6 +254,7 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
                     self._buffer_list_idx = (self._buffer_list_idx + 1) % len(self._packet_buffer_list)
                     self._packet_buffer_view = memoryview(self._packet_buffer_list[self._buffer_list_idx])
                     self._last_update = time.time()
+                    enabled = self.enable
                     # if len(packet) > 1:
 
                     #if not curr_list_idx % 20:
