@@ -299,7 +299,7 @@ def send_data(packets, chunk_size, start=0, sleep=0.0001):
     # first packet 0...134, second packet 135...269 and so on
     start = time.time()
     for i in range(0, len(test_data_view), chunk_size):
-        sock.sendto(test_data_view[i:i + chunk_size], ('127.0.0.1', 50000))
+        sock.sendto(test_data_view[i:i + chunk_size], address)
         time.sleep(sleep)  # if there's no sleep, packets get lost
     stop = time.time()
     dt = stop - start

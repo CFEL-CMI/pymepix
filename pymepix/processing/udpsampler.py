@@ -212,6 +212,7 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
                 try:
                     self._recv_bytes += self._sock.recv_into(self._packet_buffer_view[self._recv_bytes:])
                 except socket.timeout:
+                    enabled = self.enable
                     # put close file here to get the cases where there's no data coming and file should be closed
                     # mainly there for test to succeed
                     if self.close_file:
