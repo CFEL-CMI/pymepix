@@ -1,4 +1,4 @@
-branch for implementing a ZMQ driven file writer thread called in UDPSampler
+branch for implementing zmq for packetprocessor
 
 # Pymepix
 
