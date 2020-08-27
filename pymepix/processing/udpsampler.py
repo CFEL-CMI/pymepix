@@ -80,7 +80,7 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
         """Establishes a UDP connection to spidr"""
         self._sock = socket.socket(socket.AF_INET,  # Internet
                                    socket.SOCK_DGRAM)  # UDP
-        self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 5_500_000) # TODO: change for BT NIC buffer 5.5Mb?
+        #self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 5_500_000) # TODO: change for BT NIC buffer 5.5Mb?
         self._sock.settimeout(1.0)
         self.info('Establishing connection to : {}'.format(address))
         self._sock.bind(address)
