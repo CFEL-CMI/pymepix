@@ -29,7 +29,7 @@ from multiprocessing import Queue
 
 import numpy as np
 from pymepix.processing.acquisition import AcquisitionPipeline
-from pymepix.processing.tcpsampler import TcpSampler
+from pymepix.util.tcpsampler import TcpSampler
 
 address = ('127.0.0.1', 50000)
 
