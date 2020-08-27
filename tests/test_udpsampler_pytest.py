@@ -310,20 +310,39 @@ def send_data(packets, chunk_size, start=0, sleep=0.0001):
     return test_data
 
 
+def send_data_fast(packets, chunk_size):
+    ############
+    # send data
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    test_data = np.arange(0, packets * chunk_size, dtype=np.uint64)
+    test_data_view = memoryview(test_data)
+    time.sleep(1)  # seems to be necessary if this function get called as a Process
+    # first packet 0...134, second packet 135...269 and so on
+    start = time.time()
+    for i in range(0, len(test_data_view), chunk_size):
+        sock.sendto(test_data_view[0:chunk_size], address)
+        #j = ((i % 5 + 1) ** 0.2) ** 3.5  # waste some time to slow sending down
+    stop = time.time()
+    dt = stop - start
+    print(f'packets sent: {packets}, '
+          f'bytes: {len(test_data_view.tobytes())}, '
+          f'MBytes: {len(test_data_view.tobytes()) * 1e-6:.1f}, '
+          f'{len(test_data_view.tobytes()) * 1e-6 / dt:.2f} MByte/s')
+
+
 def test_zmq_multifile():
     '''
     test functionality of 1st acquisition pipeline step with data been put into Queue for pixelprocesor
     and thread to Raw2Disk
     '''
     from multiprocessing.sharedctypes import Value
-    from multiprocessing import Process
     import queue
     import time
     import threading
     import zmq
     # Create the logger
     import logging
-    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     end_queue = Queue()  # queue for PacketProcessor
 
     acqpipline = AcquisitionPipeline('Test', end_queue)
@@ -363,16 +382,16 @@ def test_zmq_multifile():
 
     ############
     # start 1st file
-    """
     print('######### 1st file ##############')
     z_sock = ctx.socket(zmq.PAIR)
     z_sock.bind('inproc://queueThread')
     t = threading.Thread(target=get_queue_thread, args=(end_queue,))
     t.start()
-    z_sock.send_string('hallo')  # establish connection, seems to be necessary to first send something from binding code....
+    # establish connection, seems to be necessary to first send something from binding code....
+    z_sock.send_string('hallo')
 
     fname = f'./test-{time.strftime("%Y%m%d-%H%M%S")}.raw'
-    #acqpipline._stages[0]._pipeline_objects[0].outfile_name = fname
+    # acqpipline._stages[0]._pipeline_objects[0].outfile_name = fname
     acqpipline._stages[0]._pipeline_objects[0].record = 1
     acqpipline._stages[0].z_sock.send_string(fname)
     res = acqpipline._stages[0].z_sock.recv_string()
@@ -408,11 +427,11 @@ def test_zmq_multifile():
         data = np.asarray([])
 
     print('data we got:')
-    print(#np.frombuffer(data, dtype=np.uint64),
-          #test_data,
-          np.unique(np.frombuffer(data, dtype=np.uint64)).shape,
-          np.frombuffer(data, dtype=np.uint64).shape,
-          test_data.shape)
+    print(  # np.frombuffer(data, dtype=np.uint64),
+        # test_data,
+        np.unique(np.frombuffer(data, dtype=np.uint64)).shape,
+        np.frombuffer(data, dtype=np.uint64).shape,
+        test_data.shape)
     # check for Queue content
     '''
     assert np.frombuffer(data, dtype=np.uint64).all() == test_data.all()
@@ -421,6 +440,8 @@ def test_zmq_multifile():
     '''
     # check for data in file
     assert np.fromfile(fname, dtype=np.uint64).all() == test_data.all()
+    assert np.fromfile(fname, dtype=np.uint64).sum() == test_data.sum()
+    assert np.fromfile(fname, dtype=np.uint64).shape == test_data.shape
 
     os.remove(fname)
     t.join()
@@ -474,19 +495,22 @@ def test_zmq_multifile():
         data = np.asarray([])
 
     print('data we got:')
-    print(#np.frombuffer(data, dtype=np.uint64),
-          #test_data,
-          np.frombuffer(data, dtype=np.uint64).shape,
-          np.unique(np.frombuffer(data, dtype=np.uint64)).shape,
-          test_data.shape)
+    print(  # np.frombuffer(data, dtype=np.uint64),
+        # test_data,
+        np.frombuffer(data, dtype=np.uint64).shape,
+        np.unique(np.frombuffer(data, dtype=np.uint64)).shape,
+        test_data.shape)
     # check for Queue content
     '''
     assert np.frombuffer(data, dtype=np.uint64).all() == test_data.all()
     assert np.frombuffer(data, dtype=np.uint64).sum() == test_data.sum()
     assert np.frombuffer(data, dtype=np.uint64).shape == test_data.shape
+    '''
     # check for data in file
     assert np.fromfile(fname, dtype=np.uint64).all() == test_data.all()
-    '''
+    assert np.fromfile(fname, dtype=np.uint64).sum() == test_data.sum()
+    assert np.fromfile(fname, dtype=np.uint64).shape == test_data.shape
+
     print('waiting for queue thread')
     t.join()
     z_sock.close()
@@ -537,11 +561,11 @@ def test_zmq_multifile():
         data = np.asarray([])
 
     print('data we got:')
-    print(#np.frombuffer(data, dtype=np.uint64),
-          #test_data,
-          np.frombuffer(data, dtype=np.uint64).shape,
-          np.unique(np.frombuffer(data, dtype=np.uint64)).shape,
-          test_data.shape)
+    print(  # np.frombuffer(data, dtype=np.uint64),
+        # test_data,
+        np.frombuffer(data, dtype=np.uint64).shape,
+        np.unique(np.frombuffer(data, dtype=np.uint64)).shape,
+        test_data.shape)
     # check for Queue content
     '''
     assert np.frombuffer(data, dtype=np.uint64).all() == test_data.all()
@@ -550,12 +574,13 @@ def test_zmq_multifile():
     '''
     # check for data in file
     assert np.fromfile(fname, dtype=np.uint64).all() == test_data.all()
+    assert np.fromfile(fname, dtype=np.uint64).sum() == test_data.sum()
+    assert np.fromfile(fname, dtype=np.uint64).shape == test_data.shape
 
     print('waiting for queue thread')
     t.join()
     z_sock.close()
     os.remove(fname)
-    """
 
     ############
     # start 4th file
@@ -601,27 +626,26 @@ def test_zmq_multifile():
         print('No packets received!!!')
         data = np.asarray([])
 
-    print('data we got from queue:')
-    print(  # np.frombuffer(data, dtype=np.uint64),
-        # test_data,
-        np.frombuffer(data, dtype=np.uint64).shape,
-        np.unique(np.frombuffer(data, dtype=np.uint64)).shape,
-        test_data.shape)
+    # print('data we got from queue:')
+    # print(  # np.frombuffer(data, dtype=np.uint64),
+    #    # test_data,
+    #    np.frombuffer(data, dtype=np.uint64).shape,
+    #    np.unique(np.frombuffer(data, dtype=np.uint64)).shape,
+    #    test_data.shape)
     # check for Queue content
     '''
     assert np.frombuffer(data, dtype=np.uint64).all() == test_data.all()
     assert np.frombuffer(data, dtype=np.uint64).sum() == test_data.sum()
     assert np.frombuffer(data, dtype=np.uint64).shape == test_data.shape
     '''
+
     # check for data in file
-    print('data we got from file:')
-    print(np.fromfile(fname, dtype=np.uint64).shape, test_data.shape,
-          np.fromfile(fname, dtype=np.uint64).shape[0] / test_data.shape[0])
-    '''
+    # print('data we got from file:')
+    # print(np.fromfile(fname, dtype=np.uint64).shape, test_data.shape,
+    #      np.fromfile(fname, dtype=np.uint64).shape[0] / test_data.shape[0])
     assert np.fromfile(fname, dtype=np.uint64).all() == test_data.all()
     assert np.fromfile(fname, dtype=np.uint64).sum() == test_data.sum()
     assert np.fromfile(fname, dtype=np.uint64).shape == test_data.shape
-    '''
 
     print('waiting for queue thread')
     t.join()
@@ -629,16 +653,42 @@ def test_zmq_multifile():
     os.remove(fname)
 
     ############
-    # send data as fast as possible, 5th file
+    # shut everything down
+    res = acqpipline._stages[0].z_sock.send_string("SHUTDOWN")
+    acqpipline.stop()
+
+    print('Done and done')
+
+
+def test_speed():
+    '''
+    receive data at maximum speed and see how many packets arrived
+    '''
+    from multiprocessing.sharedctypes import Value
+    from multiprocessing import Process
+    import time
+
+    # Create the logger
+    import logging
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    end_queue = Queue()  # queue for PacketProcessor
+
+    acqpipline = AcquisitionPipeline('Test', end_queue)
+
+    test_value = Value('I', 0)
+
+    acqpipline.addStage(0, UdpSampler, address, test_value)
+    # acqpipline.addStage(2, PacketProcessor, num_processes=4)
+
+    ##########
+    # start acquisition pipeline
+    acqpipline.start()
+
+    ############
+    # send data as fast as possible
     ############
     # start thread
-    print('\n######### 5th file ##############')
-    z_sock = ctx.socket(zmq.PAIR)
-    z_sock.bind('inproc://queueThread')
-    t = threading.Thread(target=get_queue_thread, args=(end_queue,))
-    t.start()
-    z_sock.send_string('hallo')
-
+    print('\n######### speed test ##############')
     fname = f'./test-{time.strftime("%Y%m%d-%H%M%S")}.raw'
     # acqpipline._stages[0]._pipeline_objects[0].outfile_name = fname
     acqpipline._stages[0]._pipeline_objects[0].record = 1
@@ -651,16 +701,14 @@ def test_zmq_multifile():
 
     ############
     # send data
-    packets = 60_000
+    packets = 100_000
     chunk_size = 139
     test_data = np.arange(0, packets * chunk_size, dtype=np.uint64)
-    # test_data = send_data(packets=10_000, chunk_size=135, start=15000, sleep=1e-4)
-    p = Process(target=send_data, args=(packets, chunk_size, 0, 0))
+    p = Process(target=send_data_fast, args=(packets, chunk_size))
     p.start()
     p.join()
 
-    # finish acquisition 5th file
-    time.sleep(5)  # permit thread time to empty queue
+    # finish acquisition speed test
     acqpipline._stages[0]._pipeline_objects[0].record = False
     acqpipline._stages[0]._pipeline_objects[0].close_file = True
     acqpipline._stages[0]._pipeline_objects[0].enable = False
@@ -669,44 +717,13 @@ def test_zmq_multifile():
         print(f'file {fname} closed')
     else:
         print(f'problem, {res}')
-    end_queue.put(None)
-    received = z_sock.recv_pyobj()
 
-    # do the testing
-    if len(received) > 1:
-        data = np.concatenate(received)
-    elif len(received) == 1:
-        data = np.asarray(received[0])
-    else:
-        print('No packets received!!!')
-        data = np.asarray([])
-
-    print('data we got from queue:')
-    print(  # np.frombuffer(data, dtype=np.uint64),
-        # test_data,
-        np.frombuffer(data, dtype=np.uint64).shape,
-        np.unique(np.frombuffer(data, dtype=np.uint64)).shape,
-        test_data.shape)
-    # check for Queue content
-    '''
-    assert np.frombuffer(data, dtype=np.uint64).all() == test_data.all()
-    assert np.frombuffer(data, dtype=np.uint64).sum() == test_data.sum()
-    assert np.frombuffer(data, dtype=np.uint64).shape == test_data.shape
-    '''
+    # do testing
     # check for data in file
     print('data we got from raw2disk:')
-    print(np.fromfile(fname, dtype=np.uint64).shape, test_data.shape,
-          np.fromfile(fname, dtype=np.uint64).shape[0] / test_data.shape[0])
-    '''
-    assert np.fromfile(fname, dtype=np.uint64).all() == test_data.all()
-    assert np.fromfile(fname, dtype=np.uint64).sum() == test_data.sum()
-    assert np.fromfile(fname, dtype=np.uint64).shape == test_data.shape
-    '''
-
-    if t.is_alive():
-        print('waiting for queue thread')
-        t.join()
-    z_sock.close()
+    print(f'bytes in file {np.fromfile(fname, dtype=np.uint64).shape}',
+          f'bytes sent {test_data.shape}',
+          f'ratio {np.fromfile(fname, dtype=np.uint64).shape[0] / test_data.shape[0]}')
     os.remove(fname)
 
     ############
@@ -717,6 +734,7 @@ def test_zmq_multifile():
     print('Done and done')
 
 
+"""
 def test_real_data_packetprocessor():
     '''receive actual data from TPX'''
     from multiprocessing.sharedctypes import Value
@@ -765,9 +783,10 @@ def test_real_data_packetprocessor():
     acqpipline.stop()
 
     print('Done and done')
-
+"""
 
 if __name__ == "__main__":
+    #test_speed()
     test_zmq_multifile()
     # test_zmq_singlefile()
     # test_real_data_packetprocessor()
