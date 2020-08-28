@@ -220,13 +220,13 @@ class AcquisitionPipeline(Logger):
 
         self.info('Starting acquisition')
         # Build them
-        last_stage = None
+        previous_stage = None
         last_index = len(self._stages) - 1
         self.debug('Last index is {}'.format(last_index))
         for idx, s in enumerate(self._stages):
             self.debug('Building stage {} {}'.format(idx, s.stage))
-            if last_stage != None:
-                queues = last_stage.outputQueue
+            if previous_stage != None:
+                queues = previous_stage.outputQueue
                 self.debug('Queues: {}'.format(queues))
                 if idx != last_index:
                     s.build(input_queue=queues)
@@ -239,7 +239,7 @@ class AcquisitionPipeline(Logger):
                 else:
                     self.info('First stage shares output')
                     s.build(output_queue=self._data_queue)
-            last_stage = s
+            previous_stage = s
             self.debug('Last stage is {}'.format(s))
 
         for s in self._stages:
