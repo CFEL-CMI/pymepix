@@ -23,6 +23,7 @@ import ctypes
 import multiprocessing
 import socket
 import time
+import zmq
 
 from multiprocessing.sharedctypes import Value
 from pymepix.core.log import ProcessLogger
@@ -57,9 +58,9 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
         self.loop_count = 0
 
     def init_new_process(self):
-        """create connections and initialize variables for in new process"""
+        """create connections and initialize variables in new process"""
         try:
-            self.createConnection(self.init_param['address'])
+            self.create_socket_connection(self.init_param['address'])
             self._chunk_size = self.init_param['chunk_size'] * 8192
             self._flush_timeout = self.init_param['flush_timeout']
             self._packets_collected = 0
@@ -67,17 +68,23 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
                                         for i in range(5)]  # ring buffer to put received data in
             self._buffer_list_idx = 0
             self._packet_buffer_view_list = [memoryview(self._packet_buffer_list[i])
-                                        for i in range(len(self._packet_buffer_list))]
+                                             for i in range(len(self._packet_buffer_list))]
             self._packet_buffer_view = self._packet_buffer_view_list[self._buffer_list_idx]
             self._recv_bytes = 0
             self._total_time = 0.0
             self._longtime = self.init_param['longtime']
+
+            # create connection to packetprocessor
+            self.debug('create packetprocessor socket')
+            ctx = zmq.Context.instance()
+            self._packet_sock = ctx.socket(zmq.PUSH)
+            self._packet_sock.bind('ipc://packetProcessor')
         except Exception as e:
             self.error('Exception occured in init!!!')
             self.error(e, exc_info=True)
             raise
 
-    def createConnection(self, address):
+    def create_socket_connection(self, address):
         """Establishes a UDP connection to spidr"""
         self._sock = socket.socket(socket.AF_INET,  # Internet
                                    socket.SOCK_DGRAM)  # UDP
@@ -212,6 +219,8 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
         self.pre_run()
         enabled = self.enable
         start = time.time()
+        # send some test data to packet-processor
+        self._packet_sock.send(b'hallo')
         while True:
             if enabled:
                 try:

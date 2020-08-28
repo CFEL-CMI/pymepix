@@ -342,7 +342,7 @@ def test_zmq_multifile():
     import zmq
     # Create the logger
     import logging
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     end_queue = Queue()  # queue for PacketProcessor
 
     acqpipline = AcquisitionPipeline('Test', end_queue)
@@ -350,7 +350,6 @@ def test_zmq_multifile():
     test_value = Value('I', 0)
 
     acqpipline.addStage(0, UdpSampler, address, test_value)
-    # acqpipline.addStage(2, PacketProcessor, num_processes=4)
 
     ###############
     # take data form Queue where PacketProcessor would be sitting

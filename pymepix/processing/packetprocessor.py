@@ -21,12 +21,12 @@
 ##############################################################################
 
 from .basepipeline import BasePipelineObject
-import socket
 from .datatypes import MessageType
 import time
 import numpy as np
 from enum import IntEnum
 from multiprocessing.sharedctypes import Value
+import zmq
 
 
 class PixelOrientation(IntEnum):
@@ -52,7 +52,9 @@ class PacketProcessor(BasePipelineObject):
                  handle_events=False, event_window=(0.0, 10000.0), position_offset=(0, 0),
                  orientation=PixelOrientation.Up, input_queue=None, create_output=True, num_outputs=1,
                  shared_output=None):
-        BasePipelineObject.__init__(self, PacketProcessor.__name__, input_queue=input_queue,
+        # set input_queue to None for now, or baseaqusition.build would have to be modified
+        # input_queue is replace by zmq
+        BasePipelineObject.__init__(self, PacketProcessor.__name__, input_queue=None,
                                     create_output=create_output, num_outputs=num_outputs, shared_output=shared_output)
 
         self.clearBuffers()
@@ -107,10 +109,21 @@ class PacketProcessor(BasePipelineObject):
     def _eventWindow(self):
         return self._min_event_window.value, self._max_event_window.value
 
+    def init_new_process(self):
+        """create connections and initialize variables in new process"""
+        self.debug('create ZMQ socket')
+        ctx = zmq.Context.instance()
+        self._packet_sock = ctx.socket(zmq.PULL)
+        self._packet_sock.connect('ipc://packetProcessor')
+
     def pre_run(self):
         self.info('Running with triggers? {}'.format(self._handle_events))
+        self.init_new_process()
 
-    def process(self, data_type, data):
+    def process(self, data_type=None, data=None):
+        self.debug('start receiving')
+        print(self._packet_sock.recv())
+        '''
         if data_type is not MessageType.RawData:
             return None, None
 
@@ -141,6 +154,8 @@ class PacketProcessor(BasePipelineObject):
                 return None, None
         else:
             return None, None
+        '''
+        return None, None
 
     def filterBadTriggers(self):
         self._triggers = self._triggers[np.argmin(self._triggers):]

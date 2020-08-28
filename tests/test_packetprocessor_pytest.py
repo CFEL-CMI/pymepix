@@ -68,7 +68,7 @@ def test_packets_trigger():
 
     # Create the logger
     import logging
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     end_queue = Queue()  # queue for PacketProcessor
 
     acqpipline = AcquisitionPipeline('Test', end_queue)
@@ -76,7 +76,7 @@ def test_packets_trigger():
     test_value = Value('I', 0)
 
     acqpipline.addStage(0, UdpSampler, address, test_value)
-    acqpipline.addStage(2, PacketProcessor, num_processes=2)
+    acqpipline.addStage(2, PacketProcessor, num_processes=1)
 
     ###############
     # take data form Queue where PacketProcessor would be sitting
@@ -118,6 +118,8 @@ def test_packets_trigger():
     end_queue.put(None)
     received = z_sock.recv_pyobj()
 
+    time.sleep(10)
+
     print('waiting for queue thread')
     t.join()
     z_sock.close()
@@ -128,3 +130,6 @@ def test_packets_trigger():
     acqpipline.stop()
 
     print('Done and done')
+
+if __name__ == '__main__':
+    test_packets_trigger()
