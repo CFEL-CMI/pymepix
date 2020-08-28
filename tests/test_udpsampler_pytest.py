@@ -236,8 +236,8 @@ def test_zmq_singlefile():
     fname = f'./test-{time.strftime("%Y%m%d-%H%M%S")}.raw'
     # acqpipline._stages[0]._pipeline_objects[0].outfile_name = fname
     acqpipline._stages[0]._pipeline_objects[0].record = 1
-    acqpipline._stages[0].z_sock.send_string(fname)
-    res = acqpipline._stages[0].z_sock.recv_string()
+    acqpipline._stages[0].udp_sock.send_string(fname)
+    res = acqpipline._stages[0].udp_sock.recv_string()
     if res == 'OPENED':
         print(f'file {fname} opened')
     else:
@@ -255,7 +255,7 @@ def test_zmq_singlefile():
     # finish acquisition
     time.sleep(5)  # permit thread time to empty queue
     acqpipline._stages[0]._pipeline_objects[0].record = 0
-    res = acqpipline._stages[0].z_sock.send_string("SHUTDOWN")
+    res = acqpipline._stages[0].udp_sock.send_string("SHUTDOWN")
     time.sleep(1)
     acqpipline.stop()
     end_queue.put(None)
@@ -393,8 +393,8 @@ def test_zmq_multifile():
     fname = f'./test-{time.strftime("%Y%m%d-%H%M%S")}.raw'
     # acqpipline._stages[0]._pipeline_objects[0].outfile_name = fname
     acqpipline._stages[0]._pipeline_objects[0].record = 1
-    acqpipline._stages[0].z_sock.send_string(fname)
-    res = acqpipline._stages[0].z_sock.recv_string()
+    acqpipline._stages[0].udp_sock.send_string(fname)
+    res = acqpipline._stages[0].udp_sock.recv_string()
     if res == 'OPENED':
         print(f'file {fname} opened')
     else:
@@ -408,7 +408,7 @@ def test_zmq_multifile():
     time.sleep(5)  # permit thread time to empty queue
     acqpipline._stages[0]._pipeline_objects[0].record = 0
     acqpipline._stages[0]._pipeline_objects[0].close_file = 1
-    res = acqpipline._stages[0].z_sock.recv_string()
+    res = acqpipline._stages[0].udp_sock.recv_string()
     if res == 'CLOSED':
         print(f'file {fname} closed')
     else:
@@ -464,8 +464,8 @@ def test_zmq_multifile():
     fname = f'./test-{time.strftime("%Y%m%d-%H%M%S")}.raw'
     # acqpipline._stages[0]._pipeline_objects[0].outfile_name = fname
     acqpipline._stages[0]._pipeline_objects[0].record = 1
-    acqpipline._stages[0].z_sock.send_string(fname)
-    res = acqpipline._stages[0].z_sock.recv_string()
+    acqpipline._stages[0].udp_sock.send_string(fname)
+    res = acqpipline._stages[0].udp_sock.recv_string()
     if res == 'OPENED':
         print(f'file {fname} opened')
     else:
@@ -477,7 +477,7 @@ def test_zmq_multifile():
     time.sleep(5)  # permit thread time to empty queue
     acqpipline._stages[0]._pipeline_objects[0].record = 0
     acqpipline._stages[0]._pipeline_objects[0].close_file = 1
-    res = acqpipline._stages[0].z_sock.recv_string()
+    res = acqpipline._stages[0].udp_sock.recv_string()
     if res == 'CLOSED':
         print(f'file {fname} closed')
     else:
@@ -530,8 +530,8 @@ def test_zmq_multifile():
     fname = f'./test-{time.strftime("%Y%m%d-%H%M%S")}.raw'
     # acqpipline._stages[0]._pipeline_objects[0].outfile_name = fname
     acqpipline._stages[0]._pipeline_objects[0].record = 1
-    acqpipline._stages[0].z_sock.send_string(fname)
-    res = acqpipline._stages[0].z_sock.recv_string()
+    acqpipline._stages[0].udp_sock.send_string(fname)
+    res = acqpipline._stages[0].udp_sock.recv_string()
     if res == 'OPENED':
         print(f'file {fname} opened')
     else:
@@ -543,7 +543,7 @@ def test_zmq_multifile():
     time.sleep(5)  # permit thread time to empty queue
     acqpipline._stages[0]._pipeline_objects[0].record = 0
     acqpipline._stages[0]._pipeline_objects[0].close_file = 1
-    res = acqpipline._stages[0].z_sock.recv_string()
+    res = acqpipline._stages[0].udp_sock.recv_string()
     if res == 'CLOSED':
         print(f'file {fname} closed')
     else:
@@ -596,20 +596,20 @@ def test_zmq_multifile():
     fname = f'./test-{time.strftime("%Y%m%d-%H%M%S")}.raw'
     # acqpipline._stages[0]._pipeline_objects[0].outfile_name = fname
     acqpipline._stages[0]._pipeline_objects[0].record = True
-    acqpipline._stages[0].z_sock.send_string(fname)
-    res = acqpipline._stages[0].z_sock.recv_string()
+    acqpipline._stages[0].udp_sock.send_string(fname)
+    res = acqpipline._stages[0].udp_sock.recv_string()
     if res == 'OPENED':
         print(f'file {fname} opened')
     else:
         print(f'did not open {res}')
 
-    test_data = send_data(packets=100_000, chunk_size=139, start=15000, sleep=0)
+    test_data = send_data(packets=100_000, chunk_size=139, start=15000, sleep=1e-6)
 
     # finish acquisition 4th file
     time.sleep(5)  # permit thread time to empty queue
     acqpipline._stages[0]._pipeline_objects[0].record = False
     acqpipline._stages[0]._pipeline_objects[0].close_file = True
-    res = acqpipline._stages[0].z_sock.recv_string()
+    res = acqpipline._stages[0].udp_sock.recv_string()
     if res == 'CLOSED':
         print(f'file {fname} closed')
     else:
@@ -654,7 +654,7 @@ def test_zmq_multifile():
 
     ############
     # shut everything down
-    res = acqpipline._stages[0].z_sock.send_string("SHUTDOWN")
+    res = acqpipline._stages[0].udp_sock.send_string("SHUTDOWN")
     acqpipline.stop()
 
     print('Done and done')
@@ -692,8 +692,8 @@ def test_speed():
     fname = f'./test-{time.strftime("%Y%m%d-%H%M%S")}.raw'
     # acqpipline._stages[0]._pipeline_objects[0].outfile_name = fname
     acqpipline._stages[0]._pipeline_objects[0].record = 1
-    acqpipline._stages[0].z_sock.send_string(fname)
-    res = acqpipline._stages[0].z_sock.recv_string()
+    acqpipline._stages[0].udp_sock.send_string(fname)
+    res = acqpipline._stages[0].udp_sock.recv_string()
     if res == 'OPENED':
         print(f'file {fname} opened')
     else:
@@ -712,7 +712,7 @@ def test_speed():
     acqpipline._stages[0]._pipeline_objects[0].record = False
     acqpipline._stages[0]._pipeline_objects[0].close_file = True
     acqpipline._stages[0]._pipeline_objects[0].enable = False
-    res = acqpipline._stages[0].z_sock.recv_string()
+    res = acqpipline._stages[0].udp_sock.recv_string()
     if res == 'CLOSED':
         print(f'file {fname} closed')
     else:
@@ -728,7 +728,7 @@ def test_speed():
 
     ############
     # shut everything down
-    res = acqpipline._stages[0].z_sock.send_string("SHUTDOWN")
+    res = acqpipline._stages[0].udp_sock.send_string("SHUTDOWN")
     acqpipline.stop()
 
     print('Done and done')
@@ -756,8 +756,8 @@ def test_real_data_packetprocessor():
     fname = f'./test-{time.strftime("%Y%m%d-%H%M%S")}.raw'
     start = time.time()
     acqpipline._stages[0]._pipeline_objects[0].record = True
-    acqpipline._stages[0].z_sock.send_string(fname)
-    res = acqpipline._stages[0].z_sock.recv_string()
+    acqpipline._stages[0].udp_sock.send_string(fname)
+    res = acqpipline._stages[0].udp_sock.recv_string()
     if res == 'OPENED':
         print(f'file {fname} opened')
     else:
@@ -767,7 +767,7 @@ def test_real_data_packetprocessor():
     acqpipline._stages[0]._pipeline_objects[0].record = False
     stop = time.time()
     acqpipline._stages[0]._pipeline_objects[0].close_file = True
-    res = acqpipline._stages[0].z_sock.recv_string()
+    res = acqpipline._stages[0].udp_sock.recv_string()
     if res == 'CLOSED':
         print(f'file {fname} closed')
     else:
@@ -779,7 +779,7 @@ def test_real_data_packetprocessor():
     # close everything
     os.remove(fname)
     acqpipline._stages[0]._pipeline_objects[0].enable = False
-    res = acqpipline._stages[0].z_sock.send_string("SHUTDOWN")
+    res = acqpipline._stages[0].udp_sock.send_string("SHUTDOWN")
     acqpipline.stop()
 
     print('Done and done')

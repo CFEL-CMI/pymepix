@@ -124,7 +124,7 @@ def test_packets_trigger():
 
     ############
     # shut everything down
-    res = acqpipline._stages[0].z_sock.send_string("SHUTDOWN")
+    res = acqpipline._stages[0].udp_sock.send_string("SHUTDOWN")
     acqpipline.stop()
 
     print('Done and done')
