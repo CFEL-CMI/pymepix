@@ -56,10 +56,6 @@ class AcquisitionStage(Logger):
         self._args = []
         self._kwargs = {}
 
-        # zmq socket for communication with write2disk thread
-        ctx = zmq.Context.instance()
-        self.udp_sock = ctx.socket(zmq.PAIR)
-        self.udp_sock.bind('tcp://127.0.0.1:40000')
 
     @property
     def stage(self):
@@ -111,6 +107,14 @@ class AcquisitionStage(Logger):
 
         self.debug('Assigning stage {} to klass {}'.format(self.stage, pipeline_klass))
         self._pipeline_klass = pipeline_klass
+
+        # zmq socket for communication with write2disk thread
+        # only initialize in udpsampler
+        from pymepix.processing.udpsampler import UdpSampler
+        if pipeline_klass == UdpSampler:
+            ctx = zmq.Context.instance()
+            self.udp_sock = ctx.socket(zmq.PAIR)
+            self.udp_sock.bind('tcp://127.0.0.1:40000')
 
         self.setArgs(*args, **kwargs)
 
