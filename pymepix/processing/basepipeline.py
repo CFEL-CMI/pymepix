@@ -148,9 +148,6 @@ class BasePipelineObject(multiprocessing.Process, ProcessLogger):
         To perform work within the pipeline, a class must override this function.
         General guidelines include, check for correct data type, and must return
         None for both if no output is given.
-
-
-
         """
         self.debug('I AM PROCESSING')
         time.sleep(0.1)
@@ -166,12 +163,8 @@ class BasePipelineObject(multiprocessing.Process, ProcessLogger):
 
     def run(self):
         self.pre_run()
-        enabled = self.enable
         while True:
-            if self.loop_count > 1_000_000:
-                enabled = False
-            self.loop_count += 1
-            #enabled = self.enable
+            enabled = self.enable
             try:
                 if self.input_queue is not None:
                     self.debug('Getting value from input queue')
@@ -201,9 +194,9 @@ class BasePipelineObject(multiprocessing.Process, ProcessLogger):
                 self.error(e, exc_info=True)
                 break
         output_type, result = self.post_run()
-        if output_type is not None and result is not None: # TODO: not quite sure what happens without "enabled"
+        if output_type is not None and result is not None:  # TODO: not quite sure what happens without "enabled"
             self.pushOutput(output_type, result)
-        print(f'iterations {self.loop_count}')
+        #print(f'iterations {self.loop_count}')
 
         self.info('Job complete')
 
