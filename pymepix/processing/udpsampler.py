@@ -57,6 +57,7 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
         self.loop_count = 0
 
     def init_new_process(self):
+        """create connections and initialize variables for in new process"""
         try:
             self.createConnection(self.init_param['address'])
             self._chunk_size = self.init_param['chunk_size'] * 8192
@@ -172,11 +173,16 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
             self.error("Huston, here's a problem, file cannot be created.")
 
     def pre_run(self):
+        """init stuff which should only be available in new process"""
         self.init_new_process()
         self.write2disk = Raw2Disk()
         self._last_update = time.time()
 
     def post_run(self):
+        """
+        method get's called either at the very end of the process live or
+        if there's a socket timeout and raw2disk file should be closed
+        """
         if self._recv_bytes > 1:
             bytes_to_send = self._recv_bytes
             self._recv_bytes = 0
@@ -202,6 +208,7 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
 
 
     def run(self):
+        """method which is executed in new process via multiprocessing.Process.start"""
         self.pre_run()
         enabled = self.enable
         start = time.time()
