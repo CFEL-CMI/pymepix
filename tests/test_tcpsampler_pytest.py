@@ -72,7 +72,7 @@ def test_zmq_multifile():
 
     acqpipline = AcquisitionPipeline('Test', end_queue)
 
-    test_value = Value('I', 0)
+    test_value = Value('L', 0)
 
     acqpipline.addStage(0, TcpSampler, address, test_value)
     # acqpipline.addStage(2, PacketProcessor, num_processes=4)
@@ -470,7 +470,7 @@ def test_real_data_packetprocessor():
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
     end_queue = Queue()  # queue for PacketProcessor
-    test_value = Value('I', 0)
+    test_value = Value('L', 0)
     acqpipline = AcquisitionPipeline('Test', end_queue)
     acqpipline.addStage(0, TcpSampler, address, test_value)
     # acqpipline.addStage(2, PacketProcessor, num_processes=4)
