@@ -106,6 +106,7 @@ class Raw2Disk(ProcessLogger):
                         self.debug(f"File {instruction} opening")
                         # Open filehandle
                         filehandle = open(instruction, "wb")
+                        filehandle.write(time.time_ns().to_bytes(8, 'little'))  # add start time into file
                         z_sock.send_string("OPENED")
                         waiting = False
                         writing = True
