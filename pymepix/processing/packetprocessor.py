@@ -114,22 +114,23 @@ class PacketProcessor(BasePipelineObject):
         self.debug('create ZMQ socket')
         ctx = zmq.Context.instance()
         self._packet_sock = ctx.socket(zmq.PULL)
-        self._packet_sock.connect('ipc://packetProcessor')
+        self._packet_sock.connect('ipc:///tmp/packetProcessor')
 
     def pre_run(self):
         self.info('Running with triggers? {}'.format(self._handle_events))
         self.init_new_process()
 
     def process(self, data_type=None, data=None):
-        self.debug('start receiving')
-        print(self._packet_sock.recv())
-        '''
-        if data_type is not MessageType.RawData:
+        packet_view = memoryview(self._packet_sock.recv(copy=False))
+        packet = np.frombuffer(packet_view[:-8], dtype=np.uint64)
+        # needs to be an integer or "(ltime >> 28) & 0x3" fails
+        longtime = int(np.frombuffer(packet_view[-8:], dtype=np.uint64)[0])
+
+        if len(packet) == 0:
             return None, None
 
-        packets, longtime = data
-
-        packet = packets
+        #packets, longtime = data
+        #packet = packets
 
         header = ((packet & 0xF000000000000000) >> 60) & 0xF
         subheader = ((packet & 0x0F00000000000000) >> 56) & 0xF
@@ -154,7 +155,7 @@ class PacketProcessor(BasePipelineObject):
                 return None, None
         else:
             return None, None
-        '''
+
         return None, None
 
     def filterBadTriggers(self):
@@ -299,7 +300,6 @@ class PacketProcessor(BasePipelineObject):
         # print('TOA after FTOa',globalToA*time_unit*1E-9)
         globalToA += ((col // 2) % 16) << 8
         globalToA[((col // 2) % 16) == 0] += (16 << 8)
-
         finalToA = globalToA * time_unit * 1E-9
 
         # print('finalToa',finalToA)

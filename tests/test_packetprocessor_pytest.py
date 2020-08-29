@@ -21,6 +21,7 @@
 '''
 module to test packetprocessor functionality
 run: pytest test_packetprocessor_pytest.py
+to be able to use this test comment 'elif self._buffer_list_idx == 4:' in udpsampler to send all data
 '''
 
 import numpy as np
@@ -29,40 +30,26 @@ import time
 
 address = ('127.0.0.1', 50000)
 
-def send_data(packets, chunk_size, start=0, sleep=0.0001):
-    ############
-    # send data
+def send_data(packets=1_000, chunk_size=139, start=0, sleep=0.0001):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    test_data = np.arange(start, start + packets * chunk_size,
-                          dtype=np.uint64)  # chunk size 135 -> max number=1_012_500
-    test_data_view = memoryview(test_data)
-    time.sleep(1)  # seems to be necessary if this function get called as a Process
-    # first packet 0...134, second packet 135...269 and so on
-    start = time.time()
-    for i in range(0, len(test_data_view), chunk_size):
-        sock.sendto(test_data_view[i:i + chunk_size], address)
-        time.sleep(sleep)  # if there's no sleep, packets get lost
-    stop = time.time()
-    dt = stop - start
-    print(f'packets sent: {packets}, '
-          f'bytes: {len(test_data_view.tobytes())}, '
-          f'MBytes: {len(test_data_view.tobytes()) * 1e-6:.1f}, '
-          f'{len(test_data_view.tobytes()) * 1e-6 / dt:.2f} MByte/s')
-    return test_data
+    with open('files/raw_test_data.raw', 'rb') as f:
+        sock.sendto(f.read(), address)
 
 def test_packets_trigger():
     '''
     test functionality of 1st acquisition pipeline step with data been put into Queue for pixelprocesor
     and thread to Raw2Disk
     '''
-    from multiprocessing import Queue
+    from multiprocessing import Queue, Process
     from multiprocessing.sharedctypes import Value
+    import pickle
     import queue
     import time
     import threading
     import zmq
 
-    from pymepix.processing.acquisition import AcquisitionPipeline
+    from pymepix.processing.acquisition import PixelPipeline
+    from pymepix.processing.datatypes import MessageType
     from pymepix.processing.udpsampler import UdpSampler
     from pymepix.processing.packetprocessor import PacketProcessor
 
@@ -70,13 +57,9 @@ def test_packets_trigger():
     import logging
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     end_queue = Queue()  # queue for PacketProcessor
+    longtime = Value('L', 2233861246990)  # longtime
 
-    acqpipline = AcquisitionPipeline('Test', end_queue)
-
-    test_value = Value('I', 0)
-
-    acqpipline.addStage(0, UdpSampler, address, test_value)
-    acqpipline.addStage(2, PacketProcessor, num_processes=1)
+    acqpipline = PixelPipeline(end_queue, address, longtime, use_event=True)
 
     ###############
     # take data form Queue where PacketProcessor would be sitting
@@ -91,11 +74,11 @@ def test_packets_trigger():
         received = []
         while True:
             try:
-                value = q.get(block=False, timeout=0.5)  # value = (Message.Type, [array, longtime])
+                value = q.get(block=False, timeout=0.5)
                 if value is None:
                     break
                 messType, data = value
-                received.append(data[0])
+                received.append(value)
             except queue.Empty:
                 pass
             # print(value)
@@ -115,10 +98,40 @@ def test_packets_trigger():
     # establish connection, seems to be necessary to first send something from binding code....
     z_sock.send_string('hallo')
 
+    # wait before sending data
+    time.sleep(2)
+    send_data()
+    time.sleep(1)
+
+    # stop things and test results
     end_queue.put(None)
     received = z_sock.recv_pyobj()
+    for i in received:
+        if i[0] == MessageType.PixelData:
+            pixels = i[1]
+        elif i[0] == MessageType.TriggerData:
+            triggers = i[1]
+        elif i[0] == MessageType.EventData:
+            events = i[1]
 
-    time.sleep(10)
+    with open('files/raw_test_data_events.bin', 'rb') as f:
+        events_orig = pickle.load(f)
+    assert events[0].all() == events_orig['event_nr'].all()
+    assert events[1].all() == events_orig['x'].all()
+    assert events[2].all() == events_orig['y'].all()
+    assert events[3].all() == events_orig['tof'].all()
+    assert events[4].all() == events_orig['tot'].all()
+
+    with open('files/raw_test_data_pixels.bin', 'rb') as f:
+        pixels_orig = pickle.load(f)
+    assert pixels[0].all() == pixels_orig['x'].all()
+    assert pixels[1].all() == pixels_orig['y'].all()
+    assert pixels[2].all() == pixels_orig['toa'].all()
+    assert pixels[3].all() == pixels_orig['tot'].all()
+
+    with open('files/raw_test_data_timestamps.bin', 'rb') as f:
+        triggers_orig = pickle.load(f)
+    assert triggers[0].all() == triggers_orig['trigger_time'].all()
 
     print('waiting for queue thread')
     t.join()

@@ -20,6 +20,7 @@
 #
 ##############################################################################
 import ctypes
+import numpy as np
 import multiprocessing
 import socket
 import time
@@ -78,7 +79,7 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
             self.debug('create packetprocessor socket')
             ctx = zmq.Context.instance()
             self._packet_sock = ctx.socket(zmq.PUSH)
-            self._packet_sock.bind('ipc://packetProcessor')
+            self._packet_sock.bind('ipc:///tmp/packetProcessor')
         except Exception as e:
             self.error('Exception occured in init!!!')
             self.error(e, exc_info=True)
@@ -86,9 +87,8 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
 
     def create_socket_connection(self, address):
         """Establishes a UDP connection to spidr"""
-        self._sock = socket.socket(socket.AF_INET,  # Internet
+        self._sock = socket.socket(socket.AF_INET,     # Internet
                                    socket.SOCK_DGRAM)  # UDP
-        #self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 5_500_000) # TODO: change for BT NIC buffer 5.5Mb?
         self._sock.settimeout(1.0)
         self.info('Establishing connection to : {}'.format(address))
         self._sock.bind(address)
@@ -219,8 +219,6 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
         self.pre_run()
         enabled = self.enable
         start = time.time()
-        # send some test data to packet-processor
-        self._packet_sock.send(b'hallo')
         while True:
             if enabled:
                 try:
@@ -248,18 +246,26 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
 
                 flush_time = end - self._last_update
 
+                # sends empty packets if flush_timeout==True but no data was received
+                #
                 if (self._recv_bytes > self._chunk_size) or (flush_time > self._flush_timeout):
-                    #packet = np.frombuffer(self._packet_buffer_view[:self._recv_bytes], dtype=np.uint64) # TODO: put this in packet processor
-                    #print(packet)
-
                     # tpx_packets = self.get_useful_packets(packet)
                     if self.record:
-                        self.write2disk.my_sock.send(self._packet_buffer_list[self._buffer_list_idx][:self._recv_bytes], copy=False)
+                        self.write2disk.my_sock.send(
+                            self._packet_buffer_list[self._buffer_list_idx][:self._recv_bytes], copy=False)
                     elif self.close_file:
                         self.close_file = False
                         self.debug('received close file')
-                        self.write2disk.my_sock.send(self._packet_buffer_list[self._buffer_list_idx][:self._recv_bytes], copy=False)
+                        self.write2disk.my_sock.send(
+                            self._packet_buffer_list[self._buffer_list_idx][:self._recv_bytes], copy=False)
                         self.write2disk.my_sock.send(b'EOF')
+                    # send stuff to packet processor
+                    #elif self._buffer_list_idx == 4:
+                    # add longtime to buffers end
+                    bytes_to_send = self._recv_bytes + 8
+                    self._packet_buffer_view[self._recv_bytes:bytes_to_send] = np.uint64(self._longtime.value).tobytes()
+                    self._packet_sock.send(
+                            self._packet_buffer_list[self._buffer_list_idx][:bytes_to_send], copy=False)
 
                     self._recv_bytes = 0
                     self._buffer_list_idx = (self._buffer_list_idx + 1) % len(self._packet_buffer_list)

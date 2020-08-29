@@ -42,7 +42,7 @@ class PixelPipeline(AcquisitionPipeline):
         self._event_window = (0, 10000)
 
         self.addStage(0, UdpSampler, address, longtime)
-        self.addStage(2, PacketProcessor, num_processes=12)
+        self.addStage(2, PacketProcessor, num_processes=2)
         self._reconfigureProcessor()
 
     def _reconfigureProcessor(self):
