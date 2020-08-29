@@ -347,14 +347,18 @@ def test_zmq_multifile():
 
     acqpipline = AcquisitionPipeline('Test', end_queue)
 
-    test_value = Value('L', 0)
-
-    acqpipline.addStage(0, UdpSampler, address, test_value)
+    longtime = Value('L', 0)
+    acqpipline.addStage(0, UdpSampler, address, longtime)
 
     ###############
     # take data form Queue where PacketProcessor would be sitting
+    # create connection to packetprocessor
     ctx = zmq.Context.instance()
+    packet_sock = ctx.socket(zmq.PULL)
+    packet_sock.connect('ipc:///tmp/packetProcessor')
 
+    ##############
+    # get data from end_queue
     def get_queue_thread(q):
         ctx = zmq.Context.instance()
         sock = ctx.socket(zmq.PAIR)
@@ -438,9 +442,9 @@ def test_zmq_multifile():
     assert np.frombuffer(data, dtype=np.uint64).shape == test_data.shape
     '''
     # check for data in file
-    assert np.fromfile(fname, dtype=np.uint64).all() == test_data.all()
-    assert np.fromfile(fname, dtype=np.uint64).sum() == test_data.sum()
-    assert np.fromfile(fname, dtype=np.uint64).shape == test_data.shape
+    assert np.fromfile(fname, dtype=np.uint64)[1:].all() == test_data.all()
+    assert np.fromfile(fname, dtype=np.uint64)[1:].sum() == test_data.sum()
+    assert np.fromfile(fname, dtype=np.uint64)[1:].shape == test_data.shape
 
     os.remove(fname)
     t.join()
@@ -506,9 +510,9 @@ def test_zmq_multifile():
     assert np.frombuffer(data, dtype=np.uint64).shape == test_data.shape
     '''
     # check for data in file
-    assert np.fromfile(fname, dtype=np.uint64).all() == test_data.all()
-    assert np.fromfile(fname, dtype=np.uint64).sum() == test_data.sum()
-    assert np.fromfile(fname, dtype=np.uint64).shape == test_data.shape
+    assert np.fromfile(fname, dtype=np.uint64)[1:].all() == test_data.all()
+    assert np.fromfile(fname, dtype=np.uint64)[1:].sum() == test_data.sum()
+    assert np.fromfile(fname, dtype=np.uint64)[1:].shape == test_data.shape
 
     print('waiting for queue thread')
     t.join()
@@ -572,9 +576,9 @@ def test_zmq_multifile():
     assert np.frombuffer(data, dtype=np.uint64).shape == test_data.shape
     '''
     # check for data in file
-    assert np.fromfile(fname, dtype=np.uint64).all() == test_data.all()
-    assert np.fromfile(fname, dtype=np.uint64).sum() == test_data.sum()
-    assert np.fromfile(fname, dtype=np.uint64).shape == test_data.shape
+    assert np.fromfile(fname, dtype=np.uint64)[1:].all() == test_data.all()
+    assert np.fromfile(fname, dtype=np.uint64)[1:].sum() == test_data.sum()
+    assert np.fromfile(fname, dtype=np.uint64)[1:].shape == test_data.shape
 
     print('waiting for queue thread')
     t.join()
@@ -642,9 +646,9 @@ def test_zmq_multifile():
     # print('data we got from file:')
     # print(np.fromfile(fname, dtype=np.uint64).shape, test_data.shape,
     #      np.fromfile(fname, dtype=np.uint64).shape[0] / test_data.shape[0])
-    assert np.fromfile(fname, dtype=np.uint64).all() == test_data.all()
-    assert np.fromfile(fname, dtype=np.uint64).sum() == test_data.sum()
-    assert np.fromfile(fname, dtype=np.uint64).shape == test_data.shape
+    assert np.fromfile(fname, dtype=np.uint64)[1:].all() == test_data.all()
+    assert np.fromfile(fname, dtype=np.uint64)[1:].sum() == test_data.sum()
+    assert np.fromfile(fname, dtype=np.uint64)[1:].shape == test_data.shape
 
     print('waiting for queue thread')
     t.join()
@@ -666,6 +670,7 @@ def test_speed():
     from multiprocessing.sharedctypes import Value
     from multiprocessing import Process
     import time
+    import zmq
 
     # Create the logger
     import logging
@@ -678,6 +683,11 @@ def test_speed():
 
     acqpipline.addStage(0, UdpSampler, address, test_value)
     # acqpipline.addStage(2, PacketProcessor, num_processes=4)
+
+    # create connection to packetprocessor
+    ctx = zmq.Context.instance()
+    packet_sock = ctx.socket(zmq.PULL)
+    packet_sock.connect('ipc:///tmp/packetProcessor')
 
     ##########
     # start acquisition pipeline
@@ -785,7 +795,7 @@ def test_real_data_packetprocessor():
 """
 
 if __name__ == "__main__":
-    #test_speed()
     test_zmq_multifile()
+    test_speed()
     # test_zmq_singlefile()
     # test_real_data_packetprocessor()
