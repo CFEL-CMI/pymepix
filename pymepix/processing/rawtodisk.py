@@ -91,7 +91,6 @@ class raw2Disk (multiprocessing.Process, ProcessLogger):
         self._timerBool.value = int(value)
 
     def run(self):
-        print(f'!!!! {__name__} GO!')
         while True:
             enabled = self.enable
             if not enabled:
