@@ -107,14 +107,13 @@ class AcquisitionStage(Logger):
         self._pipeline_klass = pipeline_klass
 
         # zmq socket for communication with write2disk thread
-        # only initialize in udpsampler
+        # only initialize this in udpsampler
         from pymepix.processing.udpsampler import UdpSampler
         if pipeline_klass == UdpSampler:
-            self.info("bind zmq socket at 'tcp://127.0.0.1:40000'")
-            ctx = zmq.Context.instance()
-            self.udp_sock = ctx.socket(zmq.PAIR)
-            self.udp_sock.bind('tcp://127.0.0.1:40000')
-            self.info("zmq bind on 'tcp://127.0.0.1:40000'")
+            self.ctx = zmq.Context.instance()
+            #self.udp_sock = self.ctx.socket(zmq.PAIR)
+            #self.udp_sock.bind('tcp://127.0.0.1:40000')
+            #self.info("zmq bind on 'tcp://127.0.0.1:40000'")
 
         self.setArgs(*args, **kwargs)
 
@@ -154,6 +153,10 @@ class AcquisitionStage(Logger):
 
     def start(self):
         for p in self._pipeline_objects:
+            if p.name.find('UdpSampler-') > -1:
+                self.udp_sock = self.ctx.socket(zmq.PAIR)
+                self.udp_sock.bind('tcp://127.0.0.1:40000')
+                self.info("zmq bind on 'tcp://127.0.0.1:40000'")
             p.start()
 
     def stop(self, force=False):
@@ -175,8 +178,8 @@ class AcquisitionStage(Logger):
         else:
             for p in self._pipeline_objects:
                 if p.name.find('UdpSampler-') > -1:
-                    self.info(f'stoppping {p.name}')
-                    p.stopRaw2Disk()
+                    self.info(f'closing zmq socket for "tcp://127.0.0.1:40000"')
+                    self.udp_sock.close()
                 p.enable = False
                 self.info('Joining thread {}'.format(p))
                 p.join(1.0)
@@ -188,7 +191,7 @@ class AcquisitionStage(Logger):
 
 
 class AcquisitionPipeline(Logger):
-    """Class that manages varius stages"""
+    """Class that manages various stages"""
 
     def __init__(self, name, data_queue):
         Logger.__init__(self, name + ' AcqPipeline')

@@ -102,11 +102,18 @@ class Raw2Disk(ProcessLogger):
                     waiting = False
                     shutdown = True
                 else:  # Interpret as file name / path
-                    directory, name = os.path.split(instruction)
-                    if (not os.path.exists(instruction)) and os.path.isdir(directory):
-                        self.info(f"File {instruction} opening")
+                    filename = instruction
+                    directory, name = os.path.split(filename)
+                    if (not os.path.exists(filename)) and os.path.isdir(directory):
+                        files = np.sort(glob.glob(f'{filename}*.raw'))
+                        if len(files) > 0:
+                            index = int(files[-1].split('_')[1]) + 1
+                        else:
+                            index = 0
+                        raw_filename = f'{filename}_{index:04d}_{time.strftime("%Y%m%d-%H%M")}.raw'
+                        self.info(f"File {raw_filename} opening")
                         # Open filehandle
-                        filehandle = open(instruction, "wb")
+                        filehandle = open(raw_filename, "wb")
                         filehandle.write(time.time_ns().to_bytes(8, 'little'))  # add start time into file
                         z_sock.send_string("OPENED")
                         waiting = False

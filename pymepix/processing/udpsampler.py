@@ -288,17 +288,6 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
 
 
 
-    def stopRaw2Disk(self):
-        # TODO: this doesn't work for now. should probably go to post_run
-        '''
-        self.debug('Stopping Raw2Disk')
-        self.write2disk.close()
-        self.write2disk.my_sock.send_string('SHUTDOWN')
-        # print(write2disk.my_sock.recv())
-        self.write2disk.write_thr.join()
-        self.debug('Raw2Disk stopped')
-        '''
-
 def main():
     from multiprocessing import Process
     import zmq

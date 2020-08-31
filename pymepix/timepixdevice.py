@@ -613,8 +613,7 @@ def main():
     t.daemon = True
     t.start()
 
-    #spidr = SPIDRController(('192.168.1.10', 50000))
-    spidr = SPIDRController(('127.0.0.1', 50000))
+    spidr = SPIDRController(('192.168.100.10', 50000))
 
     timepix = TimepixDevice(spidr[0], end_queue)
     timepix.loadSophyConfig('/Users/alrefaie/Documents/repos/libtimepix/config/eq-norm-50V.spx')
