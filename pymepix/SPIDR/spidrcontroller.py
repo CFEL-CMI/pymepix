@@ -70,7 +70,7 @@ class SPIDRController(Logger):
 
     """
 
-    def __init__(self, dst_ip_port, src_ip_port=('192.168.1.1', 0)):
+    def __init__(self, dst_ip_port, src_ip_port=('192.168.100.1', 0)):
         Logger.__init__(self, SPIDRController.__name__)
 
         self.info('Connecting to {}:{}'.format(*dst_ip_port))
