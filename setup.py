@@ -21,7 +21,7 @@
 # see <https://www.gnu.org/licenses/>.
 
 author = 'CFEL Controlled Molecule Imaging group'
-copyright = '2018–2020 CFEL-CMI <jochen.kuepper@cfel.de>'
+copyright = '2018–2020 CFEL-CMI <cmidaq@desy.de>'
 name = 'pymepix'
 version = '1.1.dev0'
 release = version

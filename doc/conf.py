@@ -17,23 +17,36 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 
-
-author = 'CFEL Controlled Molecule Imaging group'
-copyright = '2018–2020 CFEL Controlled Molecule Imaging group <cmidaq@desy.de>'
-name = 'pymepix'
-project = name
-version = '1.1.dev0'
-release = version
+# Helpful for debugging RTD: https://readthedocs.org/projects/pymepix/builds
 
 import os
 import sys
+import pathlib
+
+
+# accessing the setup.py file to get current information about the project
+name, project, version, release, author, copyright = [''] * 6
+desired = ['copyright', 'project', 'name', 'version', 'release', 'author']
+
+# first get the path of the setup.py file
+current_path = pathlib.Path(__file__).parent.absolute()
+setup_path = current_path.parent.joinpath("setup.py")
+
+#  access setup.py as text file to find the necessary lines, then execute those
+# importlib.util.spec_from_file_location didn't work
+with open(setup_path, 'r') as f:
+    for line in f:
+        line = line.strip()
+        line_list = line.split()
+        if len(line_list) > 0 and line_list[0] in desired:
+            exec(line)
+            desired.remove(line_list[0])
+project = name
 
 sys.path.insert(0, os.path.abspath('../../lib/'))
 print(sys.path)
 
 # -- General configuration ------------------------------------------------
-
-author = 'CFEL Controlled Molecule Imaging group'
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #
