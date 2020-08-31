@@ -73,7 +73,9 @@ class TimepixDevice(Logger):
         self._device.reinitDevice()
 
         self._longtime = Value('L', 0)
-        self.setupAcquisition(PixelPipeline)
+        # TODO: this dosn't work with GUI as setupAcquisition get's called here and
+        #  in pymepixviewer and thus the zmq socket get's initialized twice.
+        #self.setupAcquisition(PixelPipeline)
 
         self._initDACS()
 
@@ -611,7 +613,8 @@ def main():
     t.daemon = True
     t.start()
 
-    spidr = SPIDRController(('192.168.1.10', 50000))
+    #spidr = SPIDRController(('192.168.1.10', 50000))
+    spidr = SPIDRController(('127.0.0.1', 50000))
 
     timepix = TimepixDevice(spidr[0], end_queue)
     timepix.loadSophyConfig('/Users/alrefaie/Documents/repos/libtimepix/config/eq-norm-50V.spx')

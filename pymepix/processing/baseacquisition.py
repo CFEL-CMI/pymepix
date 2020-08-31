@@ -110,6 +110,7 @@ class AcquisitionStage(Logger):
         # only initialize in udpsampler
         from pymepix.processing.udpsampler import UdpSampler
         if pipeline_klass == UdpSampler:
+            self.info("bind zmq socket at 'tcp://127.0.0.1:40000'")
             ctx = zmq.Context.instance()
             self.udp_sock = ctx.socket(zmq.PAIR)
             self.udp_sock.bind('tcp://127.0.0.1:40000')
