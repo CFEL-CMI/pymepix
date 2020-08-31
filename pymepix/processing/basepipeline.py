@@ -20,12 +20,12 @@
 
 """Base implementation of objects relating to the processing pipeline"""
 
-from pymepix.core.log import ProcessLogger
 import multiprocessing
-from multiprocessing import Queue
-import traceback
-from multiprocessing.sharedctypes import Value
 import time
+from multiprocessing import Queue
+
+from multiprocessing.sharedctypes import Value
+from pymepix.core.log import ProcessLogger
 
 
 class BasePipelineObject(multiprocessing.Process, ProcessLogger):

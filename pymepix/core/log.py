@@ -22,7 +22,6 @@
 import logging
 import threading
 from multiprocessing import Queue
-import multiprocessing
 
 __all__ = ['Logger', 'ProcessLogger']
 

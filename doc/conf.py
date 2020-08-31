@@ -20,9 +20,8 @@
 # Helpful for debugging RTD: https://readthedocs.org/projects/pymepix/builds
 
 import os
-import sys
 import pathlib
-
+import sys
 
 # accessing the setup.py file to get current information about the project
 name, project, version, release, author, copyright = [''] * 6

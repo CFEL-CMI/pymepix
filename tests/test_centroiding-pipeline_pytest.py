@@ -24,9 +24,7 @@ run: pytest test_packetprocessor_pytest.py
 to be able to use this test comment 'elif self._buffer_list_idx == 4:' in udpsampler to send all data
 '''
 
-import numpy as np
 import socket
-import time
 
 address = ('127.0.0.1', 50000)
 
@@ -40,7 +38,7 @@ def test_packets_trigger():
     test functionality of 1st acquisition pipeline step with data been put into Queue for pixelprocesor
     and thread to Raw2Disk
     '''
-    from multiprocessing import Queue, Process
+    from multiprocessing import Queue
     from multiprocessing.sharedctypes import Value
     import pickle
     import queue
@@ -50,8 +48,6 @@ def test_packets_trigger():
 
     from pymepix.processing.acquisition import CentroidPipeline
     from pymepix.processing.datatypes import MessageType
-    from pymepix.processing.udpsampler import UdpSampler
-    from pymepix.processing.packetprocessor import PacketProcessor
 
     # Create the logger
     import logging

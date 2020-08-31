@@ -18,12 +18,15 @@
 # You should have received a copy of the GNU General Public License along with this program. If not,
 # see <https://www.gnu.org/licenses/>.
 
-import threading
-import zmq
-import time
+import glob
 import os
-from pymepix.core.log import ProcessLogger
+import threading
+import time
+
 import numpy as np
+import zmq
+from pymepix.core.log import ProcessLogger
+
 
 # Class to write raw data to files using ZMQ and a new thread to prevent IO blocking
 class Raw2Disk(ProcessLogger):

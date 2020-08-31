@@ -19,10 +19,12 @@
 # see <https://www.gnu.org/licenses/>.
 
 import weakref
-from .spidrcmds import SpidrCmds
+
 import numpy as np
-from .spidrdefs import SpidrRegs
 from pymepix.core.log import Logger
+
+from .spidrcmds import SpidrCmds
+from .spidrdefs import SpidrRegs
 
 
 class SpidrDevice(Logger):

@@ -20,6 +20,6 @@
 #
 ##############################################################################
 
-from .sophyconfig import SophyConfig
 from .defaultconfig import DefaultConfig
+from .sophyconfig import SophyConfig
 from .timepixconfig import TimepixConfig

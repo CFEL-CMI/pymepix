@@ -18,13 +18,14 @@
 # You should have received a copy of the GNU General Public License along with this program. If not,
 # see <https://www.gnu.org/licenses/>.
 
+from enum import IntEnum
+
+import numpy as np
+import zmq
+from multiprocessing.sharedctypes import Value
+
 from .basepipeline import BasePipelineObject
 from .datatypes import MessageType
-import time
-import numpy as np
-from enum import IntEnum
-from multiprocessing.sharedctypes import Value
-import zmq
 
 
 class PixelOrientation(IntEnum):

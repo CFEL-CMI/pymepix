@@ -18,16 +18,17 @@
 # You should have received a copy of the GNU General Public License along with this program. If not,
 # see <https://www.gnu.org/licenses/>.
 
+import socket
+import socketserver
 ###################################
 # TCP Server
 ###################################
 import struct
-import socket
-import socketserver
-from pymepix.SPIDR.spidrcmds import SpidrCmds
-from pymepix.timepixdef import DacRegisterCodes
-from pymepix.core.log import Logger
+
 import numpy as np
+from pymepix.SPIDR.spidrcmds import SpidrCmds
+from pymepix.core.log import Logger
+from pymepix.timepixdef import DacRegisterCodes
 
 
 class TPX3Handler(socketserver.BaseRequestHandler, Logger):

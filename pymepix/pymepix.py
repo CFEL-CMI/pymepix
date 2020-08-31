@@ -20,15 +20,15 @@
 
 """Main module for pymepix"""
 
-import numpy as np
-from .SPIDR.spidrcontroller import SPIDRController
-from .SPIDR.spidrdefs import SpidrReadoutSpeed
-from pymepix.core.log import Logger
-from .timepixdevice import TimepixDevice
-from multiprocessing import Queue
-from collections import deque
 import threading
 import time
+from collections import deque
+from multiprocessing import Queue
+
+from pymepix.core.log import Logger
+
+from .SPIDR.spidrcontroller import SPIDRController
+from .timepixdevice import TimepixDevice
 
 
 class PollBufferEmpty(Exception):
@@ -268,7 +268,6 @@ class Pymepix(Logger):
 def main():
     import logging
     from .processing.datatypes import MessageType
-    from .processing import CentroidPipeline
     from .util.storage import open_output_file, store_raw, store_toa, store_tof
     import argparse
     import time

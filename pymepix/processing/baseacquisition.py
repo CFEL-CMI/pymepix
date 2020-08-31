@@ -20,9 +20,11 @@
 
 """Module deals with managing processing objects to form a data pipeline"""
 
-from pymepix.core.log import Logger
 from multiprocessing import Queue
+
 import zmq
+from pymepix.core.log import Logger
+
 
 class AcquisitionStage(Logger):
     """Defines a single acquisition stage

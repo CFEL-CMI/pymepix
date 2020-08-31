@@ -20,13 +20,13 @@
 
 """Processors relating to centroiding"""
 
-from .basepipeline import BasePipelineObject
-import socket
-from .datatypes import MessageType
 import time
+
 import numpy as np
-from enum import IntEnum
 from multiprocessing.sharedctypes import Value
+
+from .basepipeline import BasePipelineObject
+from .datatypes import MessageType
 
 
 class Centroiding(BasePipelineObject):

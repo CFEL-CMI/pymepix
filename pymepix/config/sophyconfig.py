@@ -18,10 +18,14 @@
 # You should have received a copy of the GNU General Public License along with this program. If not,
 # see <https://www.gnu.org/licenses/>.
 
-from .timepixconfig import TimepixConfig
 import xml.etree.ElementTree as et
 import zipfile
+
 import numpy as np
+
+from .timepixconfig import TimepixConfig
+
+
 class SophyConfig(TimepixConfig):
 
     def __init__(self,filename):        

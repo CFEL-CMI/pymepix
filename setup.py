@@ -26,16 +26,9 @@ name = 'pymepix'
 version = '1.1.dev0'
 release = version
 
-
-
-import os
-from setuptools import Distribution
-from setuptools import setup, find_packages
-from setuptools.command.install import install
-
 from distutils.core import setup
-from distutils.command.install_scripts import install_scripts
-from distutils import log
+
+from setuptools import find_packages
 
 packages = find_packages(exclude=('tests', 'doc'))
 

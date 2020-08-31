@@ -18,17 +18,15 @@
 # You should have received a copy of the GNU General Public License along with this program. If not,
 # see <https://www.gnu.org/licenses/>.
 
-import numpy as np
-from .SPIDR.spidrdevice import SpidrDevice
-from .SPIDR.error import PymePixException
-from .timepixdef import *
+import threading
+import time
+
+from multiprocessing.sharedctypes import Value
+
 from .config import TimepixConfig, SophyConfig, DefaultConfig
 # from .config.sophyconfig import SophyConfig
 from .core.log import Logger
-from .processing.acquisition import PixelPipeline
-from multiprocessing.sharedctypes import Value
-import time
-import threading
+from .timepixdef import *
 
 
 class ConfigClassException(Exception):
@@ -597,7 +595,6 @@ class TimepixDevice(Logger):
 def main():
     import logging
     from .SPIDR.spidrcontroller import SPIDRController
-    from .SPIDR.spidrdefs import SpidrShutterMode
     from multiprocessing import Queue
     logging.basicConfig(level=logging.INFO)
     end_queue = Queue()

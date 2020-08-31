@@ -18,12 +18,12 @@
 # You should have received a copy of the GNU General Public License along with this program. If not,
 # see <https://www.gnu.org/licenses/>.
 import ctypes
-import numpy as np
 import multiprocessing
 import socket
 import time
-import zmq
 
+import numpy as np
+import zmq
 from multiprocessing.sharedctypes import Value
 from pymepix.core.log import ProcessLogger
 # from pymepix.processing.basepipeline import BasePipelineObject

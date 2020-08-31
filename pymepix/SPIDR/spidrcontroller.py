@@ -22,13 +22,15 @@
 """SPIDR related classes"""
 
 import socket
+import threading
+
 import numpy as np
+from pymepix.core.log import Logger
+
 from .error import PymePixException
 from .spidrcmds import SpidrCmds
-from .spidrdevice import SpidrDevice
 from .spidrdefs import SpidrRegs, SpidrShutterMode, SpidrReadoutSpeed
-from pymepix.core.log import Logger
-import threading
+from .spidrdevice import SpidrDevice
 
 
 class SPIDRController(Logger):

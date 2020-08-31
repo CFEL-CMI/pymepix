@@ -21,8 +21,8 @@
 """Module that contains predefined acquisition pipelines for the user to use"""
 
 from .baseacquisition import AcquisitionPipeline
-from .packetprocessor import PacketProcessor
 from .centroiding import Centroiding
+from .packetprocessor import PacketProcessor
 from .udpsampler import UdpSampler
 
 
