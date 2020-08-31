@@ -114,6 +114,7 @@ class AcquisitionStage(Logger):
             ctx = zmq.Context.instance()
             self.udp_sock = ctx.socket(zmq.PAIR)
             self.udp_sock.bind('tcp://127.0.0.1:40000')
+            self.info("zmq bind on 'tcp://127.0.0.1:40000'")
 
         self.setArgs(*args, **kwargs)
 

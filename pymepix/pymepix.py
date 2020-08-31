@@ -88,7 +88,7 @@ class Pymepix(Logger):
             data_type, data = value
             self._event_callback(data_type, data)
 
-    def __init__(self, spidr_address, src_ip_port=('192.168.1.1', 0)):
+    def __init__(self, spidr_address, src_ip_port=('192.168.100.1', 0)):
         Logger.__init__(self, 'Pymepix')
         self._spidr = SPIDRController(spidr_address, src_ip_port)
 
@@ -326,9 +326,10 @@ def main():
     # Start acquisition
     pymepix.start()
     # start raw2disk
-    pymepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0].outfile_name = args.output
-    pymepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0]._raw2Disk.timer = 1
-    pymepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0].record = 1
+    #pymepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0].outfile_name = args.output
+    #pymepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0]._raw2Disk.timer = 1
+    #pymepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0].record = 1
+    
 
     start_time = time.time()
     logging.info('------Starting acquisition---------')

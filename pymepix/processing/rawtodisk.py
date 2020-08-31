@@ -48,7 +48,7 @@ class Raw2Disk(ProcessLogger):
     def __init__(self, context=None):
         ProcessLogger.__init__(self, 'Raw2Disk')
 
-        self.debug("init raw2disk")
+        self.info("init raw2disk")
 
         self.writing = False  # Keep track of whether we're currently writing a file
         self.stop_thr = False
@@ -83,6 +83,7 @@ class Raw2Disk(ProcessLogger):
         # socket for cummunication with main
         z_sock = context.socket(zmq.PAIR)
         z_sock.connect('tcp://127.0.0.1:40000')
+        self.info("zmq connect to 'tcp://127.0.0.1:40000'")
 
         # State machine etc. local variables
         waiting = True
@@ -97,13 +98,13 @@ class Raw2Disk(ProcessLogger):
             while waiting:
                 instruction = z_sock.recv_string()
                 if instruction == "SHUTDOWN":
-                    self.debug("SHUTDOWN received")
+                    self.info("SHUTDOWN received")
                     waiting = False
                     shutdown = True
                 else:  # Interpret as file name / path
                     directory, name = os.path.split(instruction)
                     if (not os.path.exists(instruction)) and os.path.isdir(directory):
-                        self.debug(f"File {instruction} opening")
+                        self.info(f"File {instruction} opening")
                         # Open filehandle
                         filehandle = open(instruction, "wb")
                         filehandle.write(time.time_ns().to_bytes(8, 'little'))  # add start time into file
@@ -112,7 +113,7 @@ class Raw2Disk(ProcessLogger):
                         writing = True
                         self.writing = True
                     else:
-                        self.debug(f'{instruction} not a valid command')
+                        self.info(f'{instruction} not a valid command')
                         z_sock.send_string(f"{instruction} in an INVALID command")
 
             # start writing received data to a file
