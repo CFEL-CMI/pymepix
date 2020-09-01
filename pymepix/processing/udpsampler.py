@@ -87,6 +87,10 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
         """Establishes a UDP connection to spidr"""
         self._sock = socket.socket(socket.AF_INET,     # Internet
                                    socket.SOCK_DGRAM)  # UDP
+        try:
+            self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 300_000_000)  # NIC buffer
+        except OSError:
+            self.warning("NIC memory you try to allocate is too much.")
         self._sock.settimeout(1.0)
         self.info('Establishing connection to : {}'.format(address))
         self._sock.bind(address)
