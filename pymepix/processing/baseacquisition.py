@@ -24,6 +24,7 @@ from multiprocessing import Queue
 
 import zmq
 from pymepix.core.log import Logger
+from pymepix.processing.usbtrainid import USBTrainID
 
 
 class AcquisitionStage(Logger):
@@ -158,7 +159,12 @@ class AcquisitionStage(Logger):
             if p.name.find('UdpSampler-') > -1:
                 self.udp_sock = self.ctx.socket(zmq.PAIR)
                 self.udp_sock.bind('tcp://127.0.0.1:40000')
-                self.info("zmq bind on 'tcp://127.0.0.1:40000'")
+                self.info('zmq bind on "tcp://127.0.0.1:40000"')
+
+                self.train_sock = self.ctx.socket(zmq.PAIR)
+                self.train_sock.bind('ipc:///tmp/train_sock')
+                self.info('trainID bind on "ipc:///tmp/train_sock"')
+                self.startTrainID()
             p.start()
 
     def stop(self, force=False):
@@ -180,8 +186,11 @@ class AcquisitionStage(Logger):
         else:
             for p in self._pipeline_objects:
                 if p.name.find('UdpSampler-') > -1:
-                    self.info(f'closing zmq socket for "tcp://127.0.0.1:40000"')
+                    self.debug(f'closing zmq socket for "tcp://127.0.0.1:40000"')
                     self.udp_sock.close()
+                    self.stopTrainID()
+                    self.debug(f'closing zmq socket for "icp:///tmp/train_sock"')
+                    self.train_sock.close()
                 p.enable = False
                 self.info('Joining thread {}'.format(p))
                 p.join(1.0)
@@ -190,6 +199,20 @@ class AcquisitionStage(Logger):
                 self.info('Join complete')
         self.info('Stop complete')
         self._pipeline_objects = []
+
+    def startTrainID(self):
+        self.info(f'start USBTrainID process')
+        # generate worker to save the data directly to disk
+        self._trainIDRec = USBTrainID()
+        self._trainIDRec.start()
+
+    def stopTrainID(self):
+        self.info(f'stopping USBTrainID process')
+        self.train_sock.send_string('STOP RECORDING')
+        self.train_sock.send_string('SHUTDOWN')
+        self._trainIDRec.join(2.0)  # file still needs to be saved
+        self._trainIDRec.terminate()
+        self._trainIDRec.join()
 
 
 class AcquisitionPipeline(Logger):
