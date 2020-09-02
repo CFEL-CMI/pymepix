@@ -256,7 +256,8 @@ class PacketProcessor(BasePipelineObject):
 
         m_trigTime = tdc_time
 
-        self.pushOutput(MessageType.TriggerData, m_trigTime)
+        # TODO: don't clatter queue with unnecessary stuff for now
+        #self.pushOutput(MessageType.TriggerData, m_trigTime)
         # print(m_trigTime)
         if self._handle_events:
             if self._triggers is None:
@@ -309,7 +310,8 @@ class PacketProcessor(BasePipelineObject):
         x += self._x_offset
         y += self._y_offset
 
-        self.pushOutput(MessageType.PixelData, (x, y, finalToA, ToT))
+        # TODO: don't clatter queue with unnecessary stuff for now
+        #self.pushOutput(MessageType.PixelData, (x, y, finalToA, ToT))
 
         # print('PIXEL',finalToA,longtime)
         if self._handle_events:

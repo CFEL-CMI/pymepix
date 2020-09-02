@@ -64,7 +64,7 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
             self._flush_timeout = self.init_param['flush_timeout']
             self._packets_collected = 0
             self._packet_buffer_list = [bytearray(int(1.5 * self._chunk_size))
-                                        for i in range(5)]  # ring buffer to put received data in
+                                        for i in range(10)]  # ring buffer to put received data in
             self._buffer_list_idx = 0
             self._packet_buffer_view_list = [memoryview(self._packet_buffer_list[i])
                                              for i in range(len(self._packet_buffer_list))]
@@ -261,13 +261,13 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
                         self.write2disk.my_sock.send(
                             self._packet_buffer_list[self._buffer_list_idx][:self._recv_bytes], copy=False)
                         self.write2disk.my_sock.send(b'EOF')
-                    # send stuff to packet processor
-                    #elif self._buffer_list_idx == 4:
-                    # add longtime to buffers end
-                    bytes_to_send = self._recv_bytes + 8
-                    self._packet_buffer_view[self._recv_bytes:bytes_to_send] = np.uint64(self._longtime.value).tobytes()
-                    self._packet_sock.send(
-                            self._packet_buffer_list[self._buffer_list_idx][:bytes_to_send], copy=False)
+                    # send stuff to packet processor only every 10th iteration
+                    elif self._buffer_list_idx == 9:
+                        # add longtime to buffers end
+                        bytes_to_send = self._recv_bytes + 8
+                        self._packet_buffer_view[self._recv_bytes:bytes_to_send] = np.uint64(self._longtime.value).tobytes()
+                        self._packet_sock.send(
+                                self._packet_buffer_list[self._buffer_list_idx][:bytes_to_send], copy=False)
 
                     self._recv_bytes = 0
                     self._buffer_list_idx = (self._buffer_list_idx + 1) % len(self._packet_buffer_list)
