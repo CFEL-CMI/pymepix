@@ -84,26 +84,24 @@ def test_pixelmask():
 
     # there should be more open pixels than masked ones
     assert np.count_nonzero(mask == 0) > np.count_nonzero(mask == 1)
-    print("Successfully done test_pixelmas()")
 
-# socketserver.ThreadingMixIn,
-class TPX3PacketCapture(TPX3Handler):
-    """The part to capture and evaluate the config packets from pymepix"""
+
+class TestTPX3Handler(TPX3Handler):
+    """The socketserver to capture and evaluate the config packets from pymepix
+
+        This class uses the main functionality of the spidrDummyTCP to collect config packets.
+        Furthermore it takes some of those packets and has another look on them containing the correct values."""
+    def __init__(self, request, client_address, server, event=None):
+        self.shutdown_event = event
+        TPX3Handler.__init__(self, request, client_address, server)
 
     def handle(self):
-        self.shutdown_evt = threading.Event()
-        self.requestIndex = 0
-        # while self.requestIndex<1000:
-        while 1:
+        while not self.shutdown_event.is_set():
+
+            self.actual_data = False
             self._gather_packet()
-
-            if self.data == b'shutdown':
-                self.shutdown_evt.set()
-                break
-            if self.shutdown_evt.wait(0.1):
-                break
-
             self._process_data()
+
             if self.cmd == SpidrCmds.CMD_SET_PIXCONF:
                 assert len(self.data) in [53, 149]
                 # marks the next row
@@ -115,35 +113,41 @@ class TPX3PacketCapture(TPX3Handler):
                 cmd_load = self.data[4]
                 dac_cmd = cmd_load >> 16
                 value = cmd_load & 0xFFFF
-                assert exact_parameter(dac_cmd, value)
+                parameter_range_of_values(dac_cmd, value)
+                # Pymepix first sends hardcoded default parameters and afterwards
+                if self.actual_data:
+                    parameter_exact(dac_cmd, value)
+                if dac_cmd == DacRegisterCodes.PLL_Vcntrl:
+                    self.actual_data = True
+
+
+class CustomTCPServer(socketserver.TCPServer):
+    def __init__(self, server_address, RequestHandlerClass, bind_and_activate=True, event=None):
+        self.shutdown_event=event
+        socketserver.TCPServer.__init__(self, server_address, RequestHandlerClass, bind_and_activate=bind_and_activate)
+
+    def finish_request(self, request, client_address):
+        self.RequestHandlerClass(request, client_address, self, event=self.shutdown_event)
 
 
 def test_send_config():
     """Pretend to be a TPX3 and capture config packets.
     Check for the right format.
     """
-    server = socketserver.TCPServer(ADDRESS, TPX3PacketCapture)
-    thread = threading.Thread(target=server.serve_forever)
-    thread.start()
+    shutdown_event = threading.Event()
+    server = CustomTCPServer(ADDRESS, TestTPX3Handler, event=shutdown_event)
+    server.timeout = 5
+    server_thread = threading.Thread(target=server.handle_request)
+    server_thread.daemon = True
+    server_thread.start()
+    ip, port = server.server_address
 
-    tpx = Pymepix(ADDRESS)
+    tpx = Pymepix((ip, port))
     tpx[0].loadConfig(CONFIG_PATH)
 
-    tpx.start()
-    tpx.stop()  # TODO: neither socketserver nor pymepix shutdown correctly
-    print("Successfully done test_send_config()")
-    server.shutdown_event.set()
-    print(1.5)
+    shutdown_event.set()
     server.server_close()
-    print(2)
-    server.shutdown()
-
-
-    print("server is gone")
-    thread.join(1)
 
 
 if __name__ == "__main__":
-    test_parameters()
-    test_pixelmask()
     test_send_config()
