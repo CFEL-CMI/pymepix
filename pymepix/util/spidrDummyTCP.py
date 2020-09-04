@@ -31,7 +31,9 @@ import numpy as np
 
 
 class TPX3Handler(socketserver.BaseRequestHandler, Logger):
-    #def __init__(self):
+    def __init__(self, request, client_address, server):
+        self.requestIndex = 0
+        socketserver.BaseRequestHandler.__init__(self, request, client_address, server)
     #    Logger.__init__(self, "TPX3 TCP Handler")
     def _gather_packet(self):
         sock_recv = self.request.recv(1024)  # .strip()
@@ -498,7 +500,6 @@ class TPX3Handler(socketserver.BaseRequestHandler, Logger):
             self.requestIndex += 1
 
     def handle(self):
-        self.requestIndex = 0
         # while self.requestIndex<1000:
         while 1:
             self._gather_packet()
