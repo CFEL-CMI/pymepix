@@ -1,8 +1,6 @@
-import socket
 import socketserver
 import threading
 import numpy as np
-import time
 from pymepix import Pymepix
 from pymepix.config.sophyconfig import SophyConfig
 from pymepix.SPIDR.spidrcmds import SpidrCmds
@@ -14,60 +12,64 @@ CONFIG_PATH = 'test_assets/test_config_W0028_H06_50V.spx'
 ADDRESS = ("192.168.1.10", 50000)
 
 
-def exact_parameter(code, value):
+def parameter_exact(code, value):
     """Test for precisely correct interpreted parameters of a known .spx file"""
     if code == DacRegisterCodes.Ibias_Preamp_ON:
-        return value == 128
+        assert value == 128
     elif code == DacRegisterCodes.Ibias_Preamp_OFF:
-        return value == 8
+        assert value == 8
     elif code == DacRegisterCodes.VPreamp_NCAS:
-        return value == 128
+        assert value == 128
     elif code == DacRegisterCodes.Ibias_Ikrum:
-        return value == 20
+        assert value == 20
     elif code == DacRegisterCodes.Vfbk:
-        return value == 128
+        assert value == 128
     elif code == DacRegisterCodes.Vthreshold_fine:
-        return value == 150
+        assert value == 150
     elif code == DacRegisterCodes.Vthreshold_coarse:
-        return value == 6
+        assert value == 6
     elif code == DacRegisterCodes.Ibias_DiscS1_ON:
-        return value == 128
+        assert value == 128
     elif code == DacRegisterCodes.Ibias_DiscS1_OFF:
-        return value == 8
+        assert value == 8
     elif code == DacRegisterCodes.Ibias_DiscS2_ON:
-        return value == 128
+        assert value == 128
     elif code == DacRegisterCodes.Ibias_DiscS2_OFF:
-        return value == 8
+        assert value == 8
     elif code == DacRegisterCodes.Ibias_PixelDAC:
-        return value == 150
+        assert value == 150
     elif code == DacRegisterCodes.Ibias_TPbufferIn:
-        return value == 128
+        assert value == 128
     elif code == DacRegisterCodes.Ibias_TPbufferOut:
-        return value == 128
+        assert value == 128
     elif code == DacRegisterCodes.VTP_coarse:
-        return value == 128
+        assert value == 128
     elif code == DacRegisterCodes.VTP_fine:
-        return value == 256
+        assert value == 256
     elif code == DacRegisterCodes.Ibias_CP_PLL:
-        return value == 128
+        assert value == 128
     elif code == DacRegisterCodes.PLL_Vcntrl:
-        return value == 128
+        assert value == 128
 
 
-def test_parameters():
+def parameter_range_of_values(code, value):
     """Test for DAC parameters being in their respective range of values"""
+    if code in [1, 3, 4, 5, 8, 10, 12, 13, 14, 15, 17]:
+        assert 0 <= value <= 255
+    elif code in [2, 7, 9, 11]:
+        assert 0 <= value <= 15
+    elif code in [6, 16]:
+        assert 0 <= value <= 511
+    elif code == 18:
+        assert True  # TODO: @firode waiting for answer with information about PLL_VCNTRL
+
+
+def test_read_config():
     spx = SophyConfig(CONFIG_PATH)
     conf_params = spx.dacCodes()
     for code, value in conf_params:
-        if code in [1, 3, 4, 5, 8, 10, 12, 13, 14, 15, 17]:
-            assert 0 <= value <= 255
-        elif code in [2, 7, 9, 11]:
-            assert 0 <= value <= 15
-        elif code in [6, 16]:
-            assert 0 <= value <= 511
-        elif code == 18:
-            assert True  # TODO: @firode waiting for answer with information about PLL_VCNTRL
-        assert exact_parameter(code, value)
+        parameter_range_of_values(code, value)
+        parameter_exact(code, value)
 
 
 def test_pixelmask():
