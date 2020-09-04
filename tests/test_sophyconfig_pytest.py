@@ -152,4 +152,6 @@ def test_send_config():
 
 
 if __name__ == "__main__":
+    test_read_config()
+    test_pixelmask()
     test_send_config()
