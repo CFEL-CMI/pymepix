@@ -89,15 +89,22 @@ def test_pixelmask():
 
 
 class TestTPX3Handler(TPX3Handler):
-    """The socketserver to capture and evaluate the config packets from pymepix
+    """The handler class for a socketserver to capture and evaluate the config packets from pymepix
 
         This class uses the main functionality of the spidrDummyTCP to collect config packets.
-        Furthermore it takes some of those packets and has another look on them containing the correct values."""
+        Furthermore it takes some of those packets and has another look on them containing the correct values.
+        """
     def __init__(self, request, client_address, server, event=None):
         self.shutdown_event = event
         TPX3Handler.__init__(self, request, client_address, server)
 
     def handle(self):
+        """The handle loop is the main function of the request handler.
+
+        Pymepix only connects to the camera once and then sends packets without opening a new request.
+        That is why there needs to be a loop in the handle function to capture all the packets from just one request.
+        To end the loop a threading event was created to communicate with the handler from the outside
+        and tell it when to stop."""
         while not self.shutdown_event.is_set():
 
             self.actual_data = False
@@ -124,6 +131,14 @@ class TestTPX3Handler(TPX3Handler):
 
 
 class CustomTCPServer(socketserver.TCPServer):
+    """The custom socketserver to communicate with Pymepix
+
+    This socketserver overrides two functions of the TCPServer to hand the threading event, that is
+    responsible for ending the connection, to the custom request handler class.
+    Usually you would stop a socketserver by calling the shutdown() function. As the request never gets closed though
+    this is not possible in this case. The socketserver will wait for the request handler to finish and
+    thus can not compute the shutdown() function call. That is why we need a thread event to communicate with
+    the request handler from the outside. For more fundamental insights look up the python socketserver docs."""
     def __init__(self, server_address, RequestHandlerClass, bind_and_activate=True, event=None):
         self.shutdown_event=event
         socketserver.TCPServer.__init__(self, server_address, RequestHandlerClass, bind_and_activate=bind_and_activate)
@@ -134,7 +149,7 @@ class CustomTCPServer(socketserver.TCPServer):
 
 def test_send_config():
     """Pretend to be a TPX3 and capture config packets.
-    Check for the right format.
+    Check for correct format and values.
     """
     shutdown_event = threading.Event()
     server = CustomTCPServer(ADDRESS, TestTPX3Handler, event=shutdown_event)
