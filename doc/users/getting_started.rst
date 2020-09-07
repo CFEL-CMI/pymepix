@@ -25,11 +25,11 @@ Installing from git source directly (platform-independent)
 
 You can clone pymepix from our main git repository::
 
-    git clone https://<desy username>@stash.desy.de/scm/cmipublic/timepix.git
+    git clone https://github.com/CFEL-CMI/pymepix.git
 
 Move into the pymepix library::
 
-    cd timepix/pymepix
+    cd pymepix
 
 Then, just do::
 
