@@ -5,12 +5,23 @@ Connecting and Configuring
 -----------
 Connecting
 -----------
+For the camera to work you will have to set up a local alias on your machine with a specific IP address,
+that the camera can communicate with. This can be achieved via terminal:
 
+
+On a Mac system::
+
+    % sudo ifconfig lo0 alias 192.168.1.1
+
+On a linux system the local interface is usually called lo. The rest of the command stays the same.
+
+
+The IP address of your TPX camera is the one seen on the OLED screen on.
 Connecting to SPIDR can be done with:
 
 >>> timepix = Pymepix(('192.168.1.10',50000))
 
-Where the IP address is the one seen on the OLED screen on timepix. The number of devices can be found using:
+The number of devices can be found using:
 
 >>> len(timepix)
 1
