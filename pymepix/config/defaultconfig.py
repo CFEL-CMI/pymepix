@@ -22,11 +22,17 @@ from .timepixconfig import TimepixConfig
 
 
 class DefaultConfig(TimepixConfig):
-
+    """Provides default values for DAC parameters"""
     def __init__(self):
         pass
 
     def dacCodes(self):
+        """Accessor for the dac parameters
+
+                        Returns
+                        ----------
+                        :obj:`list` of :obj:`tuples` (<dac code>, <value>)
+                            The value for every DAC parameter"""
         codes = [(1,  128),  # TPX3_IBIAS_PREAMP_ON  [0-255]
                  (2,    8),  # TPX3_IBIAS_PREAMP_OFF [0- 15]
                  (3,  128),  # TPX3_VPREAMP_NCAS     [0-255]

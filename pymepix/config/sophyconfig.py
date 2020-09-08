@@ -25,8 +25,9 @@ import numpy as np
 
 
 class SophyConfig(TimepixConfig):
+    """This class provides functionality for interpreting a .spx config file from SoPhy."""
 
-    def __init__(self,filename):        
+    def __init__(self, filename):
         self._dac_codes = {'Ibias_Preamp_ON': 1,
                             'Ibias_Preamp_OFF': 2,
                             'VPreamp_NCAS': 3,
@@ -76,6 +77,7 @@ class SophyConfig(TimepixConfig):
         self.parsePixelConfig(spx, names[-3:])
     
     def parseDAC(self, xmlstring):
+        """Reads and formats DAC parameters"""
         root = et.fromstring(xmlstring)
         dac_setting = root.findall(".//entry[@class='sophy.medipix.SPMPXDACCollection']")
         dac_setting = dac_setting[0][0]
@@ -89,8 +91,15 @@ class SophyConfig(TimepixConfig):
             dac_value = int(data.items()[-1][-1])
 
             self._dac_values[dac_key] = dac_value
+        print(f"DAC Codes: {type(self.dacCodes())} \n{self.dacCodes()}")
 
     def dacCodes(self):
+        """Accessor for the dac parameters
+
+                Returns
+                ----------
+                :obj:`list` of :obj:`tuples` (<dac code>, <value>)
+                    The value for every DAC parameter"""
         dac_codes = []
         for key, value in self._dac_values.items():
             code = self._dac_codes[key]
@@ -108,8 +117,12 @@ class SophyConfig(TimepixConfig):
         return int(reverse, 2)
 
     def parsePixelConfig(self, zip_file, file_names):
-        # SoPhy config file saves the pixel information row by row,
-        # while timepix expects the information column wise.
+        """Reads and formats the pixel data from config file.
+
+        Notes
+        ----------
+        The spx config file saves the pixel information row by row while
+        the timepix camera expects the information column wise."""
         buffer = zip_file.read(file_names[0])
         self._mask = np.fliplr(np.frombuffer(buffer[27:], dtype=np.int16).reshape(256, 256).transpose()).copy()
         buffer = zip_file.read(file_names[1])
@@ -117,17 +130,34 @@ class SophyConfig(TimepixConfig):
         buffer = zip_file.read(file_names[2])
         self._thresh = np.frombuffer(buffer[27:], dtype=np.int16).copy() >> 8
         self._thresh = np.fliplr(np.array([self._reverseBits(x) for x in self._thresh]).reshape(256, 256).transpose())
+        print(f"mask: {type(self._mask)}, shape: {self._mask.shape}")
+        print(f"test: {type(self._test)}, shape: {self._test.shape}")
+        print(f"thresh: {type(self._thresh)}, shape: {self._thresh.shape}")
 
     def maskPixels(self):
-        """Returns mask pixels"""
+        """Accessor for the mask pixels [0, 1]
+
+        Returns
+        ----------
+        :obj:`numpy.ndarray` (256, 256)
+            The information which pixels are to be masked"""
         return 1 - (self._mask // 256)
     
     def testPixels(self):
-        """Returns test pixels"""
+        """Accessor for the test pixels
+
+        Returns
+        ----------
+        :obj:`numpy.ndarray` (256, 256)"""
         return self._test
     
     def thresholdPixels(self):
-        """Returns threshold pixels"""
+        """Accessor for the pixel thresholds [0, 15]
+
+        Returns
+        ----------
+        :obj:`numpy.ndarray` (256, 256)
+            The threshold information for each pixel"""
         return self._thresh
 
 
