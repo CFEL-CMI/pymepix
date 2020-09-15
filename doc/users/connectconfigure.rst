@@ -5,12 +5,18 @@ Connecting and Configuring
 -----------
 Connecting
 -----------
+For the camera to work you will have to set up the IP address on your machine,
+that the camera then communicates with. For Timepix3 with 10 Gb/s that is 192.168.100.1.
+Look up the official documentation for your camera to find out more.
 
+**Before using Pymepix, make sure your camera works properly with the SoPhy software.**
+
+The IP address of your TPX camera is the one seen on the OLED screen.
 Connecting to SPIDR can be done with:
 
->>> timepix = Pymepix(('192.168.1.10',50000))
+>>> timepix = Pymepix(('192.168.100.10',50000))
 
-Where the IP address is the one seen on the OLED screen on timepix. The number of devices can be found using:
+The number of devices can be found using:
 
 >>> len(timepix)
 1
