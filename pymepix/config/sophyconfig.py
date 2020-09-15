@@ -130,9 +130,6 @@ class SophyConfig(TimepixConfig):
         buffer = zip_file.read(file_names[2])
         self._thresh = np.frombuffer(buffer[27:], dtype=np.int16).copy() >> 8
         self._thresh = np.fliplr(np.array([self._reverseBits(x) for x in self._thresh]).reshape(256, 256).transpose())
-        print(f"mask: {type(self._mask)}, shape: {self._mask.shape}")
-        print(f"test: {type(self._test)}, shape: {self._test.shape}")
-        print(f"thresh: {type(self._thresh)}, shape: {self._thresh.shape}")
 
     def maskPixels(self):
         """Accessor for the mask pixels [0, 1]
