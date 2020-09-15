@@ -8,4 +8,5 @@
     Data Formats <dataformats>
     Examples <examples>
     pymepix-acq <pymepixacq>
+    Troubleshooting <troubleshooting>
     
