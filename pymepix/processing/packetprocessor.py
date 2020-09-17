@@ -184,10 +184,10 @@ class PacketProcessor(BasePipelineObject):
         try:
             event_mapping = np.digitize(toa, start) - 1
         except Exception as e:
-            print('Exception has occured {} due to ', str(e))
-            print('Writing output TOA {}'.format(toa))
-            print('Writing triggers {}'.format(start))
-            print('Flushing triggers!!!')
+            self.error('Exception has occured {} due to ', str(e))
+            self.error('Writing output TOA {}'.format(toa))
+            self.error('Writing triggers {}'.format(start))
+            self.error('Flushing triggers!!!')
             self._triggers = self._triggers[-2:]
             return None
         self._triggers = self._triggers[-2:]
