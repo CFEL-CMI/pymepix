@@ -160,58 +160,56 @@ class PacketProcessor(BasePipelineObject):
     def filterBadTriggers(self):
         self._triggers = self._triggers[np.argmin(self._triggers):]
 
+    def find_events_fast_post(self):
+        '''Call this function at the very end of to also have the last two trigger events processed'''
+        # add an imaginary last trigger event after last pixel event for np.digitize to work
+        self._triggers = np.concatenate((self._triggers,
+                                         np.array([self._toa.max() + 1, self._toa.max() + 2])))
+        return self.find_events_fast()
+
     def find_events_fast(self):
         if self._triggers is None:
             return None
-        # self.filterBadTriggers()
-        if self._triggers.size < 5:
+        if self._triggers.size < 4:
             return None
-        self.filterBadTriggers()
+        self._triggers = self._triggers[np.argmin(self._triggers):]
         if self._toa is None:
             return None
         if self._toa.size == 0:
             # Clear out the triggers since they have nothing
             return None
 
-        # Get our start/end triggers to get events
+        # Get our start/end triggers to bin events accordingly
         start = self._triggers[0:-1:]
         if start.size == 0:
             return None
 
         min_window, max_window = self._eventWindow
 
-        trigger_counter = np.arange(self._trigger_counter, self._trigger_counter + start.size, dtype=np.int)
-
+        trigger_counter = np.arange(self._trigger_counter, self._trigger_counter + start.size - 1, dtype=np.int)
         self._trigger_counter = trigger_counter[-1] + 1
 
         # end = self._triggers[1:-1:]
         # Get the first and last triggers in pile
         first_trigger = start[0]
         last_trigger = start[-1]
-        # print('First Trigger las trigger',first_trigger,last_trigger)
-        # print('TOA before',self._toa)
-        # Delete useless pixels behind the first trigger
+        # Delete useless pixels before the first trigger
         self.updateBuffers(self._toa >= first_trigger)
         # grab only pixels we care about
         x, y, toa, tot = self.getBuffers(self._toa < last_trigger)
-        # print('triggers',start)
-        # print('TOA',toa)
         self.updateBuffers(self._toa >= last_trigger)
         try:
             event_mapping = np.digitize(toa, start) - 1
         except Exception as e:
-            self.error('Exception has occured {} due to ', str(e))
-            self.error('Writing output TOA {}'.format(toa))
-            self.error('Writing triggers {}'.format(start))
-            self.error('Flushing triggers!!!')
-            self._triggers = self._triggers[-1:]
+            print('Exception has occured {} due to ', str(e))
+            print('Writing output TOA {}'.format(toa))
+            print('Writing triggers {}'.format(start))
+            print('Flushing triggers!!!')
+            self._triggers = self._triggers[-2:]
             return None
-        event_triggers = self._triggers[:-1:]
-        self._triggers = self._triggers[-1:]
+        self._triggers = self._triggers[-2:]
 
-        # print('Trigger delta',triggers,np.ediff1d(triggers))
-
-        tof = toa - event_triggers[event_mapping]
+        tof = toa - start[event_mapping]
         event_number = trigger_counter[event_mapping]
 
         exp_filter = (tof >= min_window) & (tof <= max_window)
