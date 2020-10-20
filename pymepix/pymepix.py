@@ -88,7 +88,7 @@ class Pymepix(Logger):
             data_type, data = value
             self._event_callback(data_type, data)
 
-    def __init__(self, spidr_address, src_ip_port=('192.168.100.1', 0)):
+    def __init__(self, spidr_address, src_ip_port=('192.168.1.1', 0)):
         Logger.__init__(self, 'Pymepix')
         self._spidr = SPIDRController(spidr_address, src_ip_port)
 

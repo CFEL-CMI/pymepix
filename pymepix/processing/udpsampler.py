@@ -262,12 +262,12 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
                             self._packet_buffer_list[self._buffer_list_idx][:self._recv_bytes], copy=False)
                         self.write2disk.my_sock.send(b'EOF')
                     # send stuff to packet processor only every 10th iteration
-                    elif self._buffer_list_idx == 9:
-                        # add longtime to buffers end
-                        bytes_to_send = self._recv_bytes + 8
-                        self._packet_buffer_view[self._recv_bytes:bytes_to_send] = np.uint64(self._longtime.value).tobytes()
-                        self._packet_sock.send(
-                                self._packet_buffer_list[self._buffer_list_idx][:bytes_to_send], copy=False)
+                    #elif self._buffer_list_idx == 9:
+                    # add longtime to buffers end
+                    bytes_to_send = self._recv_bytes + 8
+                    self._packet_buffer_view[self._recv_bytes:bytes_to_send] = np.uint64(self._longtime.value).tobytes()
+                    self._packet_sock.send(
+                            self._packet_buffer_list[self._buffer_list_idx][:bytes_to_send], copy=False)
 
                     self._recv_bytes = 0
                     self._buffer_list_idx = (self._buffer_list_idx + 1) % len(self._packet_buffer_list)
