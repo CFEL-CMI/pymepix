@@ -18,6 +18,6 @@
 # You should have received a copy of the GNU General Public License along with this program. If not,
 # see <https://www.gnu.org/licenses/>.
 
-from .sophyconfig import SophyConfig
 from .defaultconfig import DefaultConfig
+from .sophyconfig import SophyConfig
 from .timepixconfig import TimepixConfig

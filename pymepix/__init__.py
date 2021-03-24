@@ -18,6 +18,6 @@
 # You should have received a copy of the GNU General Public License along with this program. If not,
 # see <https://www.gnu.org/licenses/>.
 
+from pymepix.processing import MessageType
 from pymepix.pymepix import Pymepix, PollBufferEmpty
 from pymepix.timepixdef import *
-from pymepix.processing import MessageType

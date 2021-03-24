@@ -18,9 +18,10 @@
 # You should have received a copy of the GNU General Public License along with this program. If not,
 # see <https://www.gnu.org/licenses/>.
 import socket
-import numpy as np
-import time
 import struct
+import time
+
+import numpy as np
 
 HOST, PORT = "127.0.0.1", 50000
 #data = " ".join(sys.argv[1:])

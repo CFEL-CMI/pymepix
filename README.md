@@ -1,3 +1,5 @@
+branch for implementing zmq for packetprocessor
+
 # Pymepix
 
 The `pymepix` Python module provides the control and data-acquisition (DAQ) functionality. It

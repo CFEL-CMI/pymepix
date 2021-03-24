@@ -20,12 +20,12 @@
 
 """Base implementation of objects relating to the processing pipeline"""
 
-from pymepix.core.log import ProcessLogger
 import multiprocessing
-from multiprocessing import Queue
-import traceback
-from multiprocessing.sharedctypes import Value
 import time
+from multiprocessing import Queue
+
+from multiprocessing.sharedctypes import Value
+from pymepix.core.log import ProcessLogger
 
 
 class BasePipelineObject(multiprocessing.Process, ProcessLogger):
@@ -146,9 +146,6 @@ class BasePipelineObject(multiprocessing.Process, ProcessLogger):
         To perform work within the pipeline, a class must override this function.
         General guidelines include, check for correct data type, and must return
         None for both if no output is given.
-
-
-
         """
         self.debug('I AM PROCESSING')
         time.sleep(0.1)
@@ -195,9 +192,9 @@ class BasePipelineObject(multiprocessing.Process, ProcessLogger):
                 self.error(e, exc_info=True)
                 break
         output_type, result = self.post_run()
-        if output_type is not None and result is not None: # not quite sure what happens without "enabled"
+        if output_type is not None and result is not None:  # TODO: not quite sure what happens without "enabled"
             self.pushOutput(output_type, result)
-
+        #print(f'iterations {self.loop_count}')
 
         self.info('Job complete')
 

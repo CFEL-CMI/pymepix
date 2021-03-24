@@ -18,6 +18,6 @@
 # You should have received a copy of the GNU General Public License along with this program. If not,
 # see <https://www.gnu.org/licenses/>.
 
+from pymepix.SPIDR.error import PymePixException
 from pymepix.SPIDR.spidrcontroller import SPIDRController
 from pymepix.SPIDR.spidrdefs import *
-from pymepix.SPIDR.error import PymePixException

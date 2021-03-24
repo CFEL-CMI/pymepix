@@ -23,7 +23,6 @@ import numpy as np
 
 def compute_timewalk(tof, tot, region):
     from scipy.optimize import curve_fit
-    from scipy.stats import norm
 
     # Filter for the calibration region we are looking at
     region_filter = (tof >= region[0]) & (tof <= region[1])

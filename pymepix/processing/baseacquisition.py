@@ -20,8 +20,11 @@
 
 """Module deals with managing processing objects to form a data pipeline"""
 
-from pymepix.core.log import Logger
 from multiprocessing import Queue
+
+import zmq
+from pymepix.core.log import Logger
+from pymepix.processing.usbtrainid import USBTrainID
 
 
 class AcquisitionStage(Logger):
@@ -53,6 +56,7 @@ class AcquisitionStage(Logger):
 
         self._args = []
         self._kwargs = {}
+
 
     @property
     def stage(self):
@@ -105,6 +109,15 @@ class AcquisitionStage(Logger):
         self.debug('Assigning stage {} to klass {}'.format(self.stage, pipeline_klass))
         self._pipeline_klass = pipeline_klass
 
+        # zmq socket for communication with write2disk thread
+        # only initialize this in udpsampler
+        from pymepix.processing.udpsampler import UdpSampler
+        if pipeline_klass == UdpSampler:
+            self.ctx = zmq.Context.instance()
+            #self.udp_sock = self.ctx.socket(zmq.PAIR)
+            #self.udp_sock.bind('tcp://127.0.0.1:40000')
+            #self.info("zmq bind on 'tcp://127.0.0.1:40000'")
+
         self.setArgs(*args, **kwargs)
 
     def setArgs(self, *args, **kwargs):
@@ -143,9 +156,16 @@ class AcquisitionStage(Logger):
 
     def start(self):
         for p in self._pipeline_objects:
-            p.start()
             if p.name.find('UdpSampler-') > -1:
-                p.startRaw2Disk()
+                self.udp_sock = self.ctx.socket(zmq.PAIR)
+                self.udp_sock.bind('tcp://127.0.0.1:40000')
+                self.info('zmq bind on "tcp://127.0.0.1:40000"')
+
+                self.train_sock = self.ctx.socket(zmq.PAIR)
+                self.train_sock.bind('ipc:///tmp/train_sock')
+                self.info('trainID bind on "ipc:///tmp/train_sock"')
+                self.startTrainID()
+            p.start()
 
     def stop(self, force=False):
         self.info('Stopping stage {}'.format(self.stage))
@@ -166,8 +186,11 @@ class AcquisitionStage(Logger):
         else:
             for p in self._pipeline_objects:
                 if p.name.find('UdpSampler-') > -1:
-                    self.info(f'stoppping {p.name}')
-                    p.stopRaw2Disk()
+                    self.debug(f'closing zmq socket for "tcp://127.0.0.1:40000"')
+                    self.udp_sock.close()
+                    self.stopTrainID()
+                    self.debug(f'closing zmq socket for "icp:///tmp/train_sock"')
+                    self.train_sock.close()
                 p.enable = False
                 self.info('Joining thread {}'.format(p))
                 p.join(1.0)
@@ -177,9 +200,23 @@ class AcquisitionStage(Logger):
         self.info('Stop complete')
         self._pipeline_objects = []
 
+    def startTrainID(self):
+        self.info(f'start USBTrainID process')
+        # generate worker to save the data directly to disk
+        self._trainIDRec = USBTrainID()
+        self._trainIDRec.start()
+
+    def stopTrainID(self):
+        self.info(f'stopping USBTrainID process')
+        self.train_sock.send_string('STOP RECORDING')
+        self.train_sock.send_string('SHUTDOWN')
+        self._trainIDRec.join(2.0)  # file still needs to be saved
+        self._trainIDRec.terminate()
+        self._trainIDRec.join()
+
 
 class AcquisitionPipeline(Logger):
-    """Class that manages varius stages"""
+    """Class that manages various stages"""
 
     def __init__(self, name, data_queue):
         Logger.__init__(self, name + ' AcqPipeline')
@@ -215,13 +252,13 @@ class AcquisitionPipeline(Logger):
 
         self.info('Starting acquisition')
         # Build them
-        last_stage = None
+        previous_stage = None
         last_index = len(self._stages) - 1
         self.debug('Last index is {}'.format(last_index))
         for idx, s in enumerate(self._stages):
             self.debug('Building stage {} {}'.format(idx, s.stage))
-            if last_stage != None:
-                queues = last_stage.outputQueue
+            if previous_stage != None:
+                queues = previous_stage.outputQueue
                 self.debug('Queues: {}'.format(queues))
                 if idx != last_index:
                     s.build(input_queue=queues)
@@ -234,7 +271,7 @@ class AcquisitionPipeline(Logger):
                 else:
                     self.info('First stage shares output')
                     s.build(output_queue=self._data_queue)
-            last_stage = s
+            previous_stage = s
             self.debug('Last stage is {}'.format(s))
 
         for s in self._stages:

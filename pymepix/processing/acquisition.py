@@ -21,8 +21,8 @@
 """Module that contains predefined acquisition pipelines for the user to use"""
 
 from .baseacquisition import AcquisitionPipeline
-from .packetprocessor import PacketProcessor
 from .centroiding import Centroiding
+from .packetprocessor import PacketProcessor
 from .udpsampler import UdpSampler
 
 
@@ -40,7 +40,7 @@ class PixelPipeline(AcquisitionPipeline):
         self._event_window = (0, 10000)
 
         self.addStage(0, UdpSampler, address, longtime)
-        self.addStage(2, PacketProcessor, num_processes=12)
+        self.addStage(2, PacketProcessor, num_processes=2)
         self._reconfigureProcessor()
 
     def _reconfigureProcessor(self):

@@ -18,17 +18,15 @@
 # You should have received a copy of the GNU General Public License along with this program. If not,
 # see <https://www.gnu.org/licenses/>.
 
-import numpy as np
-from .SPIDR.spidrdevice import SpidrDevice
-from .SPIDR.error import PymePixException
-from .timepixdef import *
+import threading
+import time
+
+from multiprocessing.sharedctypes import Value
+
 from .config import TimepixConfig, SophyConfig, DefaultConfig
 # from .config.sophyconfig import SophyConfig
 from .core.log import Logger
-from .processing.acquisition import PixelPipeline
-from multiprocessing.sharedctypes import Value
-import time
-import threading
+from .timepixdef import *
 
 
 class ConfigClassException(Exception):
@@ -73,7 +71,9 @@ class TimepixDevice(Logger):
         self._device.reinitDevice()
 
         self._longtime = Value('L', 0)
-        self.setupAcquisition(PixelPipeline)
+        # TODO: this dosn't work with GUI as setupAcquisition get's called here and
+        #  in pymepixviewer and thus the zmq socket get's initialized twice.
+        #self.setupAcquisition(PixelPipeline)
 
         self._initDACS()
 
@@ -595,7 +595,6 @@ class TimepixDevice(Logger):
 def main():
     import logging
     from .SPIDR.spidrcontroller import SPIDRController
-    from .SPIDR.spidrdefs import SpidrShutterMode
     from multiprocessing import Queue
     logging.basicConfig(level=logging.INFO)
     end_queue = Queue()
@@ -611,7 +610,7 @@ def main():
     t.daemon = True
     t.start()
 
-    spidr = SPIDRController(('192.168.1.10', 50000))
+    spidr = SPIDRController(('192.168.100.10', 50000))
 
     timepix = TimepixDevice(spidr[0], end_queue)
     timepix.loadSophyConfig('/Users/alrefaie/Documents/repos/libtimepix/config/eq-norm-50V.spx')

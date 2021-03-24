@@ -18,13 +18,14 @@
 # You should have received a copy of the GNU General Public License along with this program. If not,
 # see <https://www.gnu.org/licenses/>.
 
-from .basepipeline import BasePipelineObject
-import socket
-from .datatypes import MessageType
-import time
-import numpy as np
 from enum import IntEnum
+
+import numpy as np
+import zmq
 from multiprocessing.sharedctypes import Value
+
+from .basepipeline import BasePipelineObject
+from .datatypes import MessageType
 
 
 class PixelOrientation(IntEnum):
@@ -50,7 +51,9 @@ class PacketProcessor(BasePipelineObject):
                  handle_events=False, event_window=(0.0, 10000.0), position_offset=(0, 0),
                  orientation=PixelOrientation.Up, input_queue=None, create_output=True, num_outputs=1,
                  shared_output=None):
-        BasePipelineObject.__init__(self, PacketProcessor.__name__, input_queue=input_queue,
+        # set input_queue to None for now, or baseaqusition.build would have to be modified
+        # input_queue is replace by zmq
+        BasePipelineObject.__init__(self, PacketProcessor.__name__, input_queue=None,
                                     create_output=create_output, num_outputs=num_outputs, shared_output=shared_output)
 
         self.clearBuffers()
@@ -105,16 +108,28 @@ class PacketProcessor(BasePipelineObject):
     def _eventWindow(self):
         return self._min_event_window.value, self._max_event_window.value
 
+    def init_new_process(self):
+        """create connections and initialize variables in new process"""
+        self.debug('create ZMQ socket')
+        ctx = zmq.Context.instance()
+        self._packet_sock = ctx.socket(zmq.PULL)
+        self._packet_sock.connect('ipc:///tmp/packetProcessor')
+
     def pre_run(self):
         self.info('Running with triggers? {}'.format(self._handle_events))
+        self.init_new_process()
 
-    def process(self, data_type, data):
-        if data_type is not MessageType.RawData:
+    def process(self, data_type=None, data=None):
+        packet_view = memoryview(self._packet_sock.recv(copy=False))
+        packet = np.frombuffer(packet_view[:-8], dtype=np.uint64)
+        # needs to be an integer or "(ltime >> 28) & 0x3" fails
+        longtime = int(np.frombuffer(packet_view[-8:], dtype=np.uint64)[0])
+
+        if len(packet) == 0:
             return None, None
 
-        packets, longtime = data
-
-        packet = packets
+        #packets, longtime = data
+        #packet = packets
 
         header = ((packet & 0xF000000000000000) >> 60) & 0xF
         subheader = ((packet & 0x0F00000000000000) >> 56) & 0xF
@@ -139,6 +154,8 @@ class PacketProcessor(BasePipelineObject):
                 return None, None
         else:
             return None, None
+
+        return None, None
 
     def filterBadTriggers(self):
         self._triggers = self._triggers[np.argmin(self._triggers):]
@@ -237,7 +254,8 @@ class PacketProcessor(BasePipelineObject):
 
         m_trigTime = tdc_time
 
-        self.pushOutput(MessageType.TriggerData, m_trigTime)
+        # TODO: don't clatter queue with unnecessary stuff for now
+        #self.pushOutput(MessageType.TriggerData, m_trigTime)
         # print(m_trigTime)
         if self._handle_events:
             if self._triggers is None:
@@ -280,7 +298,6 @@ class PacketProcessor(BasePipelineObject):
         # print('TOA after FTOa',globalToA*time_unit*1E-9)
         globalToA += ((col // 2) % 16) << 8
         globalToA[((col // 2) % 16) == 0] += (16 << 8)
-
         finalToA = globalToA * time_unit * 1E-9
 
         # print('finalToa',finalToA)
@@ -291,7 +308,8 @@ class PacketProcessor(BasePipelineObject):
         x += self._x_offset
         y += self._y_offset
 
-        self.pushOutput(MessageType.PixelData, (x, y, finalToA, ToT))
+        # TODO: don't clatter queue with unnecessary stuff for now
+        #self.pushOutput(MessageType.PixelData, (x, y, finalToA, ToT))
 
         # print('PIXEL',finalToA,longtime)
         if self._handle_events:
