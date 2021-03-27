@@ -26,10 +26,12 @@ import zmq
 from pymepix.core.log import Logger
 from pymepix.processing.usbtrainid import USBTrainID
 
+import pymepix.config.load_config as cfg
+
 
 class AcquisitionStage(Logger):
     """Defines a single acquisition stage
-    
+
     Usually not created directly. Instead created by :class:`AcquisitionPipeline`
     Represent a single pipeline stage and handles management of queues and message passing
     as well as creation and destruction of processing objects.
@@ -40,11 +42,11 @@ class AcquisitionStage(Logger):
     ------------
     stage: int
         Initial position in the pipeline, lower stages are executed first
-    
+
     """
 
     def __init__(self, stage, num_processes=1):
-        Logger.__init__(self, 'AcqStage-{}'.format(stage))
+        Logger.__init__(self, "AcqStage-{}".format(stage))
         self._stage_number = stage
 
         self._pipeline_objects = []
@@ -56,7 +58,6 @@ class AcquisitionStage(Logger):
 
         self._args = []
         self._kwargs = {}
-
 
     @property
     def stage(self):
@@ -70,17 +71,17 @@ class AcquisitionStage(Logger):
     @property
     def numProcess(self):
         """Number of processes to spawn when built
-        
+
         Parameters
         ----------
         value: int
             Number of processes to spawn when acquisition starts
-        
+
         Returns
         ----------
         int:
             Number of processes
-        
+
         """
 
         return self._num_processes
@@ -102,21 +103,22 @@ class AcquisitionStage(Logger):
 
         **kwargs:
             keyward arguments to pass into the class init
-        
+
 
         """
 
-        self.debug('Assigning stage {} to klass {}'.format(self.stage, pipeline_klass))
+        self.debug("Assigning stage {} to klass {}".format(self.stage, pipeline_klass))
         self._pipeline_klass = pipeline_klass
 
         # zmq socket for communication with write2disk thread
         # only initialize this in udpsampler
         from pymepix.processing.udpsampler import UdpSampler
+
         if pipeline_klass == UdpSampler:
             self.ctx = zmq.Context.instance()
-            #self.udp_sock = self.ctx.socket(zmq.PAIR)
-            #self.udp_sock.bind('tcp://127.0.0.1:40000')
-            #self.info("zmq bind on 'tcp://127.0.0.1:40000'")
+            # self.udp_sock = self.ctx.socket(zmq.PAIR)
+            # self.udp_sock.bind('tcp://127.0.0.1:40000')
+            # self.info("zmq bind on 'tcp://127.0.0.1:40000'")
 
         self.setArgs(*args, **kwargs)
 
@@ -132,19 +134,23 @@ class AcquisitionStage(Logger):
         self._input_queue = input_queue
         self._output_queue = output_queue
 
-        self.debug('Building stage with arguments {} {}'.format(self._args, self._kwargs))
+        self.debug("Building stage with arguments {} {}".format(self._args, self._kwargs))
 
         if self._output_queue is None:
-            self.debug('I am creating the queue')
+            self.debug("I am creating the queue")
             self._output_queue = Queue()
         else:
-            self.debug('Recieved the queue {}'.format(output_queue))
-        self.debug('Building stage {} '.format(self._stage_number))
-        self.info('Creating {} processes'.format(self._num_processes))
+            self.debug("Recieved the queue {}".format(output_queue))
+        self.debug("Building stage {} ".format(self._stage_number))
+        self.info("Creating {} processes".format(self._num_processes))
         for n in range(self._num_processes):
 
-            p = self._pipeline_klass(*self._args, **self._kwargs, input_queue=self._input_queue,
-                                     shared_output=self._output_queue)
+            p = self._pipeline_klass(
+                *self._args,
+                **self._kwargs,
+                input_queue=self._input_queue,
+                shared_output=self._output_queue,
+            )
             p.daemon = True
             self._pipeline_objects.append(p)
             if self._output_queue is None:
@@ -156,60 +162,62 @@ class AcquisitionStage(Logger):
 
     def start(self):
         for p in self._pipeline_objects:
-            if p.name.find('UdpSampler-') > -1:
+            if p.name.find("UdpSampler-") > -1:
                 self.udp_sock = self.ctx.socket(zmq.PAIR)
-                self.udp_sock.bind('tcp://127.0.0.1:40000')
+                self.udp_sock.bind("tcp://127.0.0.1:40000")
                 self.info('zmq bind on "tcp://127.0.0.1:40000"')
 
-                self.train_sock = self.ctx.socket(zmq.PAIR)
-                self.train_sock.bind('ipc:///tmp/train_sock')
-                self.info('trainID bind on "ipc:///tmp/train_sock"')
-                self.startTrainID()
+                if cfg.default_cfg["trainID"]["connected"]:
+                    self.train_sock = self.ctx.socket(zmq.PAIR)
+                    self.train_sock.bind("ipc:///tmp/train_sock")
+                    self.info('trainID bind on "ipc:///tmp/train_sock"')
+                    self.startTrainID()
             p.start()
 
     def stop(self, force=False):
-        self.info('Stopping stage {}'.format(self.stage))
+        self.info("Stopping stage {}".format(self.stage))
         if self._input_queue is not None:
             # Put a none in and join all threads
             self._input_queue.put(None)
             for idx, p in enumerate(self._pipeline_objects):
                 p.enable = False
-                self.info('Waiting for process {}'.format(idx))
+                self.info("Waiting for process {}".format(idx))
                 p.join(1.0)
                 p.terminate()
                 p.join()
-                self.info('Process stop complete')
+                self.info("Process stop complete")
             if self._input_queue.get() is not None:
-                self.error('Queue should only contain None!!')
-                raise Exception('Queue contains more data')
+                self.error("Queue should only contain None!!")
+                raise Exception("Queue contains more data")
             self._input_queue.close()
         else:
             for p in self._pipeline_objects:
-                if p.name.find('UdpSampler-') > -1:
+                if p.name.find("UdpSampler-") > -1:
                     self.debug(f'closing zmq socket for "tcp://127.0.0.1:40000"')
                     self.udp_sock.close()
-                    self.stopTrainID()
-                    self.debug(f'closing zmq socket for "icp:///tmp/train_sock"')
-                    self.train_sock.close()
+                    if cfg.default_cfg["trainID"]["connected"]:
+                        self.stopTrainID()
+                        self.debug(f'closing zmq socket for "icp:///tmp/train_sock"')
+                        self.train_sock.close()
                 p.enable = False
-                self.info('Joining thread {}'.format(p))
+                self.info("Joining thread {}".format(p))
                 p.join(1.0)
                 p.terminate()
                 p.join()
-                self.info('Join complete')
-        self.info('Stop complete')
+                self.info("Join complete")
+        self.info("Stop complete")
         self._pipeline_objects = []
 
     def startTrainID(self):
-        self.info(f'start USBTrainID process')
+        self.info(f"start USBTrainID process")
         # generate worker to save the data directly to disk
         self._trainIDRec = USBTrainID()
         self._trainIDRec.start()
 
     def stopTrainID(self):
-        self.info(f'stopping USBTrainID process')
-        self.train_sock.send_string('STOP RECORDING')
-        self.train_sock.send_string('SHUTDOWN')
+        self.info(f"stopping USBTrainID process")
+        self.train_sock.send_string("STOP RECORDING")
+        self.train_sock.send_string("SHUTDOWN")
         self._trainIDRec.join(2.0)  # file still needs to be saved
         self._trainIDRec.terminate()
         self._trainIDRec.join()
@@ -219,8 +227,8 @@ class AcquisitionPipeline(Logger):
     """Class that manages various stages"""
 
     def __init__(self, name, data_queue):
-        Logger.__init__(self, name + ' AcqPipeline')
-        self.info('Initializing pipeline')
+        Logger.__init__(self, name + " AcqPipeline")
+        self.info("Initializing pipeline")
         self._stages = []
 
         self._data_queue = data_queue
@@ -230,7 +238,7 @@ class AcquisitionPipeline(Logger):
     def addStage(self, stage_number, pipeline_klass, *args, num_processes=1, **kwargs):
         """Adds a stage to the pipeline"""
         stage = AcquisitionStage(stage_number, num_processes)
-        self.info('Adding stage {} with klass {}'.format(stage_number, pipeline_klass))
+        self.info("Adding stage {} with klass {}".format(stage_number, pipeline_klass))
         stage.configureStage(pipeline_klass, *args, **kwargs)
         self._stages.append(stage)
         self._stages = sorted(self._stages, key=lambda x: x.stage)
@@ -250,29 +258,29 @@ class AcquisitionPipeline(Logger):
         """Starts all stages"""
         # Sort them by stage number
 
-        self.info('Starting acquisition')
+        self.info("Starting acquisition")
         # Build them
         previous_stage = None
         last_index = len(self._stages) - 1
-        self.debug('Last index is {}'.format(last_index))
+        self.debug("Last index is {}".format(last_index))
         for idx, s in enumerate(self._stages):
-            self.debug('Building stage {} {}'.format(idx, s.stage))
+            self.debug("Building stage {} {}".format(idx, s.stage))
             if previous_stage != None:
                 queues = previous_stage.outputQueue
-                self.debug('Queues: {}'.format(queues))
+                self.debug("Queues: {}".format(queues))
                 if idx != last_index:
                     s.build(input_queue=queues)
                 else:
-                    self.debug('This is the last queue so output is the last one')
+                    self.debug("This is the last queue so output is the last one")
                     s.build(input_queue=queues, output_queue=self._data_queue)
             else:
                 if idx != last_index:
                     s.build()
                 else:
-                    self.info('First stage shares output')
+                    self.info("First stage shares output")
                     s.build(output_queue=self._data_queue)
             previous_stage = s
-            self.debug('Last stage is {}'.format(s))
+            self.debug("Last stage is {}".format(s))
 
         for s in self._stages:
             s.enable = True
@@ -285,7 +293,7 @@ class AcquisitionPipeline(Logger):
 
     def stop(self):
         """Stops all stages"""
-        self.info('Stopping acquisition')
+        self.info("Stopping acquisition")
         self.debug(self._stages)
         if self._running is True:
             for s in self._stages:
@@ -300,24 +308,27 @@ def main():
     from pymepix.processing.packetprocessor import PacketProcessor
     from multiprocessing.sharedctypes import Value
     import threading
+
     # Create the logger
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
     end_queue = Queue()
 
-    acqpipline = AcquisitionPipeline('Test', end_queue)
+    acqpipline = AcquisitionPipeline("Test", end_queue)
 
-    test_value = Value('I', 0)
+    test_value = Value("I", 0)
 
-    acqpipline.addStage(0, UdpSampler, ('127.0.0.1', 50000), test_value)
+    acqpipline.addStage(0, UdpSampler, ("127.0.0.1", 50000), test_value)
     acqpipline.addStage(2, PacketProcessor, num_processes=4)
 
     def get_queue_thread(queue):
         recieved = []
         while True:
             value = queue.get()
-            #messType, data = value
-            #recieved.append(value[1])
-            #print(value)
+            # messType, data = value
+            # recieved.append(value[1])
+            # print(value)
             if value is None:
                 break
 
@@ -331,7 +342,7 @@ def main():
     end_queue.put(None)
 
     t.join()
-    print('Done')
+    print("Done")
 
 
 if __name__ == "__main__":

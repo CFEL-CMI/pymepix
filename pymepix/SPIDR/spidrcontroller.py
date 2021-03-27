@@ -72,10 +72,10 @@ class SPIDRController(Logger):
 
     """
 
-    def __init__(self, dst_ip_port, src_ip_port=('192.168.100.1', 0)):
+    def __init__(self, dst_ip_port, src_ip_port):
         Logger.__init__(self, SPIDRController.__name__)
 
-        self.info('Connecting to {}:{}'.format(*dst_ip_port))
+        self.info("Connecting to {}:{}".format(*dst_ip_port))
 
         self._sock = socket.create_connection(dst_ip_port, source_address=src_ip_port)
         self._request_lock = threading.Lock()
@@ -524,7 +524,7 @@ class SPIDRController(Logger):
 
     @property
     def deviceCount(self):
-        """ Count of devices connected to SPIDR
+        """Count of devices connected to SPIDR
 
         Returns
         ---------
@@ -547,7 +547,7 @@ class SPIDRController(Logger):
 
     @property
     def deviceIds(self):
-        """ The ids of all devices connected to the SPIDR board
+        """The ids of all devices connected to the SPIDR board
 
         Returns
         ---------
@@ -594,7 +594,7 @@ class SPIDRController(Logger):
         self.requestSetInt(SpidrCmds.CMD_RESET_DEVICES, 0, 0)
 
     def reinitDevices(self):
-        """ Resets and initializes all devices
+        """Resets and initializes all devices
 
         Raises
         ----------
@@ -611,7 +611,7 @@ class SPIDRController(Logger):
         self.requestSetInt(SpidrCmds.CMD_TPX_POWER_ENA, 0, int(enable))
 
     def setBiasSupplyEnable(self, enable):
-        """ Enables/Disables bias supply voltage
+        """Enables/Disables bias supply voltage
 
         Parameters
         -----------
@@ -629,7 +629,7 @@ class SPIDRController(Logger):
 
     @property
     def biasVoltage(self):
-        """ Bias voltage
+        """Bias voltage
 
         Parameters
         -----------
@@ -654,11 +654,13 @@ class SPIDRController(Logger):
 
     @biasVoltage.setter
     def biasVoltage(self, volts):
-        if volts < 12: volts = 12
-        if volts > 104: volts = 104
+        if volts < 12:
+            volts = 12
+        if volts > 104:
+            volts = 104
 
         dac_value = int(((volts - 12) * 4095) / (104 - 12))
-        self.info('Setting bias Voltage to {} V (Dac value {})'.format(volts, dac_value))
+        self.info("Setting bias Voltage to {} V (Dac value {})".format(volts, dac_value))
         self.requestSetInt(SpidrCmds.CMD_SET_BIAS_ADJUST, 0, dac_value)
 
     def enableDecoders(self, enable):
@@ -688,7 +690,7 @@ class SPIDRController(Logger):
         self.requestSetInt(SpidrCmds.CMD_DECODERS_ENA, 0, int(enable))
 
     def enablePeriphClk80Mhz(self):
-        self.CpuToTpx |= (1 << 24)
+        self.CpuToTpx |= 1 << 24
 
     def disablePeriphClk80Mhz(self):
         self.CpuToTpx &= ~(1 << 24)
@@ -706,7 +708,7 @@ class SPIDRController(Logger):
 
         """
 
-        self.CpuToTpx |= (1 << 25)
+        self.CpuToTpx |= 1 << 25
 
     def disableExternalRefClock(self):
         """SPIDR recieves its reference clock internally
@@ -724,7 +726,8 @@ class SPIDRController(Logger):
 
     def sequentialReadout(self, tokens, now):
 
-        if (now): tokens |= 0x80000000
+        if now:
+            tokens |= 0x80000000
         self.requestSetInt(SpidrCmds.CMD_SEQ_READOUT, 0, tokens)
 
     def datadrivenReadout(self):
@@ -904,7 +907,9 @@ class SPIDRController(Logger):
 
         res = self.requestGetInts(SpidrCmds.CMD_GET_SPIDRREG, 0, 2, addr)
         if res[0] != addr:
-            raise Exception('Incorrect register address returned {} expected {}'.format(res[0], addr))
+            raise Exception(
+                "Incorrect register address returned {} expected {}".format(res[0], addr)
+            )
 
         return res[1]
 
@@ -940,35 +945,40 @@ class SPIDRController(Logger):
         """
         with self._request_lock:
             self.debug(
-                'Command: {}, Device Id: {} Message Length: {} Expected Reply: {}'.format(SpidrCmds(cmd).name, dev_nr,
-                                                                                          message_length,
-                                                                                          expected_bytes))
+                "Command: {}, Device Id: {} Message Length: {} Expected Reply: {}".format(
+                    SpidrCmds(cmd).name, dev_nr, message_length, expected_bytes
+                )
+            )
             self._req_buffer[0] = socket.htonl(cmd)
             self._req_buffer[1] = socket.htonl(message_length)
             self._req_buffer[2] = 0
             self._req_buffer[3] = socket.htonl(dev_nr)
-            self.debug('Request Buffer: {}'.format(self._req_buffer[0:message_length]))
+            self.debug("Request Buffer: {}".format(self._req_buffer[0:message_length]))
             self._sock.send(self._req_buffer.tobytes()[0:message_length])
 
-            if cmd & SpidrCmds.CMD_NOREPLY: return
+            if cmd & SpidrCmds.CMD_NOREPLY:
+                return
 
             bytes_returned = self._sock.recv_into(self._reply_view, 4096)
 
             if bytes_returned < 0:
-                raise Exception('Failed to get reply')
+                raise Exception("Failed to get reply")
 
             if bytes_returned < expected_bytes:
                 raise Exception(
-                    "Unexpected reply length, got {} expected at least {}".format(bytes_returned, expected_bytes))
+                    "Unexpected reply length, got {} expected at least {}".format(
+                        bytes_returned, expected_bytes
+                    )
+                )
 
             _replyMsg = np.frombuffer(self._reply_buffer, dtype=np.uint32)
-            self.debug('reply message: {}'.format(_replyMsg))
+            self.debug("reply message: {}".format(_replyMsg))
             error = socket.ntohl(int(_replyMsg[2]))
             if error != 0:
                 try:
                     raise PymePixException(error)
                 except PymePixException as e:
-                    if 'ERR_EMPTY' in e.message:
+                    if "ERR_EMPTY" in e.message:
                         pass
                     else:
                         raise
@@ -976,10 +986,10 @@ class SPIDRController(Logger):
             reply = socket.ntohl(int(_replyMsg[0]))
 
             if reply != cmd | SpidrCmds.CMD_REPLY:
-                raise Exception('Unexpected Reply {}'.format(reply))
+                raise Exception("Unexpected Reply {}".format(reply))
 
             if socket.ntohl(int(_replyMsg[3])) != dev_nr:
-                raise Exception('Unexpected device {}'.format(dev_nr))
+                raise Exception("Unexpected device {}".format(dev_nr))
 
             return _replyMsg
 
@@ -1012,7 +1022,7 @@ class SPIDRController(Logger):
 
         reply = self.request(cmd, dev_nr, msg_length, expected_len)
 
-        return self._vec_ntohl(reply[4:4 + num_ints])
+        return self._vec_ntohl(reply[4 : 4 + num_ints])
 
     def requestGetBytes(self, cmd, dev_nr, expected_bytes, args=0):
         msg_length = (4 + 1) * 4
@@ -1045,7 +1055,7 @@ class SPIDRController(Logger):
         num_ints = len(value)
         msg_length = (4 + num_ints) * 4
 
-        self._req_buffer[4:4 + num_ints] = self._vec_htonl(value)[:]
+        self._req_buffer[4 : 4 + num_ints] = self._vec_htonl(value)[:]
 
         self.request(cmd, dev_nr, msg_length, 20)
 
@@ -1061,22 +1071,23 @@ class SPIDRController(Logger):
 
 def main():
     import logging
+
     logging.basicConfig(level=logging.INFO)
 
-    spidr = SPIDRController(('192.168.1.10', 50000))
-    print('Local temp: {} C'.format(spidr.localTemperature))
+    spidr = SPIDRController(("192.168.1.10", 50000))
+    print("Local temp: {} C".format(spidr.localTemperature))
 
-    print('FW: {:8X}'.format(spidr.firmwareVersion))
-    print('SW: {:8X}'.format(spidr.softwareVersion))
-    print('Device Ids {}'.format(spidr.deviceIds))
+    print("FW: {:8X}".format(spidr.firmwareVersion))
+    print("SW: {:8X}".format(spidr.softwareVersion))
+    print("Device Ids {}".format(spidr.deviceIds))
     for idx, dev in enumerate(spidr):
         print("Device {}: {}".format(idx, dev.deviceId))
 
-    print('CHIP Fanspeed: ', spidr.chipboardFanSpeed)
-    print('SPIDR Fanspeed: ', spidr.spidrFanSpeed)
-    print('Pressure: ', spidr.pressure, 'mbar')
-    print('Humidity: ', spidr.humidity, '%')
-    print('Temperature: ', spidr.localTemperature, ' C')
+    print("CHIP Fanspeed: ", spidr.chipboardFanSpeed)
+    print("SPIDR Fanspeed: ", spidr.spidrFanSpeed)
+    print("Pressure: ", spidr.pressure, "mbar")
+    print("Humidity: ", spidr.humidity, "%")
+    print("Temperature: ", spidr.localTemperature, " C")
     spidr.resetDevices()
     spidr.reinitDevices()
     print(spidr[0].ipAddrSrc)

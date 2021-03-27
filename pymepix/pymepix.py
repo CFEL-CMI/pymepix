@@ -29,6 +29,7 @@ from pymepix.core.log import Logger
 
 from .SPIDR.spidrcontroller import SPIDRController
 from .timepixdevice import TimepixDevice
+import pymepix.config.load_config as cfg
 
 
 class PollBufferEmpty(Exception):
@@ -51,11 +52,11 @@ class Pymepix(Logger):
 
     Examples
     --------
-    
+
     Startup device
 
     >>> timepix = Pymepix(('192.168.1.10',50000))
-    
+
     Find how many Timepix are connected
 
     >>> len(timepix)
@@ -72,24 +73,28 @@ class Pymepix(Logger):
     Load a config file into timepix
 
     >>> timepix[0].loadSophyConfig('W0026_K06_50V.spx')
-    
 
-    
+
+
     """
 
     def data_thread(self):
-        self.info('Starting data thread')
+        self.info("Starting data thread")
         while True:
             value = self._data_queue.get()
-            self.debug('Popped value {}'.format(value))
+            self.debug("Popped value {}".format(value))
             if value is None:
                 break
 
             data_type, data = value
             self._event_callback(data_type, data)
 
-    def __init__(self, spidr_address, src_ip_port=('192.168.1.1', 0)):
-        Logger.__init__(self, 'Pymepix')
+    def __init__(self, spidr_address="default", src_ip_port="default"):
+        Logger.__init__(self, "Pymepix")
+        if spidr_address == "default":
+            spidr_address = (cfg.default_cfg["timepix"]["tpx_ip"], 50000)
+        if src_ip_port == "default":
+            src_ip_port = (cfg.default_cfg["timepix"]["pc_ip"], 0)
         self._spidr = SPIDRController(spidr_address, src_ip_port)
 
         self._timepix_devices = []
@@ -144,8 +149,8 @@ class Pymepix(Logger):
 
     @property
     def pollBufferLength(self):
-        """ Get/Set polling buffer length
-        
+        """Get/Set polling buffer length
+
         Clears buffer on set
 
         """
@@ -153,14 +158,14 @@ class Pymepix(Logger):
 
     @pollBufferLength.setter
     def pollBufferLength(self, value):
-        self.warning('Clearing polling buffer')
+        self.warning("Clearing polling buffer")
         self._poll_buffer = deque(maxlen=value)
 
     @property
     def dataCallback(self):
         """Function to call when data is recieved from a timepix device
 
-        This has the effect of disabling polling. 
+        This has the effect of disabling polling.
 
         """
         return self._event_callback
@@ -168,7 +173,7 @@ class Pymepix(Logger):
     @dataCallback.setter
     def dataCallback(self, value):
         self._event_callback = value
-        self.warning('Clearing polling buffer')
+        self.warning("Clearing polling buffer")
         self._poll_buffer.clear()
 
     def enablePolling(self, maxlen=100):
@@ -178,7 +183,7 @@ class Pymepix(Logger):
 
         """
 
-        self.info('Enabling polling')
+        self.info("Enabling polling")
 
         self.pollBufferLength = maxlen
         self.dataCallback = self._pollCallback
@@ -194,9 +199,9 @@ class Pymepix(Logger):
                 self._timepix_devices.append(TimepixDevice(x, self._data_queue))
 
         self._num_timepix = len(self._timepix_devices)
-        self.info('Found {} Timepix/Medipix devices'.format(len(self._timepix_devices)))
+        self.info("Found {} Timepix/Medipix devices".format(len(self._timepix_devices)))
         for idx, tpx in enumerate(self._timepix_devices):
-            self.info('Device {} - {}'.format(idx, tpx.devIdToString()))
+            self.info("Device {} - {}".format(idx, tpx.devIdToString()))
 
     def _prepare(self):
         self._spidr.disableExternalRefClock()
@@ -211,18 +216,18 @@ class Pymepix(Logger):
         if self._running == True:
             self.stop()
 
-        self.info('Starting acquisition')
+        self.info("Starting acquisition")
         self._prepare()
         self._spidr.resetTimers()
         self._spidr.restartTimers()
 
         for t in self._timepix_devices:
-            self.info('Setting up {}'.format(t.deviceName))
+            self.info("Setting up {}".format(t.deviceName))
             t.setupDevice()
         self._spidr.restartTimers()
         self._spidr.openShutter()
         for t in self._timepix_devices:
-            self.info('Starting {}'.format(t.deviceName))
+            self.info("Starting {}".format(t.deviceName))
             t.start()
 
         self._running = True
@@ -232,18 +237,19 @@ class Pymepix(Logger):
 
         if self._running == False:
             return
-        self.info('Stopping acquisition')
+        self.info("Stopping acquisition")
         trig_mode = 0
         trig_length_us = 10000
         trig_freq_hz = 5
         nr_of_trigs = 1
 
-        self._spidr.setShutterTriggerConfig(trig_mode, trig_length_us,
-                                            trig_freq_hz, nr_of_trigs, 0)
+        self._spidr.setShutterTriggerConfig(
+            trig_mode, trig_length_us, trig_freq_hz, nr_of_trigs, 0
+        )
         self._spidr.closeShutter()
-        self.debug('Closing shutter')
+        self.debug("Closing shutter")
         for t in self._timepix_devices:
-            self.debug('Stopping {}'.format(t.deviceName))
+            self.debug("Stopping {}".format(t.deviceName))
             t.stop()
         self._running = False
 
@@ -272,17 +278,53 @@ def main():
     import argparse
     import time
 
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
 
-    parser = argparse.ArgumentParser(description='Timepix acquisition script')
-    parser.add_argument("-i", "--ip", dest='ip', type=str, default='192.168.1.10', help="IP address of Timepix")
-    parser.add_argument("-p", "--port", dest='port', type=int, default=50000, help="TCP port to use for the connection")
-    parser.add_argument("-s", "--spx", dest='spx', type=str, help="Sophy config file to load")
-    parser.add_argument("-v", "--bias", dest='bias', type=float, default=50, help="Bias voltage in Volts")
-    parser.add_argument("-t", "--time", dest='time', type=float, help="Acquisition time in seconds", required=True)
-    parser.add_argument("-o", "--output", dest='output', type=str, help="output filename prefix", required=True)
-    parser.add_argument("-d", "--decode", dest='decode', type=bool, help="Store decoded values instead", default=False)
-    parser.add_argument("-T", "--tof", dest='tof', type=bool, help="Compute TOF if decode is enabled", default=False)
+    parser = argparse.ArgumentParser(description="Timepix acquisition script")
+    parser.add_argument(
+        "-i",
+        "--ip",
+        dest="ip",
+        type=str,
+        default=cfg.default_cfg["timepix"]["tpx_ip"],
+        help="IP address of Timepix",
+    )
+    parser.add_argument(
+        "-p",
+        "--port",
+        dest="port",
+        type=int,
+        default=50000,
+        help="TCP port to use for the connection",
+    )
+    parser.add_argument("-s", "--spx", dest="spx", type=str, help="Sophy config file to load")
+    parser.add_argument(
+        "-v", "--bias", dest="bias", type=float, default=50, help="Bias voltage in Volts"
+    )
+    parser.add_argument(
+        "-t", "--time", dest="time", type=float, help="Acquisition time in seconds", required=True
+    )
+    parser.add_argument(
+        "-o", "--output", dest="output", type=str, help="output filename prefix", required=True
+    )
+    parser.add_argument(
+        "-d",
+        "--decode",
+        dest="decode",
+        type=bool,
+        help="Store decoded values instead",
+        default=False,
+    )
+    parser.add_argument(
+        "-T",
+        "--tof",
+        dest="tof",
+        type=bool,
+        help="Compute TOF if decode is enabled",
+        default=False,
+    )
 
     args = parser.parse_args()
 
@@ -290,10 +332,10 @@ def main():
     pymepix = Pymepix((args.ip, args.port))
     # If there are no valid timepix detected then quit()
     if len(pymepix) == 0:
-        logging.error('-------ERROR: SPIDR FOUND BUT NO VALID TIMEPIX DEVICE DETECTED ---------- ')
+        logging.error("-------ERROR: SPIDR FOUND BUT NO VALID TIMEPIX DEVICE DETECTED ---------- ")
         quit()
     if args.spx:
-        logging.info('Opening Sophy file {}'.format(args.spx))
+        logging.info("Opening Sophy file {}".format(args.spx))
         pymepix[0].loadConfig(args.spx)
 
     # Switch to TOF mode if set
@@ -303,16 +345,16 @@ def main():
     # Set the bias voltage
     pymepix.biasVoltage = args.bias
 
-    ext = 'raw'
+    ext = "raw"
     if args.decode:
-        logging.info('Decoding data enabled')
+        logging.info("Decoding data enabled")
         if args.tof:
-            logging.info('Tof calculation enabled')
-            ext = 'tof'
+            logging.info("Tof calculation enabled")
+            ext = "tof"
         else:
-            ext = 'toa'
+            ext = "toa"
     else:
-        logging.info('No decoding selected')
+        logging.info("No decoding selected")
 
     output_file = open_output_file(args.output, ext)
 
@@ -325,20 +367,19 @@ def main():
     # Start acquisition
     pymepix.start()
     # start raw2disk
-    #pymepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0].outfile_name = args.output
-    #pymepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0]._raw2Disk.timer = 1
-    #pymepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0].record = 1
-    
+    # pymepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0].outfile_name = args.output
+    # pymepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0]._raw2Disk.timer = 1
+    # pymepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0].record = 1
 
     start_time = time.time()
-    logging.info('------Starting acquisition---------')
+    logging.info("------Starting acquisition---------")
 
     while time.time() - start_time < total_time:
         try:
             data_type, data = pymepix.poll()
         except PollBufferEmpty:
             continue
-        logging.debug('Datatype: {} Data:{}'.format(data_type, data))
+        logging.debug("Datatype: {} Data:{}".format(data_type, data))
         if data_type is MessageType.RawData:
             if not args.decode:
                 store_raw(output_file, data)
