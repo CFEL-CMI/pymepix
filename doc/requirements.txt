@@ -1,3 +1,4 @@
 numpy
 sklearn
 sphinx>=2
+yaml

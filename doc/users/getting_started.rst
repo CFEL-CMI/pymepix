@@ -39,6 +39,12 @@ To build documentation do::
     
     python setup.py build_sphinx
 
+Adapt
+
+    pymepix/config/default.yaml
+
+according to your setup.
+    
 Dependencies
 ------------
 
