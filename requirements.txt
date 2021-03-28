@@ -1,5 +1,4 @@
 flake8
-pytest
 numpy
 scikit-learn
 pyzmq

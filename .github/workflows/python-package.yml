@@ -47,4 +47,7 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
+        pip install pytest
+        pip install pytest-cov
+        working-directory: /home/runner/work/pymepix
         pytest ../test/test_defaultconfig_pytest.py
