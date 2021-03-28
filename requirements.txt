@@ -4,3 +4,4 @@ numpy
 scikit-learn
 pyzmq
 h5py
+pyyaml
