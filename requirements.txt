@@ -3,3 +3,4 @@ scikit-learn
 pyzmq
 h5py
 pyyaml
+pyserial
