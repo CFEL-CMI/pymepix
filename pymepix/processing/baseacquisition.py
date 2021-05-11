@@ -230,7 +230,7 @@ class AcquisitionPipeline(Logger):
         Logger.__init__(self, name + " AcqPipeline")
         self.info("Initializing pipeline")
         self._stages = []
-
+        
         self._data_queue = data_queue
 
         self._running = False

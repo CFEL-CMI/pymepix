@@ -207,13 +207,14 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
                 self.debug('post_run: closed file')
             #return MessageType.RawData, (
             #    self._packet_buffer_list[curr_list_idx][:bytes_to_send], self._longtime.value)
-            return None, None
         else:
             if self.write2disk.writing:
                 self.debug('post_run: close file')
                 self.write2disk.my_sock.send(b'EOF')  # we should get a response here, but the socket is elsewhere...
                 self.debug('post_run: closed file')
-            return None, None
+        
+        self._packet_sock.close()
+        return None, None
 
 
     def run(self):
@@ -268,7 +269,7 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
                     self._packet_buffer_view[self._recv_bytes:bytes_to_send] = np.uint64(self._longtime.value).tobytes()
                     self._packet_sock.send(
                             self._packet_buffer_list[self._buffer_list_idx][:bytes_to_send], copy=False)
-
+                            
                     self._recv_bytes = 0
                     self._buffer_list_idx = (self._buffer_list_idx + 1) % len(self._packet_buffer_list)
                     self._packet_buffer_view = self._packet_buffer_view_list[self._buffer_list_idx]
