@@ -21,6 +21,7 @@
 import weakref
 
 import numpy as np
+
 from pymepix.core.log import Logger
 
 from .spidrcmds import SpidrCmds
@@ -49,7 +50,7 @@ class SpidrDevice(Logger):
         self._ctrl = weakref.proxy(spidr_ctrl)
         self._dev_num = device_num
 
-        self.info('Device {} with id {} created'.format(self._dev_num, self.deviceId))
+        self.info("Device {} with id {} created".format(self._dev_num, self.deviceId))
 
         self.clearPixelConfig()
 
@@ -84,7 +85,9 @@ class SpidrDevice(Logger):
 
     def setHeaderFilter(self, eth_mask, cpu_mask):
         to_write = (eth_mask & 0xFFFF) | ((cpu_mask & 0xFFFF) << 16)
-        self._ctrl.requestSetInt(SpidrCmds.CMD_SET_HEADERFILTER, self._dev_num, to_write)
+        self._ctrl.requestSetInt(
+            SpidrCmds.CMD_SET_HEADERFILTER, self._dev_num, to_write
+        )
 
     def reset(self):
         self._ctrl.requestSetInt(SpidrCmds.CMD_RESET_DEVICE, self._dev_num, 0)
@@ -101,10 +104,12 @@ class SpidrDevice(Logger):
 
     def getDac(self, dac_code):
 
-        dac_data = self._ctrl.requestGetInt(SpidrCmds.CMD_GET_DAC, self._dev_num, dac_code)
+        dac_data = self._ctrl.requestGetInt(
+            SpidrCmds.CMD_GET_DAC, self._dev_num, dac_code
+        )
 
         if (dac_data >> 16) & 0xFFFF != dac_code:
-            raise Exception('DAC code mismatch')
+            raise Exception("DAC code mismatch")
 
         return dac_data & 0xFFFF
 
@@ -177,17 +182,23 @@ class SpidrDevice(Logger):
         self._ctrl.requestSetInt(SpidrCmds.CMD_GET_PWRPULSECONFIG, self._dev_num, value)
 
     def uploadPacket(self, packet):
-        self._ctrl.requestSetIntBytes(SpidrCmds.CMD_UPLOAD_PACKET, self._dev_num, len(packet), packet)
+        self._ctrl.requestSetIntBytes(
+            SpidrCmds.CMD_UPLOAD_PACKET, self._dev_num, len(packet), packet
+        )
 
     @property
     def TpPeriodPhase(self):
-        tp_data = self._ctrl.requestGetInt(SpidrCmds.CMD_GET_TPPERIODPHASE, self._dev_num)
+        tp_data = self._ctrl.requestGetInt(
+            SpidrCmds.CMD_GET_TPPERIODPHASE, self._dev_num
+        )
 
         return tp_data & 0xFFFF, (tp_data >> 16) & 0xFFFF
 
     def setTpPeriodPhase(self, period, phase):
         tp_data = ((phase & 0xFFFF) << 16) | (period & 0xFFFF)
-        self._ctrl.requestSetInt(SpidrCmds.CMD_SET_TPPERIODPHASE, self._dev_num, tp_data)
+        self._ctrl.requestSetInt(
+            SpidrCmds.CMD_SET_TPPERIODPHASE, self._dev_num, tp_data
+        )
 
     @property
     def tpNumber(self):
@@ -199,7 +210,9 @@ class SpidrDevice(Logger):
 
     @property
     def columnTestPulseRegister(self):
-        _cptr = self._ctrl.requestGetBytes(SpidrCmds.CMD_GET_CTPR, self._dev_num, 256 // 8)
+        _cptr = self._ctrl.requestGetBytes(
+            SpidrCmds.CMD_GET_CTPR, self._dev_num, 256 // 8
+        )
         # Store it locally for use
         self._cptr = _cptr
         return _cptr
@@ -213,11 +226,13 @@ class SpidrDevice(Logger):
 
         for y in range(256):
             # print('Requested row {}'.format(y))
-            column, pixelrow = self._ctrl.requestGetIntBytes(SpidrCmds.CMD_GET_PIXCONF, self._dev_num, 256, y)
+            column, pixelrow = self._ctrl.requestGetIntBytes(
+                SpidrCmds.CMD_GET_PIXCONF, self._dev_num, 256, y
+            )
 
             # print ('Column : {} Pixels: {}'.format(row,pixelcolumn))
             self._pixel_mask[column, :] = pixelrow[:] & 0x1
-            self._pixel_threshold[column, :] = (pixelrow[:] >> 1) & 0xf
+            self._pixel_threshold[column, :] = (pixelrow[:] >> 1) & 0xF
             self._pixel_test[column, :] = (pixelrow[:] >> 5) & 0x1
             # self._pixel_config[self._pixel_idx][column,:] = pixelrow[:]
 
@@ -275,14 +290,14 @@ class SpidrDevice(Logger):
         formatted = np.zeros((size,), dtype=np.uint8)
 
         for x in range(0, matrix_packet.size, 4):
-            pixel1, pixel2, pixel3, pixel4 = matrix_packet[x: x + 4]
+            pixel1, pixel2, pixel3, pixel4 = matrix_packet[x : x + 4]
 
             byte1 = (pixel1 << 2) | (pixel2 >> 4)
-            byte2 = ((pixel2 << 4) & 0xf0) | (pixel3 >> 2)
-            byte3 = ((pixel3 << 6) & 0xc0) | pixel4
+            byte2 = ((pixel2 << 4) & 0xF0) | (pixel3 >> 2)
+            byte3 = ((pixel3 << 6) & 0xC0) | pixel4
 
             position = x * 3 // 4
-            formatted[position:(position+3)] = [byte1, byte2, byte3]
+            formatted[position : (position + 3)] = [byte1, byte2, byte3]
 
         return formatted
 
@@ -296,27 +311,41 @@ class SpidrDevice(Logger):
         self.resetPixels()
 
         # Flatten and unpack the bits of the matrix selecting only the necessary bits
-        final_pixels = self._pixel_mask | (self._pixel_threshold & 0xf) << 1 | (self._pixel_test & 1) << 5
-        self.debug('FINAL_PIXELS {}'.format(final_pixels))
+        final_pixels = (
+            self._pixel_mask
+            | (self._pixel_threshold & 0xF) << 1
+            | (self._pixel_test & 1) << 5
+        )
+        self.debug("FINAL_PIXELS {}".format(final_pixels))
 
         # create 85 packets of 3 rows and a last one of one row
         for x in range(0, 255, 3):
             start_col = x
             end_col = x + 3
             matrix_packet = final_pixels[start_col:end_col, :].reshape(768)
-            self._ctrl.requestSetIntBytes(SpidrCmds.CMD_SET_PIXCONF, self._dev_num, x,
-                                          self._formatPixelBits(matrix_packet))
+            self._ctrl.requestSetIntBytes(
+                SpidrCmds.CMD_SET_PIXCONF,
+                self._dev_num,
+                x,
+                self._formatPixelBits(matrix_packet),
+            )
 
         # last row
         matrix_packet = final_pixels[255, :].reshape(256)
 
-        self._ctrl.requestSetIntBytes(SpidrCmds.CMD_SET_PIXCONF, self._dev_num, 255,
-                                      self._formatPixelBits(matrix_packet))
+        self._ctrl.requestSetIntBytes(
+            SpidrCmds.CMD_SET_PIXCONF,
+            self._dev_num,
+            255,
+            self._formatPixelBits(matrix_packet),
+        )
         # Should be length 393216
 
     @property
     def timer(self):
-        return tuple(self._ctrl.requestGetInts(SpidrCmds.CMD_GET_TIMER, self._dev_num, 2))
+        return tuple(
+            self._ctrl.requestGetInts(SpidrCmds.CMD_GET_TIMER, self._dev_num, 2)
+        )
 
     @timer.setter
     def timer(self, time):
@@ -326,18 +355,24 @@ class SpidrDevice(Logger):
 
     @property
     def shutterStart(self):
-        return tuple(self._ctrl.requestGetInts(SpidrCmds.CMD_GET_SHUTTERSTART, self._dev_num, 2))
+        return tuple(
+            self._ctrl.requestGetInts(SpidrCmds.CMD_GET_SHUTTERSTART, self._dev_num, 2)
+        )
 
     @property
     def shutterEnd(self):
-        return tuple(self._ctrl.requestGetInts(SpidrCmds.CMD_GET_SHUTTEREND, self._dev_num, 2))
+        return tuple(
+            self._ctrl.requestGetInts(SpidrCmds.CMD_GET_SHUTTEREND, self._dev_num, 2)
+        )
 
     def t0Sync(self):
         self._ctrl.requestSetInt(SpidrCmds.CMD_T0_SYNC, self._dev_num, 0)
 
     @property
     def pixelPacketCounter(self):
-        return self._ctrl.getSpidrReg(SpidrRegs.SPIDR_PIXEL_PKTCOUNTER_I + self._dev_num)
+        return self._ctrl.getSpidrReg(
+            SpidrRegs.SPIDR_PIXEL_PKTCOUNTER_I + self._dev_num
+        )
 
     def getDacOut(self, nr_samples):
         return self._ctrl.getAdc(self._dev_num, nr_samples)
@@ -347,12 +382,14 @@ class SpidrDevice(Logger):
 
         val = self._ctrl.requestGetInt(SpidrCmds.CMD_GET_IPADDR_SRC, self._dev_num)
 
-        return "{}.{}.{}.{}".format((val >> 24) & 0xFF, (val >> 16) & 0xFF, (val >> 8) & 0xFF, (val >> 0) & 0xFF)
+        return "{}.{}.{}.{}".format(
+            (val >> 24) & 0xFF, (val >> 16) & 0xFF, (val >> 8) & 0xFF, (val >> 0) & 0xFF
+        )
 
     @ipAddrSrc.setter
     def ipAddrSrc(self, ipaddr):
 
-        split = ipaddr.split['.']
+        split = ipaddr.split["."]
 
         first = int(split[0]) & 0xFF
         second = int(split[1]) & 0xFF
@@ -366,11 +403,13 @@ class SpidrDevice(Logger):
     def ipAddrDest(self):
         val = self._ctrl.requestGetInt(SpidrCmds.CMD_GET_IPADDR_DEST, self._dev_num)
 
-        return "{}.{}.{}.{}".format((val >> 24) & 0xFF, (val >> 16) & 0xFF, (val >> 8) & 0xFF, (val >> 0) & 0xFF)
+        return "{}.{}.{}.{}".format(
+            (val >> 24) & 0xFF, (val >> 16) & 0xFF, (val >> 8) & 0xFF, (val >> 0) & 0xFF
+        )
 
     @ipAddrDest.setter
     def ipAddrDest(self, ipaddr):
-        split = ipaddr.split['.']
+        split = ipaddr.split["."]
 
         first = int(split[0]) & 0xFF
         second = int(split[1]) & 0xFF
@@ -390,4 +429,6 @@ class SpidrDevice(Logger):
 
     @serverPort.setter
     def serverPort(self, value):
-        return self._ctrl.requestSetInt(SpidrCmds.CMD_SET_SERVERPORT, self._dev_num, value)
+        return self._ctrl.requestSetInt(
+            SpidrCmds.CMD_SET_SERVERPORT, self._dev_num, value
+        )

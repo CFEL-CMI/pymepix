@@ -85,7 +85,9 @@ class SophyConfig(TimepixConfig):
     def parseDAC(self, xmlstring):
         """Reads and formats DAC parameters"""
         root = et.fromstring(xmlstring)
-        dac_setting = root.findall(".//entry[@class='sophy.medipix.SPMPXDACCollection']")
+        dac_setting = root.findall(
+            ".//entry[@class='sophy.medipix.SPMPXDACCollection']"
+        )
         dac_setting = dac_setting[0][0]
 
         for element in dac_setting.findall(".//element[@class='java.util.Map.Entry']"):
@@ -140,7 +142,9 @@ class SophyConfig(TimepixConfig):
         buffer = zip_file.read(file_names[2])
         self._thresh = np.frombuffer(buffer[27:], dtype=np.int16).copy() >> 8
         self._thresh = np.fliplr(
-            np.array([self._reverseBits(x) for x in self._thresh]).reshape(256, 256).transpose()
+            np.array([self._reverseBits(x) for x in self._thresh])
+            .reshape(256, 256)
+            .transpose()
         )
 
     def maskPixels(self):

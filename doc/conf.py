@@ -24,8 +24,8 @@ import pathlib
 import sys
 
 # accessing the setup.py file to get current information about the project
-name, project, version, release, author, copyright = [''] * 6
-desired = ['copyright', 'project', 'name', 'version', 'release', 'author']
+name, project, version, release, author, copyright = [""] * 6
+desired = ["copyright", "project", "name", "version", "release", "author"]
 
 # first get the path of the setup.py file
 current_path = pathlib.Path(__file__).parent.absolute()
@@ -33,7 +33,7 @@ setup_path = current_path.parent.joinpath("setup.py")
 
 #  access setup.py as text file to find the necessary lines, then execute those
 # importlib.util.spec_from_file_location didn't work
-with open(setup_path, 'r') as f:
+with open(setup_path, "r") as f:
     for line in f:
         line = line.strip()
         line_list = line.split()
@@ -42,7 +42,7 @@ with open(setup_path, 'r') as f:
             desired.remove(line_list[0])
 project = name
 
-sys.path.insert(0, os.path.abspath('../../lib/'))
+sys.path.insert(0, os.path.abspath("../../lib/"))
 print(sys.path)
 
 # -- General configuration ------------------------------------------------
@@ -55,25 +55,26 @@ print(sys.path)
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.githubpages',
-    'sphinx.ext.intersphinx',
-    'sphinx.ext.napoleon',
-    'sphinx.ext.mathjax',
-    'sphinx.ext.todo',
-    'sphinx.ext.viewcode']
+    "sphinx.ext.autodoc",
+    "sphinx.ext.githubpages",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.napoleon",
+    "sphinx.ext.mathjax",
+    "sphinx.ext.todo",
+    "sphinx.ext.viewcode",
+]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['.templates']
+templates_path = [".templates"]
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
 #
 # source_suffix = ['.rst', '.md']
-source_suffix = '.rst'
+source_suffix = ".rst"
 
 # The master toctree document.
-master_doc = 'index'
+master_doc = "index"
 
 
 # The version info for the project you're documenting, acts as replacement for
@@ -98,7 +99,7 @@ language = None
 exclude_patterns = []
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+pygments_style = "sphinx"
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
@@ -124,7 +125,7 @@ html_theme = "sphinx_rtd_theme"
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'pymepixdoc'
+htmlhelp_basename = "pymepixdoc"
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -132,15 +133,12 @@ latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
     #
     # 'papersize': 'letterpaper',
-
     # The font size ('10pt', '11pt' or '12pt').
     #
     # 'pointsize': '10pt',
-
     # Additional stuff for the LaTeX preamble.
     #
     # 'preamble': '',
-
     # Latex figure (float) alignment
     #
     # 'figure_align': 'htbp',
@@ -150,18 +148,14 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'pymepix.tex', 'pymepix Documentation',
-     author, 'manual'),
+    (master_doc, "pymepix.tex", "pymepix Documentation", author, "manual")
 ]
 
 # -- Options for manual page output ---------------------------------------
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [
-    (master_doc, 'pymepix', 'pymepix Documentation',
-     [author], 1)
-]
+man_pages = [(master_doc, "pymepix", "pymepix Documentation", [author], 1)]
 
 # -- Options for Texinfo output -------------------------------------------
 
@@ -169,7 +163,13 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'pymepix', 'pymepix Documentation',
-     author, 'pymepix', 'One line description of project.',
-     'Miscellaneous'),
+    (
+        master_doc,
+        "pymepix",
+        "pymepix Documentation",
+        author,
+        "pymepix",
+        "One line description of project.",
+        "Miscellaneous",
+    )
 ]

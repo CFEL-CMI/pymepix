@@ -20,10 +20,10 @@
 
 import threading
 import time
-
 from multiprocessing.sharedctypes import Value
 
-from .config import TimepixConfig, SophyConfig, DefaultConfig
+from .config import DefaultConfig, SophyConfig, TimepixConfig
+
 # from .config.sophyconfig import SophyConfig
 from .core.log import Logger
 from .timepixdef import *
@@ -46,34 +46,39 @@ class TimepixDevice(Logger):
 
     def update_timer(self):
         """Heartbeat thread"""
-        self.info('Heartbeat thread starting')
+        self.info("Heartbeat thread starting")
         while self._run_timer:
             while self._pause_timer and self._run_timer:
                 time.sleep(1.0)
                 continue
 
             self._timer_lsb, self._timer_msb = self._device.timer
-            self._timer = (self._timer_msb & 0xFFFFFFFF) << 32 | (self._timer_lsb & 0xFFFFFFFF)
+            self._timer = (self._timer_msb & 0xFFFFFFFF) << 32 | (
+                self._timer_lsb & 0xFFFFFFFF
+            )
             self._longtime.value = self._timer
             self.debug(
-                'Reading heartbeat LSB: {} MSB: {} TIMER: {} '.format(self._timer_lsb, self._timer_msb, self._timer))
+                "Reading heartbeat LSB: {} MSB: {} TIMER: {} ".format(
+                    self._timer_lsb, self._timer_msb, self._timer
+                )
+            )
             time.sleep(1.0)
 
     def __init__(self, spidr_device, data_queue):
 
         self._device = spidr_device
-        Logger.__init__(self, 'Timepix ' + self.devIdToString())
+        Logger.__init__(self, "Timepix " + self.devIdToString())
         self._data_queue = data_queue
         self._udp_address = (self._device.ipAddrDest, self._device.serverPort)
-        self.info('UDP Address is {}:{}'.format(*self._udp_address))
+        self.info("UDP Address is {}:{}".format(*self._udp_address))
         self._pixel_offset_coords = (0, 0)
         self._device.reset()
         self._device.reinitDevice()
 
-        self._longtime = Value('L', 0)
+        self._longtime = Value("L", 0)
         # TODO: this dosn't work with GUI as setupAcquisition get's called here and
         #  in pymepixviewer and thus the zmq socket get's initialized twice.
-        #self.setupAcquisition(PixelPipeline)
+        # self.setupAcquisition(PixelPipeline)
 
         self._initDACS()
 
@@ -94,9 +99,10 @@ class TimepixDevice(Logger):
         self._acq_running = False
 
     def setupAcquisition(self, acquisition_klass, *args, **kwargs):
-        self.info('Setting up acquisition class')
-        self._acquisition_pipeline = acquisition_klass(self._data_queue, self._udp_address, self._longtime, *args,
-                                                       **kwargs)
+        self.info("Setting up acquisition class")
+        self._acquisition_pipeline = acquisition_klass(
+            self._data_queue, self._udp_address, self._longtime, *args, **kwargs
+        )
 
     def _initDACS(self):
         self.setConfigClass(DefaultConfig)
@@ -117,7 +123,7 @@ class TimepixDevice(Logger):
         config = self._config_class(*args, **kwargs)
 
         for code, value in config.dacCodes():
-            self.info('Setting DAC {},{}'.format(code, value))
+            self.info("Setting DAC {},{}".format(code, value))
             self.setDac(code, value)
             # time.sleep(0.5)
 
@@ -140,15 +146,15 @@ class TimepixDevice(Logger):
 
         This will be manual when other acqusition parameters are working
         """
-        self.debug('Setting up acqusition')
+        self.debug("Setting up acqusition")
         self.polarity = Polarity.Positive
-        self.debug('Polarity set to {}'.format(Polarity(self.polarity)))
+        self.debug("Polarity set to {}".format(Polarity(self.polarity)))
         self.operationMode = OperationMode.ToAandToT
-        self.debug('OperationMode set to {}'.format(OperationMode(self.operationMode)))
+        self.debug("OperationMode set to {}".format(OperationMode(self.operationMode)))
         self.grayCounter = GrayCounter.Enable
-        self.debug('GrayCounter set to {}'.format(GrayCounter(self.grayCounter)))
+        self.debug("GrayCounter set to {}".format(GrayCounter(self.grayCounter)))
         self.superPixel = SuperPixel.Enable
-        self.debug('SuperPixel set to {}'.format(SuperPixel(self.superPixel)))
+        self.debug("SuperPixel set to {}".format(SuperPixel(self.superPixel)))
         pll_cfg = 0x01E | 0x100
         self._device.pllConfig = pll_cfg
         # self._device.setTpPeriodPhase(10,0)
@@ -182,13 +188,13 @@ class TimepixDevice(Logger):
         --------
         str
             Device string identifier
-        
+
         """
         devId = self._device.deviceId
         waferno = (devId >> 8) & 0xFFF
         id_y = (devId >> 4) & 0xF
         id_x = (devId >> 0) & 0xF
-        return "W{:04d}_{}{:02d}".format(waferno, chr(ord('A') + id_x - 1), id_y)
+        return "W{:04d}_{}{:02d}".format(waferno, chr(ord("A") + id_x - 1), id_y)
 
     @property
     def deviceName(self):
@@ -200,7 +206,11 @@ class TimepixDevice(Logger):
         eth_mask = eth_filter
         self._device.setHeaderFilter(eth_mask, cpu_mask)
         eth_mask, cpu_mask = self._device.headerFilter
-        self.info('Dev: {} eth_mask :{:8X} cpu_mask: {:8X}'.format(self._device.deviceId, eth_mask, cpu_mask))
+        self.info(
+            "Dev: {} eth_mask :{:8X} cpu_mask: {:8X}".format(
+                self._device.deviceId, eth_mask, cpu_mask
+            )
+        )
 
     def resetPixels(self):
         """Clears pixel configuration"""
@@ -215,7 +225,7 @@ class TimepixDevice(Logger):
         ----------
         value : :obj:`numpy.array` of :obj:`int`
             256x256 uint8 threshold to set locally
-            
+
 
         Returns
         -----------
@@ -238,13 +248,13 @@ class TimepixDevice(Logger):
         ----------
         value : :obj:`numpy.array` of :obj:`int`
             256x256 uint8 threshold mask to set locally
-            
+
 
         Returns
         -----------
         :obj:`numpy.array` of :obj:`int` or :obj:`None`:
             Locally stored pixel mask matrix
-        
+
 
         """
         # self._device.getPixelConfig()
@@ -262,13 +272,13 @@ class TimepixDevice(Logger):
         ----------
         value : :obj:`numpy.array` of :obj:`int`
             256x256 uint8 pixel test to set locally
-            
+
 
         Returns
         -----------
         :obj:`numpy.array` of :obj:`int` or :obj:`None`:
             Locally stored pixel test matrix
-        
+
 
         """
         # self._device.getPixelConfig()
@@ -289,7 +299,7 @@ class TimepixDevice(Logger):
 
     def start(self):
         self.stop()
-        self.info('Beginning acquisition')
+        self.info("Beginning acquisition")
         self.resumeHeartbeat()
         if self._acquisition_pipeline is not None:
             self._acquisition_pipeline.start()
@@ -298,7 +308,7 @@ class TimepixDevice(Logger):
     def stop(self):
 
         if self._acq_running:
-            self.info('Stopping acquisition')
+            self.info("Stopping acquisition")
             if self._acquisition_pipeline is not None:
                 self._acquisition_pipeline.stop()
             self.pauseHeartbeat()
@@ -390,7 +400,7 @@ class TimepixDevice(Logger):
     def Ibias_Preamp_ON(self):
         """[0, 255]"""
         value = self._device.getDac(DacRegisterCodes.Ibias_Preamp_ON)
-        return (value & 0xFF)
+        return value & 0xFF
 
     @Ibias_Preamp_ON.setter
     def Ibias_Preamp_ON(self, value):
@@ -402,7 +412,7 @@ class TimepixDevice(Logger):
     def Ibias_Preamp_OFF(self):
         """[0, 15]"""
         value = self._device.getDac(DacRegisterCodes.Ibias_Preamp_OFF)
-        return (value & 0xF)
+        return value & 0xF
 
     @Ibias_Preamp_OFF.setter
     def Ibias_Preamp_OFF(self, value):
@@ -414,7 +424,7 @@ class TimepixDevice(Logger):
     def VPreamp_NCAS(self):
         """[0, 255]"""
         value = self._device.getDac(DacRegisterCodes.VPreamp_NCAS)
-        return (value & 0xFF)
+        return value & 0xFF
 
     @VPreamp_NCAS.setter
     def VPreamp_NCAS(self, value):
@@ -426,7 +436,7 @@ class TimepixDevice(Logger):
     def Ibias_Ikrum(self):
         """[0, 255]"""
         value = self._device.getDac(DacRegisterCodes.Ibias_Ikrum)
-        return (value & 0xFF)
+        return value & 0xFF
 
     @Ibias_Ikrum.setter
     def Ibias_Ikrum(self, value):
@@ -438,7 +448,7 @@ class TimepixDevice(Logger):
     def Vfbk(self):
         """[0, 255]"""
         value = self._device.getDac(DacRegisterCodes.Vfbk)
-        return (value & 0xFF)
+        return value & 0xFF
 
     @Vfbk.setter
     def Vfbk(self, value):
@@ -450,7 +460,7 @@ class TimepixDevice(Logger):
     def Vthreshold_fine(self):
         """[0, 511]"""
         value = self._device.getDac(DacRegisterCodes.Vthreshold_fine)
-        return (value & 0x1FF)
+        return value & 0x1FF
 
     @Vthreshold_fine.setter
     def Vthreshold_fine(self, value):
@@ -462,7 +472,7 @@ class TimepixDevice(Logger):
     def Vthreshold_coarse(self):
         """[0, 15]"""
         value = self._device.getDac(DacRegisterCodes.Vthreshold_coarse)
-        return (value & 0xF)
+        return value & 0xF
 
     @Vthreshold_coarse.setter
     def Vthreshold_coarse(self, value):
@@ -474,7 +484,7 @@ class TimepixDevice(Logger):
     def Ibias_DiscS1_ON(self):
         """[0, 255]"""
         value = self._device.getDac(DacRegisterCodes.Ibias_DiscS1_ON)
-        return (value & 0xFF)
+        return value & 0xFF
 
     @Ibias_DiscS1_ON.setter
     def Ibias_DiscS1_ON(self, value):
@@ -486,7 +496,7 @@ class TimepixDevice(Logger):
     def Ibias_DiscS1_OFF(self):
         """[0, 15]"""
         value = self._device.getDac(DacRegisterCodes.Ibias_DiscS1_OFF)
-        return (value & 0xF)
+        return value & 0xF
 
     @Ibias_DiscS1_OFF.setter
     def Ibias_DiscS1_OFF(self, value):
@@ -498,7 +508,7 @@ class TimepixDevice(Logger):
     def Ibias_DiscS2_ON(self):
         """[0, 255]"""
         value = self._device.getDac(DacRegisterCodes.Ibias_DiscS2_ON)
-        return (value & 0xFF)
+        return value & 0xFF
 
     @Ibias_DiscS2_ON.setter
     def Ibias_DiscS2_ON(self, value):
@@ -510,7 +520,7 @@ class TimepixDevice(Logger):
     def Ibias_DiscS2_OFF(self):
         """[0, 15]"""
         value = self._device.getDac(DacRegisterCodes.Ibias_DiscS2_OFF)
-        return (value & 0xF)
+        return value & 0xF
 
     @Ibias_DiscS2_OFF.setter
     def Ibias_DiscS2_OFF(self, value):
@@ -522,7 +532,7 @@ class TimepixDevice(Logger):
     def Ibias_PixelDAC(self):
         """[0, 255]"""
         value = self._device.getDac(DacRegisterCodes.Ibias_PixelDAC)
-        return (value & 0xFF)
+        return value & 0xFF
 
     @Ibias_PixelDAC.setter
     def Ibias_PixelDAC(self, value):
@@ -534,7 +544,7 @@ class TimepixDevice(Logger):
     def Ibias_TPbufferIn(self):
         """[0, 255]"""
         value = self._device.getDac(DacRegisterCodes.Ibias_TPbufferIn)
-        return (value & 0xFF)
+        return value & 0xFF
 
     @Ibias_TPbufferIn.setter
     def Ibias_TPbufferIn(self, value):
@@ -585,7 +595,7 @@ class TimepixDevice(Logger):
         ----------
         code: :obj:`int`
             DAC code to set
-        
+
         value: :obj:`int`
             value to set
         """
@@ -594,8 +604,10 @@ class TimepixDevice(Logger):
 
 def main():
     import logging
-    from .SPIDR.spidrcontroller import SPIDRController
     from multiprocessing import Queue
+
+    from .SPIDR.spidrcontroller import SPIDRController
+
     logging.basicConfig(level=logging.INFO)
     end_queue = Queue()
 
@@ -610,10 +622,12 @@ def main():
     t.daemon = True
     t.start()
 
-    spidr = SPIDRController(('192.168.100.10', 50000))
+    spidr = SPIDRController(("192.168.100.10", 50000))
 
     timepix = TimepixDevice(spidr[0], end_queue)
-    timepix.loadSophyConfig('/Users/alrefaie/Documents/repos/libtimepix/config/eq-norm-50V.spx')
+    timepix.loadSophyConfig(
+        "/Users/alrefaie/Documents/repos/libtimepix/config/eq-norm-50V.spx"
+    )
 
     # spidr.shutterTriggerMode = SpidrShutterMode.Auto
     spidr.disableExternalRefClock()
@@ -630,7 +644,7 @@ def main():
     timepix.start()
     time.sleep(4.0)
     timepix.stop()
-    logging.info('DONE')
+    logging.info("DONE")
     spidr.closeShutter()
 
 

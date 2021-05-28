@@ -25,11 +25,11 @@ import time
 from collections import deque
 from multiprocessing import Queue
 
+import pymepix.config.load_config as cfg
 from pymepix.core.log import Logger
 
 from .SPIDR.spidrcontroller import SPIDRController
 from .timepixdevice import TimepixDevice
-import pymepix.config.load_config as cfg
 
 
 class PollBufferEmpty(Exception):
@@ -213,7 +213,7 @@ class Pymepix(Logger):
     def start(self):
         """Starts acquisition"""
 
-        if self._running == True:
+        if self._running is True:
             self.stop()
 
         self.info("Starting acquisition")
@@ -235,7 +235,7 @@ class Pymepix(Logger):
     def stop(self):
         """Stops acquisition"""
 
-        if self._running == False:
+        if self._running is False:
             return
         self.info("Stopping acquisition")
         trig_mode = 0
@@ -272,14 +272,16 @@ class Pymepix(Logger):
 
 
 def main():
-    import logging
-    from .processing.datatypes import MessageType
-    from .util.storage import open_output_file, store_raw, store_toa, store_tof
     import argparse
+    import logging
     import time
 
+    from .processing.datatypes import MessageType
+    from .util.storage import open_output_file, store_raw, store_toa, store_tof
+
     logging.basicConfig(
-        level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
     parser = argparse.ArgumentParser(description="Timepix acquisition script")
@@ -299,15 +301,32 @@ def main():
         default=50000,
         help="TCP port to use for the connection",
     )
-    parser.add_argument("-s", "--spx", dest="spx", type=str, help="Sophy config file to load")
     parser.add_argument(
-        "-v", "--bias", dest="bias", type=float, default=50, help="Bias voltage in Volts"
+        "-s", "--spx", dest="spx", type=str, help="Sophy config file to load"
     )
     parser.add_argument(
-        "-t", "--time", dest="time", type=float, help="Acquisition time in seconds", required=True
+        "-v",
+        "--bias",
+        dest="bias",
+        type=float,
+        default=50,
+        help="Bias voltage in Volts",
     )
     parser.add_argument(
-        "-o", "--output", dest="output", type=str, help="output filename prefix", required=True
+        "-t",
+        "--time",
+        dest="time",
+        type=float,
+        help="Acquisition time in seconds",
+        required=True,
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        dest="output",
+        type=str,
+        help="output filename prefix",
+        required=True,
     )
     parser.add_argument(
         "-d",
@@ -332,7 +351,9 @@ def main():
     pymepix = Pymepix((args.ip, args.port))
     # If there are no valid timepix detected then quit()
     if len(pymepix) == 0:
-        logging.error("-------ERROR: SPIDR FOUND BUT NO VALID TIMEPIX DEVICE DETECTED ---------- ")
+        logging.error(
+            "-------ERROR: SPIDR FOUND BUT NO VALID TIMEPIX DEVICE DETECTED ---------- "
+        )
         quit()
     if args.spx:
         logging.info("Opening Sophy file {}".format(args.spx))

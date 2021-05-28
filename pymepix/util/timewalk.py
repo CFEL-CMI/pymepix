@@ -26,7 +26,7 @@ def compute_timewalk(tof, tot, region):
 
     # Filter for the calibration region we are looking at
     region_filter = (tof >= region[0]) & (tof <= region[1])
-    tof_region = tof[region_filter] * 1E9
+    tof_region = tof[region_filter] * 1e9
     tot_region = tot[region_filter]
 
     # Find maximum tot
@@ -45,10 +45,11 @@ def compute_timewalk(tof, tot, region):
     tot_bins = int(np.max(tot_region) - np.min(tot_region)) / 25
     print(time_walk_bin, tot_bins)
     # Sample on a 2d histogram
-    time_hist, tot_bins, time_bins = np.histogram2d(tot_region, time_diff, bins=[tot_bins, time_walk_bin])
+    time_hist, tot_bins, time_bins = np.histogram2d(
+        tot_region, time_diff, bins=[tot_bins, time_walk_bin]
+    )
     bin_edges = time_bins
     bin_centres = (bin_edges[:-1] + bin_edges[1:]) / 2
-    last_mean = 99999
     tot_points = []
     time_walk_points = []
 
@@ -72,13 +73,15 @@ def compute_timewalk(tof, tot, region):
         # # Define model function to be used to fit to the data above:
         def gauss(x, *p):
             A, mu, sigma = p
-            return A * np.exp(-(x - mu) ** 2 / (2. * sigma ** 2))
+            return A * np.exp(-((x - mu) ** 2) / (2.0 * sigma ** 2))
 
         # Fit sampled tot region with gaussian
 
-        A_guess = np.max(current_tot)
         center_guess = np.sum(current_tot * bin_centres) / np.sum(current_tot)
-        sigma_guess = np.sqrt(np.sum(current_tot * np.square(bin_centres - center_guess)) / (np.sum(current_tot) - 1))
+        sigma_guess = np.sqrt(
+            np.sum(current_tot * np.square(bin_centres - center_guess))
+            / (np.sum(current_tot) - 1)
+        )
         # print('CENTER ',center_guess)
         # print('SIGMA ',sigma_guess)
         # # p0 is the initial guess for the fitting coefficients (A, mu and sigma above)
@@ -87,13 +90,13 @@ def compute_timewalk(tof, tot, region):
         try:
 
             coeff, var_matrix = curve_fit(gauss, bin_centres, current_tot, p0=p0)
-        except:
-            print("Counldn't do it")
+        except Exception:
+            print(f"Counldn't do it {Exception}")
             continue
         print(tot_bins[b], coeff[1])
         if np.isnan(coeff[2]):
             continue
-        if (coeff[1] < 1.525):
+        if coeff[1] < 1.525:
             break
         # print(coeff[1],coeff[2])
         #         if(coeff[1]>last_mean):
@@ -121,6 +124,7 @@ def compute_timewalk(tof, tot, region):
 
 def compute_timewalk_lookup(tof, tot, region):
     from scipy import interpolate
+
     tot_points, time_walk_points = compute_timewalk(tof, tot, region)
     tot_lookup_table = np.zeros(0x3FF, dtype=np.float32)
     tot_lookup_table[tot_points.astype(int) // 25] = time_walk_points[...]
@@ -129,6 +133,6 @@ def compute_timewalk_lookup(tof, tot, region):
         try:
             val = f((x + 1) * 25)
             tot_lookup_table[x] = val
-        except:
+        except Exception:
             pass
-    return tot_lookup_table * 1E-9
+    return tot_lookup_table * 1e-9

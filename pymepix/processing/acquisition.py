@@ -33,9 +33,9 @@ class PixelPipeline(AcquisitionPipeline):
         This class can be used as a base for all acqusition pipelines.
     """
 
-    def __init__(self, data_queue, address, longtime, use_event=False, name='Pixel'):
+    def __init__(self, data_queue, address, longtime, use_event=False, name="Pixel"):
         AcquisitionPipeline.__init__(self, name, data_queue)
-        self.info('Initializing Pixel pipeline')
+        self.info("Initializing Pixel pipeline")
         self._use_events = use_event
         self._event_window = (0, 10000)
 
@@ -44,10 +44,16 @@ class PixelPipeline(AcquisitionPipeline):
         self._reconfigureProcessor()
 
     def _reconfigureProcessor(self):
-        self.debug('Configuring packet processor handle_events={} event_window={}'.format(self._use_events,
-                                                                                          self._event_window))
-        self.getStage(2).configureStage(PacketProcessor, handle_events=self._use_events,
-                                        event_window=self._event_window)
+        self.debug(
+            "Configuring packet processor handle_events={} event_window={}".format(
+                self._use_events, self._event_window
+            )
+        )
+        self.getStage(2).configureStage(
+            PacketProcessor,
+            handle_events=self._use_events,
+            event_window=self._event_window,
+        )
 
     @property
     def enableEvents(self):
@@ -71,7 +77,7 @@ class PixelPipeline(AcquisitionPipeline):
 
     @enableEvents.setter
     def enableEvents(self, value):
-        self.info('Setting event to {}'.format(value))
+        self.info("Setting event to {}".format(value))
         self._use_events = value
         self._reconfigureProcessor()
 
@@ -123,8 +129,10 @@ class CentroidPipeline(PixelPipeline):
     """
 
     def __init__(self, data_queue, address, longtime):
-        PixelPipeline.__init__(self, data_queue, address, longtime, use_event=True, name='Centroid')
-        self.info('Initializing Centroid pipeline')
+        PixelPipeline.__init__(
+            self, data_queue, address, longtime, use_event=True, name="Centroid"
+        )
+        self.info("Initializing Centroid pipeline")
         self._skip_centroid = 1
         self._tot_threshold = 0
         self._samples = 3
@@ -136,8 +144,13 @@ class CentroidPipeline(PixelPipeline):
 
     def _reconfigureCentroid(self):
         self._reconfigureProcessor()
-        p = self.getStage(4).configureStage(Centroiding, skip_data=self._skip_centroid, tot_filter=self._tot_threshold,
-                                            epsilon=self._epsilon, samples=self._samples)
+        p = self.getStage(4).configureStage(
+            Centroiding,
+            skip_data=self._skip_centroid,
+            tot_filter=self._tot_threshold,
+            epsilon=self._epsilon,
+            samples=self._samples,
+        )
 
     @property
     def centroidSkip(self):
@@ -153,7 +166,7 @@ class CentroidPipeline(PixelPipeline):
 
     @centroidSkip.setter
     def centroidSkip(self, value):
-        self.info('Setting Centroid skip to {}'.format(value))
+        self.info("Setting Centroid skip to {}".format(value))
         self._skip_centroid = value
         self._reconfigureCentroid()
         if self.isRunning:
@@ -177,7 +190,7 @@ class CentroidPipeline(PixelPipeline):
     def epsilon(self, value):
         self._epsilon = value
         self._reconfigureCentroid()
-        self.info('Setting epsilon skip to {}'.format(value))
+        self.info("Setting epsilon skip to {}".format(value))
         if self.isRunning:
             skip = self._epsilon
             for p in self.getStage(4).processes:

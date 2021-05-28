@@ -18,42 +18,48 @@
 # You should have received a copy of the GNU General Public License along with this program. If not,
 # see <https://www.gnu.org/licenses/>.
 
-'''
+"""
 module to test packetprocessor functionality
 run: pytest test_packetprocessor_pytest.py
 to be able to use this test comment 'elif self._buffer_list_idx == 4:' in udpsampler to send all data
-'''
+"""
 
 import socket
 
-address = ('127.0.0.1', 50000)
+address = ("127.0.0.1", 50000)
+
 
 def send_data(packets=1_000, chunk_size=139, start=0, sleep=0.0001):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    with open('files/raw_test_data.raw', 'rb') as f:
+    with open("files/raw_test_data.raw", "rb") as f:
         sock.sendto(f.read(), address)
 
+
 def test_packets_trigger():
-    '''
+    """
     test functionality of 1st acquisition pipeline step with data been put into Queue for pixelprocesor
     and thread to Raw2Disk
-    '''
-    from multiprocessing import Queue
-    from multiprocessing.sharedctypes import Value
+    """
+    # Create the logger
+    import logging
     import pickle
     import queue
-    import time
     import threading
+    import time
+    from multiprocessing import Queue
+    from multiprocessing.sharedctypes import Value
+
     import zmq
 
     from pymepix.processing.acquisition import CentroidPipeline
     from pymepix.processing.datatypes import MessageType
 
-    # Create the logger
-    import logging
-    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    )
     end_queue = Queue()  # queue for PacketProcessor
-    longtime = Value('L', 2233861246990)  # longtime
+    longtime = Value("L", 2233861246990)  # longtime
 
     acqpipline = CentroidPipeline(end_queue, address, longtime)
 
@@ -64,7 +70,7 @@ def test_packets_trigger():
     def get_queue_thread(q):
         ctx = zmq.Context.instance()
         sock = ctx.socket(zmq.PAIR)
-        sock.connect('inproc://queueThread')
+        sock.connect("inproc://queueThread")
         sock.recv_string()  # receive estabishing message
 
         received = []
@@ -88,11 +94,11 @@ def test_packets_trigger():
     ############
     # start
     z_sock = ctx.socket(zmq.PAIR)
-    z_sock.bind('inproc://queueThread')
+    z_sock.bind("inproc://queueThread")
     t = threading.Thread(target=get_queue_thread, args=(end_queue,))
     t.start()
     # establish connection, seems to be necessary to first send something from binding code....
-    z_sock.send_string('hallo')
+    z_sock.send_string("hallo")
 
     # wait before sending data
     time.sleep(2)
@@ -112,35 +118,36 @@ def test_packets_trigger():
         elif i[0] == MessageType.CentroidData:
             print(i[1])
 
-    with open('files/raw_test_data_events.bin', 'rb') as f:
+    with open("files/raw_test_data_events.bin", "rb") as f:
         events_orig = pickle.load(f)
-    assert events[0].all() == events_orig['event_nr'].all()
-    assert events[1].all() == events_orig['x'].all()
-    assert events[2].all() == events_orig['y'].all()
-    assert events[3].all() == events_orig['tof'].all()
-    assert events[4].all() == events_orig['tot'].all()
+    assert events[0].all() == events_orig["event_nr"].all()
+    assert events[1].all() == events_orig["x"].all()
+    assert events[2].all() == events_orig["y"].all()
+    assert events[3].all() == events_orig["tof"].all()
+    assert events[4].all() == events_orig["tot"].all()
 
-    with open('files/raw_test_data_pixels.bin', 'rb') as f:
+    with open("files/raw_test_data_pixels.bin", "rb") as f:
         pixels_orig = pickle.load(f)
-    assert pixels[0].all() == pixels_orig['x'].all()
-    assert pixels[1].all() == pixels_orig['y'].all()
-    assert pixels[2].all() == pixels_orig['toa'].all()
-    assert pixels[3].all() == pixels_orig['tot'].all()
+    assert pixels[0].all() == pixels_orig["x"].all()
+    assert pixels[1].all() == pixels_orig["y"].all()
+    assert pixels[2].all() == pixels_orig["toa"].all()
+    assert pixels[3].all() == pixels_orig["tot"].all()
 
-    with open('files/raw_test_data_timestamps.bin', 'rb') as f:
+    with open("files/raw_test_data_timestamps.bin", "rb") as f:
         triggers_orig = pickle.load(f)
-    assert triggers[0].all() == triggers_orig['trigger_time'].all()
+    assert triggers[0].all() == triggers_orig["trigger_time"].all()
 
-    print('waiting for queue thread')
+    print("waiting for queue thread")
     t.join()
     z_sock.close()
 
     ############
     # shut everything down
-    res = acqpipline._stages[0].udp_sock.send_string("SHUTDOWN")
+    _ = acqpipline._stages[0].udp_sock.send_string("SHUTDOWN")
     acqpipline.stop()
 
-    print('Done and done')
+    print("Done and done")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     test_packets_trigger()

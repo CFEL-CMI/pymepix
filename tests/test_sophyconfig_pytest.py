@@ -1,14 +1,15 @@
 import socketserver
 import threading
+
 import numpy as np
+
 from pymepix import Pymepix
 from pymepix.config.sophyconfig import SophyConfig
 from pymepix.SPIDR.spidrcmds import SpidrCmds
-from pymepix.util.spidrDummyTCP import TPX3Handler
 from pymepix.timepixdef import DacRegisterCodes
+from pymepix.util.spidrDummyTCP import TPX3Handler
 
-
-CONFIG_PATH = 'test_assets/test_config_W0028_H06_50V.spx'
+CONFIG_PATH = "test_assets/test_config_W0028_H06_50V.spx"
 ADDRESS = ("192.168.1.10", 50000)
 
 
@@ -61,7 +62,9 @@ def parameter_range_of_values(code, value):
     elif code in [6, 16]:
         assert 0 <= value <= 511
     elif code == 18:
-        assert True  # TODO: @firode waiting for answer with information about PLL_VCNTRL
+        assert (
+            True
+        )  # TODO: @firode waiting for answer with information about PLL_VCNTRL
 
 
 def test_read_config():
@@ -94,6 +97,7 @@ class TestTPX3Handler(TPX3Handler):
         This class uses the main functionality of the spidrDummyTCP to collect config packets.
         Furthermore it takes some of those packets and has another look on them containing the correct values.
         """
+
     def __init__(self, request, client_address, server, event=None):
         self.shutdown_event = event
         TPX3Handler.__init__(self, request, client_address, server)
@@ -139,12 +143,22 @@ class CustomTCPServer(socketserver.TCPServer):
     this is not possible in this case. The socketserver will wait for the request handler to finish and
     thus can not compute the shutdown() function call. That is why we need a thread event to communicate with
     the request handler from the outside. For more fundamental insights look up the python socketserver docs."""
-    def __init__(self, server_address, RequestHandlerClass, bind_and_activate=True, event=None):
-        self.shutdown_event=event
-        socketserver.TCPServer.__init__(self, server_address, RequestHandlerClass, bind_and_activate=bind_and_activate)
+
+    def __init__(
+        self, server_address, RequestHandlerClass, bind_and_activate=True, event=None
+    ):
+        self.shutdown_event = event
+        socketserver.TCPServer.__init__(
+            self,
+            server_address,
+            RequestHandlerClass,
+            bind_and_activate=bind_and_activate,
+        )
 
     def finish_request(self, request, client_address):
-        self.RequestHandlerClass(request, client_address, self, event=self.shutdown_event)
+        self.RequestHandlerClass(
+            request, client_address, self, event=self.shutdown_event
+        )
 
 
 def test_send_config():

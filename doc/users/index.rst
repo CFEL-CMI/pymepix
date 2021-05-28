@@ -9,4 +9,3 @@
     Examples <examples>
     pymepix-acq <pymepixacq>
     Troubleshooting <troubleshooting>
-    

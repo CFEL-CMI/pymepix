@@ -25,11 +25,12 @@ import socket
 import threading
 
 import numpy as np
+
 from pymepix.core.log import Logger
 
 from .error import PymePixException
 from .spidrcmds import SpidrCmds
-from .spidrdefs import SpidrRegs, SpidrShutterMode, SpidrReadoutSpeed
+from .spidrdefs import SpidrRegs, SpidrShutterMode
 from .spidrdevice import SpidrDevice
 
 
@@ -297,7 +298,9 @@ class SPIDRController(Logger):
 
     @ShutterTriggerLength.setter
     def ShutterTriggerLength(self, value):
-        return self.setSpidrReg(SpidrRegs.SPIDR_SHUTTERTRIG_LENGTH_I, (value + 24) // 25)
+        return self.setSpidrReg(
+            SpidrRegs.SPIDR_SHUTTERTRIG_LENGTH_I, (value + 24) // 25
+        )
 
     @property
     def ShutterTriggerDelay(self):
@@ -660,7 +663,9 @@ class SPIDRController(Logger):
             volts = 104
 
         dac_value = int(((volts - 12) * 4095) / (104 - 12))
-        self.info("Setting bias Voltage to {} V (Dac value {})".format(volts, dac_value))
+        self.info(
+            "Setting bias Voltage to {} V (Dac value {})".format(volts, dac_value)
+        )
         self.requestSetInt(SpidrCmds.CMD_SET_BIAS_ADJUST, 0, dac_value)
 
     def enableDecoders(self, enable):
@@ -908,7 +913,9 @@ class SPIDRController(Logger):
         res = self.requestGetInts(SpidrCmds.CMD_GET_SPIDRREG, 0, 2, addr)
         if res[0] != addr:
             raise Exception(
-                "Incorrect register address returned {} expected {}".format(res[0], addr)
+                "Incorrect register address returned {} expected {}".format(
+                    res[0], addr
+                )
             )
 
         return res[1]
@@ -1037,7 +1044,6 @@ class SPIDRController(Logger):
         self._req_buffer[4] = socket.htonl(args)
         expected_len = 20 + expected_bytes
         # Cast reply as an uint8
-        int_total = expected_bytes + ((expected_bytes) & 5)
         reply = self.request(cmd, dev_nr, msg_length, expected_len)
         int_val = socket.ntohl(int(reply[4]))
 

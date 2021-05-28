@@ -22,8 +22,8 @@
 Module to test mendatory default configuration
 """
 import os
+
 import yaml
-import os
 
 import pymepix.config.load_config as cfg
 

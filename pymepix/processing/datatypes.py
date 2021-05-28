@@ -24,6 +24,7 @@ from enum import IntEnum
 
 class MessageType(IntEnum):
     """Defines the type of message that is being passed into a multiprocessing queue"""
+
     RawData = 0
     """Raw UDP packets"""
     PixelData = 1

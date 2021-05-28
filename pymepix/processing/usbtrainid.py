@@ -19,20 +19,18 @@
 # see <https://www.gnu.org/licenses/>.
 
 import multiprocessing
-import glob
 import os
-import serial
-from datetime import datetime
-import threading
-import time
 
 # Checking if device is there
-import stat, os
+import stat
+import time
 
 import numpy as np
+import serial
 import zmq
-from pymepix.core.log import ProcessLogger
+
 import pymepix.config.load_config as cfg
+from pymepix.core.log import ProcessLogger
 
 
 # Class to write raw data to files using ZMQ and a new thread to prevent IO blocking
@@ -50,8 +48,8 @@ class USBTrainID(multiprocessing.Process, ProcessLogger):
         try:
             self._ser = None
             self.connect_device(device)
-        except:
-            self.error(f"Failure connecting {device}")
+        except Exception:
+            self.error(f"Failure connecting {device} {Exception}")
 
     def connect_device(self, device):
         """ Establish connection to USB device"""
@@ -59,8 +57,8 @@ class USBTrainID(multiprocessing.Process, ProcessLogger):
         try:
             stat.S_ISBLK(os.stat(device).st_mode)
             self.info(f"{device} connected")
-        except:
-            self.error(f"Problem in init connecting to {device}")
+        except Exception:
+            self.error(f"Problem in init connecting to {device} {Exception}")
 
         # Configure serial interface
         self._ser = serial.Serial(device, 115200)
@@ -71,7 +69,7 @@ class USBTrainID(multiprocessing.Process, ProcessLogger):
         z_sock.connect("ipc:///tmp/train_sock")
 
         # variables needed in loop
-        times, ids = [], []
+        # times, ids = [], []
         # Information fields read from the USB interface
         timingInfoNames = ["Train ID", "Beam Mode", "CRC"]
         # Number of bytes in each information field
@@ -119,7 +117,9 @@ class USBTrainID(multiprocessing.Process, ProcessLogger):
                 # Information fields are in order, so do not use standard Python dictionary
                 for info in range(len(timingInfoNames)):
                     for sizeInfo in range(timingInfoLength[info]):
-                        timingInfo[timingInfoNames[info]] += self._ser.read(1).decode("utf-8")
+                        timingInfo[timingInfoNames[info]] += self._ser.read(1).decode(
+                            "utf-8"
+                        )
                 zeit = time.time_ns()
                 # Check if last byte is a ETX
                 if bytes([3]) != self._ser.read(1):
@@ -134,7 +134,9 @@ class USBTrainID(multiprocessing.Process, ProcessLogger):
                 for i in range(0, len(timingPayload), 2):
                     crcVal ^= int(timingPayload[i : i + 2], 16)
                 if crcVal != int(timingInfo["CRC"], 16):
-                    crc = " !!!Problem!!! Calculated CRC: " + str(hex(crcVal)[2:]).upper()
+                    crc = (
+                        " !!!Problem!!! Calculated CRC: " + str(hex(crcVal)[2:]).upper()
+                    )
                     continue
 
                 # Train ID in decimal

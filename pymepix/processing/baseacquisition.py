@@ -23,10 +23,10 @@
 from multiprocessing import Queue
 
 import zmq
-from pymepix.core.log import Logger
-from pymepix.processing.usbtrainid import USBTrainID
 
 import pymepix.config.load_config as cfg
+from pymepix.core.log import Logger
+from pymepix.processing.usbtrainid import USBTrainID
 
 
 class AcquisitionStage(Logger):
@@ -134,7 +134,9 @@ class AcquisitionStage(Logger):
         self._input_queue = input_queue
         self._output_queue = output_queue
 
-        self.debug("Building stage with arguments {} {}".format(self._args, self._kwargs))
+        self.debug(
+            "Building stage with arguments {} {}".format(self._args, self._kwargs)
+        )
 
         if self._output_queue is None:
             self.debug("I am creating the queue")
@@ -265,7 +267,7 @@ class AcquisitionPipeline(Logger):
         self.debug("Last index is {}".format(last_index))
         for idx, s in enumerate(self._stages):
             self.debug("Building stage {} {}".format(idx, s.stage))
-            if previous_stage != None:
+            if previous_stage is not None:
                 queues = previous_stage.outputQueue
                 self.debug("Queues: {}".format(queues))
                 if idx != last_index:
@@ -303,15 +305,17 @@ class AcquisitionPipeline(Logger):
 
 def main():
     import logging
-    import time
-    from pymepix.processing.udpsampler import UdpSampler
-    from pymepix.processing.packetprocessor import PacketProcessor
-    from multiprocessing.sharedctypes import Value
     import threading
+    import time
+    from multiprocessing.sharedctypes import Value
+
+    from pymepix.processing.packetprocessor import PacketProcessor
+    from pymepix.processing.udpsampler import UdpSampler
 
     # Create the logger
     logging.basicConfig(
-        level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
     end_queue = Queue()
 
@@ -323,7 +327,6 @@ def main():
     acqpipline.addStage(2, PacketProcessor, num_processes=4)
 
     def get_queue_thread(queue):
-        recieved = []
         while True:
             value = queue.get()
             # messType, data = value

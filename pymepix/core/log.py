@@ -23,7 +23,7 @@ import logging
 import threading
 from multiprocessing import Queue
 
-__all__ = ['Logger', 'ProcessLogger']
+__all__ = ["Logger", "ProcessLogger"]
 
 
 class PymepixLogger(object):
@@ -40,6 +40,7 @@ class PymepixLogger(object):
         Name used for logging
 
     """
+
     _proc_log_queue = Queue()
 
     _init = False
@@ -60,10 +61,10 @@ class PymepixLogger(object):
     def _logging_thread(cls):
         """This thread collects logs from Processes and writes them to stream"""
 
-        thread_log = PymepixLogger.getLogger('log_thread')
+        thread_log = PymepixLogger.getLogger("log_thread")
         log_queue = cls.getLogQueue()
 
-        thread_log.info('Starting Multiprocess logging')
+        thread_log.info("Starting Multiprocess logging")
         while True:
             name, log_level, message, args, kwargs = log_queue.get()
             _log = logging.getLogger(name)
@@ -75,21 +76,21 @@ class PymepixLogger(object):
 
     @classmethod
     def getLogger(cls, name):
-        return logging.getLogger('pymepix.{}'.format(name))
+        return logging.getLogger("pymepix.{}".format(name))
 
     @classmethod
     def reInit(cls):
         if cls._init is False:
-            cls._root_logger = logging.getLogger('pymepix')
+            cls._root_logger = logging.getLogger("pymepix")
 
-            cls._root_logger.info('Reinitializing PymepixLogger')
+            cls._root_logger.info("Reinitializing PymepixLogger")
             cls._log_thread = threading.Thread(target=cls._logging_thread)
             cls._log_thread.daemon = True
             cls._log_thread.start()
         cls._init = True
 
     def __init__(self, name):
-        self._log_name = 'pymepix.{}'.format(name)
+        self._log_name = "pymepix.{}".format(name)
         PymepixLogger.reInit()
 
     @property
@@ -190,7 +191,7 @@ def main():
 if __name__ == "__main__":
     main()
 
-### Local Variables:
-### fill-column: 100
-### truncate-lines: t
-### End:
+# Local Variables:
+# fill-column: 100
+# truncate-lines: t
+# End:

@@ -21,9 +21,9 @@
 """Processors relating to centroiding"""
 
 import time
+from multiprocessing.sharedctypes import Value
 
 import numpy as np
-from multiprocessing.sharedctypes import Value
 
 from .basepipeline import BasePipelineObject
 from .datatypes import MessageType
@@ -34,24 +34,39 @@ class Centroiding(BasePipelineObject):
 
     """
 
-    def __init__(self, skip_data=1, tot_filter=0, epsilon=3.0, samples=3, input_queue=None, create_output=True,
-                 num_outputs=1, shared_output=None):
-        BasePipelineObject.__init__(self, Centroiding.__name__, input_queue=input_queue, create_output=create_output,
-                                    num_outputs=num_outputs, shared_output=shared_output)
+    def __init__(
+        self,
+        skip_data=1,
+        tot_filter=0,
+        epsilon=3.0,
+        samples=3,
+        input_queue=None,
+        create_output=True,
+        num_outputs=1,
+        shared_output=None,
+    ):
+        BasePipelineObject.__init__(
+            self,
+            Centroiding.__name__,
+            input_queue=input_queue,
+            create_output=create_output,
+            num_outputs=num_outputs,
+            shared_output=shared_output,
+        )
 
         self._centroid_count = 0
         self._search_time = 0.0
         self._blob_time = 0.0
-        self._skip_data = Value('I', skip_data)
-        self._tot_threshold = Value('I', tot_filter)
-        self._epsilon = Value('d', 3.0)
-        self._min_samples = Value('I', 3)
+        self._skip_data = Value("I", skip_data)
+        self._tot_threshold = Value("I", tot_filter)
+        self._epsilon = Value("d", 3.0)
+        self._min_samples = Value("I", 3)
         self._num_centroids = 0
 
     @property
     def centroidSkip(self):
-        """Sets whether to process every nth pixel packet. 
-        
+        """Sets whether to process every nth pixel packet.
+
         For example, setting it to 2 means every second packet is processed. 1 means all pixel packets are processed.
 
         """
@@ -73,8 +88,8 @@ class Centroiding(BasePipelineObject):
 
     @property
     def epsilon(self):
-        """Sets whether to process every nth pixel packet. 
-        
+        """Sets whether to process every nth pixel packet.
+
         For example, setting it to 2 means every second packet is processed. 1 means all pixel packets are processed.
 
         """
@@ -83,7 +98,7 @@ class Centroiding(BasePipelineObject):
     @epsilon.setter
     def epsilon(self, value):
         # value = max(1,value)
-        self.info('Epsilon set to {}'.format(value))
+        self.info("Epsilon set to {}".format(value))
         self._epsilon.value = value
 
     @property
@@ -105,7 +120,13 @@ class Centroiding(BasePipelineObject):
         for idx, cnt in comb:
             start = idx
             end = idx + cnt
-            res = self.process_centroid(shot[start:end], x[start:end], y[start:end], tof[start:end], tot[start:end])
+            res = self.process_centroid(
+                shot[start:end],
+                x[start:end],
+                y[start:end],
+                tof[start:end],
+                tot[start:end],
+            )
             if res is not None:
                 self.pushOutput(res[0], res[1])
 
@@ -124,7 +145,7 @@ class Centroiding(BasePipelineObject):
         # if self._num_centroids % self.centroidSkip == 0:
         #     return None,None
 
-        tot_filter = (tot > self.totThreshold)
+        tot_filter = tot > self.totThreshold
         # Filter out pixels
         shot = shot[tot_filter]
         x = x[tot_filter]
@@ -133,7 +154,9 @@ class Centroiding(BasePipelineObject):
         tot = tot[tot_filter]
 
         start = time.time()
-        labels = self.find_cluster(shot, x, y, tof, tot, epsilon=self.epsilon, min_samples=self.samples)
+        labels = self.find_cluster(
+            shot, x, y, tof, tot, epsilon=self.epsilon, min_samples=self.samples
+        )
         self._search_time += time.time() - start
         label_filter = labels != 0
 
@@ -145,8 +168,14 @@ class Centroiding(BasePipelineObject):
             return None, None
         else:
             start = time.time()
-            props = self.cluster_properties(shot[label_filter], x[label_filter], y[label_filter], tof[label_filter],
-                                            tot[label_filter], labels[label_filter])
+            props = self.cluster_properties(
+                shot[label_filter],
+                x[label_filter],
+                y[label_filter],
+                tof[label_filter],
+                tot[label_filter],
+                labels[label_filter],
+            )
             # print(props)
             self._blob_time += time.time() - start
             return MessageType.CentroidData, props
@@ -170,17 +199,21 @@ class Centroiding(BasePipelineObject):
 
     #     return x_bar,y_bar,area,total,evals,evecs.flatten()
 
-    def find_cluster(self, shot, x, y, tof, tot, epsilon=2, min_samples=2, tof_epsilon=None):
+    def find_cluster(
+        self, shot, x, y, tof, tot, epsilon=2, min_samples=2, tof_epsilon=None
+    ):
         from sklearn.cluster import DBSCAN
 
         if shot.size == 0:
             return None
         # print(shot.size)
-        tof_eps = 81920 * (25. / 4096) * 1E-9
+        tof_eps = 81920 * (25.0 / 4096) * 1e-9
 
         tof_scale = epsilon / tof_eps
         X = np.vstack((shot * epsilon * 1000, x, y, tof * tof_scale)).transpose()
-        dist = DBSCAN(eps=epsilon, min_samples=min_samples, metric='euclidean', n_jobs=1).fit(X)
+        dist = DBSCAN(
+            eps=epsilon, min_samples=min_samples, metric="euclidean", n_jobs=1
+        ).fit(X)
         labels = dist.labels_ + 1
         return labels
 
@@ -188,13 +221,21 @@ class Centroiding(BasePipelineObject):
         import scipy.ndimage as nd
 
         label_index = np.unique(labels)
-        tot_max = np.array(nd.maximum_position(tot, labels=labels, index=label_index)).flatten()
+        tot_max = np.array(
+            nd.maximum_position(tot, labels=labels, index=label_index)
+        ).flatten()
         # tof_min = np.array(nd.minimum_position(tof,labels=labels,index=label_index)).flatten()
         # print(tot_max)
         tot_sum = nd.sum(tot, labels=labels, index=label_index)
-        cluster_x = np.array(nd.sum(x * tot, labels=labels, index=label_index) / tot_sum).flatten()
-        cluster_y = np.array(nd.sum(y * tot, labels=labels, index=label_index) / tot_sum).flatten()
-        cluster_tof = np.array(nd.sum(tof * tot, labels=labels, index=label_index) / tot_sum).flatten()
+        cluster_x = np.array(
+            nd.sum(x * tot, labels=labels, index=label_index) / tot_sum
+        ).flatten()
+        cluster_y = np.array(
+            nd.sum(y * tot, labels=labels, index=label_index) / tot_sum
+        ).flatten()
+        cluster_tof = np.array(
+            nd.sum(tof * tot, labels=labels, index=label_index) / tot_sum
+        ).flatten()
         cluster_tot = tot[tot_max]
         # cluster_tof = tof[tot_max]
         cluster_shot = shot[tot_max]
@@ -228,7 +269,7 @@ class Centroiding(BasePipelineObject):
 
     #         moments = self.moments_com(obj_x,obj_y,obj_tot)
     #         if moments is None:
-    #             continue    
+    #             continue
 
     #         x_bar,y_bar,area,integral,evals,evecs = moments
     #         obj_tof = tof[obj_slice]

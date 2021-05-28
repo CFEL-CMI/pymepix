@@ -24,24 +24,26 @@ import time
 import numpy as np
 
 HOST, PORT = "127.0.0.1", 50000
-#data = " ".join(sys.argv[1:])
+# data = " ".join(sys.argv[1:])
 
 # SOCK_DGRAM is the socket type to use for UDP sockets
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-fName = 'data/pyrrole__100.raw'
+fName = "data/pyrrole__100.raw"
 
 data = np.fromfile(fName, dtype=np.uint64)
 total = len(data)
 last_progress = 0
 startTime = time.time()
 for i, packet in enumerate(data[:]):
-    sock.sendto(struct.pack('Q', packet), (HOST, PORT))
+    sock.sendto(struct.pack("Q", packet), (HOST, PORT))
     progress = int(i / total * 100)
     if progress != 0 and progress % 5 == 0 and progress != last_progress:
-        print(f'Progress {i / total * 100:.1f}%')
+        print(f"Progress {i / total * 100:.1f}%")
         last_progress = progress
     # received = str(sock.recv(1024), "utf-8")
 stopTime = time.time()
 timeDiff = stopTime - startTime
-print(f'sent {i} packets; {64*i*1e-6:.2f}MBits {(64*i*1e-6)/timeDiff:.2f}MBits/sec; {(64*i*1e-6/8)/timeDiff:.2f}MByte/sec')
+print(
+    f"sent {i} packets; {64*i*1e-6:.2f}MBits {(64*i*1e-6)/timeDiff:.2f}MBits/sec; {(64*i*1e-6/8)/timeDiff:.2f}MByte/sec"
+)

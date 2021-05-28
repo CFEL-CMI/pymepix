@@ -34,7 +34,7 @@ jobs:
           ${{ runner.os }}-pip-
           ${{ runner.os }}-
     - name: Install dependencies
-      run: 
+      run:
         pip install flake8 pytest
         pip install -r requirements.txt
     - name: Install dependencies

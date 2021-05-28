@@ -19,7 +19,9 @@
 # see <https://www.gnu.org/licenses/>.
 # global import for config file
 
-import os, sys
+import os
+import sys
+
 import yaml
 
 global default_cfg

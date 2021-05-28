@@ -36,7 +36,7 @@ Then, just do::
     pip install .
 
 To build documentation do::
-    
+
     python setup.py build_sphinx
 
 Adapt
@@ -44,9 +44,8 @@ Adapt
     pymepix/config/default.yaml
 
 according to your setup.
-    
+
 Dependencies
 ------------
 
 The majority of pymepix only depends on numpy. To use centroiding, the sklearn package is required
-

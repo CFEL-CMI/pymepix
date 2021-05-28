@@ -19,10 +19,10 @@
 # see <https://www.gnu.org/licenses/>.
 
 from enum import IntEnum
+from multiprocessing.sharedctypes import Value
 
 import numpy as np
 import zmq
-from multiprocessing.sharedctypes import Value
 
 from .basepipeline import BasePipelineObject
 from .datatypes import MessageType
@@ -30,6 +30,7 @@ from .datatypes import MessageType
 
 class PixelOrientation(IntEnum):
     """Defines how row and col are intepreted in the output"""
+
     Up = 0
     """Up is the default, x=column,y=row"""
     Left = 1
@@ -47,14 +48,27 @@ class PacketProcessor(BasePipelineObject):
     It then pre-processes them and sends them off for more processing
     """
 
-    def __init__(self,
-                 handle_events=False, event_window=(0.0, 10000.0), position_offset=(0, 0),
-                 orientation=PixelOrientation.Up, input_queue=None, create_output=True, num_outputs=1,
-                 shared_output=None):
+    def __init__(
+        self,
+        handle_events=False,
+        event_window=(0.0, 10000.0),
+        position_offset=(0, 0),
+        orientation=PixelOrientation.Up,
+        input_queue=None,
+        create_output=True,
+        num_outputs=1,
+        shared_output=None,
+    ):
         # set input_queue to None for now, or baseaqusition.build would have to be modified
         # input_queue is replace by zmq
-        BasePipelineObject.__init__(self, PacketProcessor.__name__, input_queue=None,
-                                    create_output=create_output, num_outputs=num_outputs, shared_output=shared_output)
+        BasePipelineObject.__init__(
+            self,
+            PacketProcessor.__name__,
+            input_queue=None,
+            create_output=create_output,
+            num_outputs=num_outputs,
+            shared_output=shared_output,
+        )
 
         self.clearBuffers()
         self._orientation = orientation
@@ -65,8 +79,8 @@ class PacketProcessor(BasePipelineObject):
         self._handle_events = handle_events
         min_window = event_window[0]
         max_window = event_window[1]
-        self._min_event_window = Value('d', min_window)
-        self._max_event_window = Value('d', max_window)
+        self._min_event_window = Value("d", min_window)
+        self._max_event_window = Value("d", max_window)
 
     def updateBuffers(self, val_filter):
         self._x = self._x[val_filter]
@@ -76,10 +90,19 @@ class PacketProcessor(BasePipelineObject):
 
     def getBuffers(self, val_filter=None):
         if val_filter is None:
-            return np.copy(self._x), np.copy(self._y), np.copy(self._toa), np.copy(self._tot)
+            return (
+                np.copy(self._x),
+                np.copy(self._y),
+                np.copy(self._toa),
+                np.copy(self._tot),
+            )
         else:
-            return np.copy(self._x[val_filter]), np.copy(self._y[val_filter]), np.copy(self._toa[val_filter]), np.copy(
-                self._tot[val_filter])
+            return (
+                np.copy(self._x[val_filter]),
+                np.copy(self._y[val_filter]),
+                np.copy(self._toa[val_filter]),
+                np.copy(self._tot[val_filter]),
+            )
 
     def clearBuffers(self):
         self._x = None
@@ -110,13 +133,13 @@ class PacketProcessor(BasePipelineObject):
 
     def init_new_process(self):
         """create connections and initialize variables in new process"""
-        self.debug('create ZMQ socket')
+        self.debug("create ZMQ socket")
         ctx = zmq.Context.instance()
         self._packet_sock = ctx.socket(zmq.PULL)
-        self._packet_sock.connect('ipc:///tmp/packetProcessor')
+        self._packet_sock.connect("ipc:///tmp/packetProcessor")
 
     def pre_run(self):
-        self.info('Running with triggers? {}'.format(self._handle_events))
+        self.info("Running with triggers? {}".format(self._handle_events))
         self.init_new_process()
 
     def process(self, data_type=None, data=None):
@@ -128,14 +151,18 @@ class PacketProcessor(BasePipelineObject):
         if len(packet) == 0:
             return None, None
 
-        #packets, longtime = data
-        #packet = packets
+        # packets, longtime = data
+        # packet = packets
 
         header = ((packet & 0xF000000000000000) >> 60) & 0xF
         subheader = ((packet & 0x0F00000000000000) >> 56) & 0xF
 
         pixels = packet[np.logical_or(header == 0xA, header == 0xB)]
-        triggers = packet[np.logical_and(np.logical_or(header == 0x4, header == 0x6), subheader == 0xF)]
+        triggers = packet[
+            np.logical_and(
+                np.logical_or(header == 0x4, header == 0x6), subheader == 0xF
+            )
+        ]
 
         if pixels.size > 0:
             self.process_pixels(np.int64(pixels), longtime)
@@ -158,13 +185,14 @@ class PacketProcessor(BasePipelineObject):
         return None, None
 
     def filterBadTriggers(self):
-        self._triggers = self._triggers[np.argmin(self._triggers):]
+        self._triggers = self._triggers[np.argmin(self._triggers) :]
 
     def find_events_fast_post(self):
-        '''Call this function at the very end of to also have the last two trigger events processed'''
+        """Call this function at the very end of to also have the last two trigger events processed"""
         # add an imaginary last trigger event after last pixel event for np.digitize to work
-        self._triggers = np.concatenate((self._triggers,
-                                         np.array([self._toa.max() + 1, self._toa.max() + 2])))
+        self._triggers = np.concatenate(
+            (self._triggers, np.array([self._toa.max() + 1, self._toa.max() + 2]))
+        )
         return self.find_events_fast()
 
     def find_events_fast(self):
@@ -172,7 +200,7 @@ class PacketProcessor(BasePipelineObject):
             return None
         if self._triggers.size < 4:
             return None
-        self._triggers = self._triggers[np.argmin(self._triggers):]
+        self._triggers = self._triggers[np.argmin(self._triggers) :]
         if self._toa is None:
             return None
         if self._toa.size == 0:
@@ -186,7 +214,9 @@ class PacketProcessor(BasePipelineObject):
 
         min_window, max_window = self._eventWindow
 
-        trigger_counter = np.arange(self._trigger_counter, self._trigger_counter + start.size - 1, dtype=np.int)
+        trigger_counter = np.arange(
+            self._trigger_counter, self._trigger_counter + start.size - 1, dtype=np.int
+        )
         self._trigger_counter = trigger_counter[-1] + 1
 
         # end = self._triggers[1:-1:]
@@ -201,10 +231,10 @@ class PacketProcessor(BasePipelineObject):
         try:
             event_mapping = np.digitize(toa, start) - 1
         except Exception as e:
-            self.error('Exception has occured {} due to ', str(e))
-            self.error('Writing output TOA {}'.format(toa))
-            self.error('Writing triggers {}'.format(start))
-            self.error('Flushing triggers!!!')
+            self.error("Exception has occured {} due to ", str(e))
+            self.error("Writing output TOA {}".format(toa))
+            self.error("Writing triggers {}".format(start))
+            self.error("Flushing triggers!!!")
             self._triggers = self._triggers[-2:]
             return None
         self._triggers = self._triggers[-2:]
@@ -214,7 +244,13 @@ class PacketProcessor(BasePipelineObject):
 
         exp_filter = (tof >= min_window) & (tof <= max_window)
 
-        result = event_number[exp_filter], x[exp_filter], y[exp_filter], tof[exp_filter], tot[exp_filter]
+        result = (
+            event_number[exp_filter],
+            x[exp_filter],
+            y[exp_filter],
+            tof[exp_filter],
+            tot[exp_filter],
+        )
 
         if result[0].size > 0:
             return result
@@ -233,9 +269,13 @@ class PacketProcessor(BasePipelineObject):
         diff = (ltimebits - pixelbits).astype(np.int64)
         globaltime = (ltime & 0xFFFFC0000000) | (arr & 0x3FFFFFFF)
         neg_diff = (diff == 1) | (diff == -3)
-        globaltime[neg_diff] = ((ltime - 0x10000000) & 0xFFFFC0000000) | (arr[neg_diff] & 0x3FFFFFFF)
+        globaltime[neg_diff] = ((ltime - 0x10000000) & 0xFFFFC0000000) | (
+            arr[neg_diff] & 0x3FFFFFFF
+        )
         pos_diff = (diff == -1) | (diff == 3)
-        globaltime[pos_diff] = ((ltime + 0x10000000) & 0xFFFFC0000000) | (arr[pos_diff] & 0x3FFFFFFF)
+        globaltime[pos_diff] = ((ltime + 0x10000000) & 0xFFFFC0000000) | (
+            arr[pos_diff] & 0x3FFFFFFF
+        )
         # res[neg] =   ( (ltime - 0x10000000) & 0xFFFFC0000000) | (arr[neg] & 0x3FFFFFFF)
         # res[pos] =   ( (ltime + 0x10000000) & 0xFFFFC0000000) | (arr[pos] & 0x3FFFFFFF)
         # arr[zero] = ( (ltime) & 0xFFFFC0000000) | (arr[zero] & 0x3FFFFFFF)
@@ -249,13 +289,13 @@ class PacketProcessor(BasePipelineObject):
         tmpfine = (pixdata >> 5) & 0xF
         tmpfine = ((tmpfine - 1) << 9) // 12
         trigtime_fine = (pixdata & 0x0000000000000E00) | (tmpfine & 0x00000000000001FF)
-        time_unit = 25. / 4096
-        tdc_time = (coarsetime * 25E-9 + trigtime_fine * time_unit * 1E-9)
+        time_unit = 25.0 / 4096
+        tdc_time = coarsetime * 25e-9 + trigtime_fine * time_unit * 1e-9
 
         m_trigTime = tdc_time
 
         # TODO: don't clatter queue with unnecessary stuff for now
-        #self.pushOutput(MessageType.TriggerData, m_trigTime)
+        # self.pushOutput(MessageType.TriggerData, m_trigTime)
         # print(m_trigTime)
         if self._handle_events:
             if self._triggers is None:
@@ -275,30 +315,33 @@ class PacketProcessor(BasePipelineObject):
 
     def process_pixels(self, pixdata, longtime):
 
-        dcol = ((pixdata & 0x0FE0000000000000) >> 52)
-        spix = ((pixdata & 0x001F800000000000) >> 45)
-        pix = ((pixdata & 0x0000700000000000) >> 44)
-        col = (dcol + pix // 4)
-        row = (spix + (pix & 0x3))
+        dcol = (pixdata & 0x0FE0000000000000) >> 52
+        spix = (pixdata & 0x001F800000000000) >> 45
+        pix = (pixdata & 0x0000700000000000) >> 44
+        col = dcol + pix // 4
+        row = spix + (pix & 0x3)
 
-        data = ((pixdata & 0x00000FFFFFFF0000) >> 16)
-        spidr_time = (pixdata & 0x000000000000FFFF)
-        ToA = ((data & 0x0FFFC000) >> 14)
-        FToA = (data & 0xF)
+        data = (pixdata & 0x00000FFFFFFF0000) >> 16
+        spidr_time = pixdata & 0x000000000000FFFF
+        ToA = (data & 0x0FFFC000) >> 14
+        FToA = data & 0xF
         ToT = ((data & 0x00003FF0) >> 4) * 25
-        time_unit = 25. / 4096
+        time_unit = 25.0 / 4096
 
         # print('LONGTIME',longtime*25E-9)
         # print('SpidrTime',(spidr_time << 14)*25E-9)
         # print('TOA before global',((spidr_time << 14) |ToA)*25*1E-9)
 
-        ToA_coarse = self.correct_global_time((spidr_time << 14) | ToA, longtime) & 0xFFFFFFFFFFFF
+        ToA_coarse = (
+            self.correct_global_time((spidr_time << 14) | ToA, longtime)
+            & 0xFFFFFFFFFFFF
+        )
         # print('TOA after global',ToA_coarse*25*1E-9,longtime)
         globalToA = (ToA_coarse << 12) - (FToA << 8)
         # print('TOA after FTOa',globalToA*time_unit*1E-9)
         globalToA += ((col // 2) % 16) << 8
-        globalToA[((col // 2) % 16) == 0] += (16 << 8)
-        finalToA = globalToA * time_unit * 1E-9
+        globalToA[((col // 2) % 16) == 0] += 16 << 8
+        finalToA = globalToA * time_unit * 1e-9
 
         # print('finalToa',finalToA)
         # Orient the pixels based on Timepix orientation
@@ -309,7 +352,7 @@ class PacketProcessor(BasePipelineObject):
         y += self._y_offset
 
         # TODO: don't clatter queue with unnecessary stuff for now
-        #self.pushOutput(MessageType.PixelData, (x, y, finalToA, ToT))
+        # self.pushOutput(MessageType.PixelData, (x, y, finalToA, ToT))
 
         # print('PIXEL',finalToA,longtime)
         if self._handle_events:

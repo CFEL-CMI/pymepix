@@ -19,6 +19,9 @@
 #
 # You should have received a copy of the GNU General Public License along with this program. If not,
 # see <https://www.gnu.org/licenses/>.
+from distutils.core import setup
+
+from setuptools import find_packages
 
 author = "CFEL Controlled Molecule Imaging group"
 copyright = "2018–2020 CFEL-CMI <cmidaq@desy.de>"
@@ -26,15 +29,9 @@ name = "pymepix"
 version = "1.1.dev0"
 release = version
 
-from distutils.core import setup
-
-from setuptools import find_packages
-
 packages = find_packages(exclude=("tests", "doc"))
 
-provides = [
-    "pymepix",
-]
+provides = ["pymepix"]
 
 requires = []
 
@@ -42,9 +39,7 @@ install_requires = ["numpy", "sklearn", "pyyaml"]
 
 console_scripts = ["pymepix-acq=pymepix.pymepix:main"]
 
-entry_points = {
-    "console_scripts": console_scripts,
-}
+entry_points = {"console_scripts": console_scripts}
 
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -105,7 +100,7 @@ setup(
     },
 )
 
-### Local Variables:
-### fill-column: 100
-### truncate-lines: t
-### End:
+# Local Variables:
+# fill-column: 100
+# truncate-lines: t
+# End:
