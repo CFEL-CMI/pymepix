@@ -142,45 +142,47 @@ class PacketProcessor(BasePipelineObject):
         self.info("Running with triggers? {}".format(self._handle_events))
         self.init_new_process()
 
+    def post_run(self):
+        self.info("\n post_run \n")
+        self._packet_sock.close()
+
     def process(self, data_type=None, data=None):
-        packet_view = memoryview(self._packet_sock.recv(copy=False))
-        packet = np.frombuffer(packet_view[:-8], dtype=np.uint64)
-        # needs to be an integer or "(ltime >> 28) & 0x3" fails
-        longtime = int(np.frombuffer(packet_view[-8:], dtype=np.uint64)[0])
+        if self._packet_sock.poll(timeout=0):
 
-        if len(packet) == 0:
-            return None, None
+            packet_view = memoryview(self._packet_sock.recv(copy=False))
+            packet = np.frombuffer(packet_view[:-8], dtype=np.uint64)
+            # needs to be an integer or "(ltime >> 28) & 0x3" fails
+            longtime = int(np.frombuffer(packet_view[-8:], dtype=np.uint64)[0])
 
-        # packets, longtime = data
-        # packet = packets
-
-        header = ((packet & 0xF000000000000000) >> 60) & 0xF
-        subheader = ((packet & 0x0F00000000000000) >> 56) & 0xF
-
-        pixels = packet[np.logical_or(header == 0xA, header == 0xB)]
-        triggers = packet[
-            np.logical_and(
-                np.logical_or(header == 0x4, header == 0x6), subheader == 0xF
-            )
-        ]
-
-        if pixels.size > 0:
-            self.process_pixels(np.int64(pixels), longtime)
-
-        if triggers.size > 0:
-            # print('triggers', triggers, longtime)
-            self.process_triggers(np.int64(triggers), longtime)
-
-        if self._handle_events:
-
-            events = self.find_events_fast()
-
-            if events is not None:
-                return MessageType.EventData, events
-            else:
+            if len(packet) == 0:
                 return None, None
-        else:
-            return None, None
+
+            # packets, longtime = data
+            # packet = packets
+
+            header = ((packet & 0xF000000000000000) >> 60) & 0xF
+            subheader = ((packet & 0x0F00000000000000) >> 56) & 0xF
+
+            pixels = packet[np.logical_or(header == 0xA, header == 0xB)]
+            triggers = packet[
+                np.logical_and(
+                    np.logical_or(header == 0x4, header == 0x6), subheader == 0xF
+                )
+            ]
+
+            if pixels.size > 0:
+                self.process_pixels(np.int64(pixels), longtime)
+
+            if triggers.size > 0:
+                # print('triggers', triggers, longtime)
+                self.process_triggers(np.int64(triggers), longtime)
+
+            if self._handle_events:
+
+                events = self.find_events_fast()
+
+                if events is not None:
+                    return MessageType.EventData, events
 
         return None, None
 

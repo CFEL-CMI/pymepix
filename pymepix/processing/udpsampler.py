@@ -232,7 +232,6 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
                 self.debug("post_run: closed file")
             # return MessageType.RawData, (
             #    self._packet_buffer_list[curr_list_idx][:bytes_to_send], self._longtime.value)
-            return None, None
         else:
             if self.write2disk.writing:
                 self.debug("post_run: close file")
@@ -240,7 +239,9 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
                     b"EOF"
                 )  # we should get a response here, but the socket is elsewhere...
                 self.debug("post_run: closed file")
-            return None, None
+
+        self._packet_sock.close()
+        return None, None
 
     def run(self):
         """method which is executed in new process via multiprocessing.Process.start"""
