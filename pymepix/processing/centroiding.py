@@ -24,22 +24,24 @@ import time
 from multiprocessing.sharedctypes import Value
 
 import numpy as np
+import scipy.ndimage as nd
+from sklearn.cluster import DBSCAN
 
 from .basepipeline import BasePipelineObject
 from .datatypes import MessageType
 
 
 class Centroiding(BasePipelineObject):
-    """Performs centroiding on EventData recieved from Packet processor
+    """Performs centroiding on EventData recieved from Packet processor"""
 
-    """
+    tof_scale = 1e7
 
     def __init__(
         self,
         skip_data=1,
         tot_filter=0,
-        epsilon=3.0,
-        samples=3,
+        epsilon=2.0,
+        samples=5,
         input_queue=None,
         create_output=True,
         num_outputs=1,
@@ -59,9 +61,8 @@ class Centroiding(BasePipelineObject):
         self._blob_time = 0.0
         self._skip_data = Value("I", skip_data)
         self._tot_threshold = Value("I", tot_filter)
-        self._epsilon = Value("d", 3.0)
-        self._min_samples = Value("I", 3)
-        self._num_centroids = 0
+        self._epsilon = Value("d", epsilon)
+        self._min_samples = Value("I", samples)
 
     @property
     def centroidSkip(self):
@@ -114,37 +115,13 @@ class Centroiding(BasePipelineObject):
             return None, None
         shot, x, y, tof, tot = data
 
-        _, indices, counts = np.unique(shot, return_index=True, return_counts=True)
-        comb = zip(indices, counts)
-
-        for idx, cnt in comb:
-            start = idx
-            end = idx + cnt
-            res = self.process_centroid(
-                shot[start:end],
-                x[start:end],
-                y[start:end],
-                tof[start:end],
-                tot[start:end],
-            )
-            if res is not None:
-                self.pushOutput(res[0], res[1])
+        res = self.process_centroid(shot, x, y, tof, tot)
+        if res is not None:
+            self.pushOutput(res[0], res[1])
 
         return None, None
 
     def process_centroid(self, shot, x, y, tof, tot):
-
-        # print('CENTROID DATA',data)
-
-        self._num_centroids += 1
-
-        # if self._num_centroids % 1000:
-        #     self.debug('Search time: {}'.format(self._search_time))
-        #     self.debug('Blob time: {} '.format(self._blob_time))
-
-        # if self._num_centroids % self.centroidSkip == 0:
-        #     return None,None
-
         tot_filter = tot > self.totThreshold
         # Filter out pixels
         shot = shot[tot_filter]
@@ -155,7 +132,7 @@ class Centroiding(BasePipelineObject):
 
         start = time.time()
         labels = self.find_cluster(
-            shot, x, y, tof, tot, epsilon=self.epsilon, min_samples=self.samples
+            shot, x, y, tof, epsilon=self.epsilon, min_samples=self.samples
         )
         self._search_time += time.time() - start
         label_filter = labels != 0
@@ -166,66 +143,37 @@ class Centroiding(BasePipelineObject):
         # print(labels[label_filter ].size)
         if labels[label_filter].size == 0:
             return None, None
-        else:
-            start = time.time()
-            props = self.cluster_properties(
-                shot[label_filter],
-                x[label_filter],
-                y[label_filter],
-                tof[label_filter],
-                tot[label_filter],
-                labels[label_filter],
-            )
-            # print(props)
-            self._blob_time += time.time() - start
-            return MessageType.CentroidData, props
+        start = time.time()
+        props = self.cluster_properties(
+            shot[label_filter],
+            x[label_filter],
+            y[label_filter],
+            tof[label_filter],
+            tot[label_filter],
+            labels[label_filter],
+        )
 
-    # def moments_com(self,X,Y,tot):
+        self._blob_time += time.time() - start
+        return MessageType.CentroidData, props
 
-    #     total = tot.sum()
-    #     x_bar = (X*tot).sum()/total
-    #     y_bar = (Y*tot).sum()/total
-    #     area = tot.size
-    #     x_cm = X - x_bar
-    #     y_cm = Y - y_bar
-    #     coords = np.vstack([x_cm, y_cm])
-
-    #     cov = np.cov(coords)
-    #     try:
-
-    #         evals, evecs = np.linalg.eig(cov)
-    #     except:
-    #         return None
-
-    #     return x_bar,y_bar,area,total,evals,evecs.flatten()
-
-    def find_cluster(
-        self, shot, x, y, tof, tot, epsilon=2, min_samples=2, tof_epsilon=None
-    ):
-        from sklearn.cluster import DBSCAN
+    def find_cluster(self, shot, x, y, tof, epsilon=2, min_samples=2):
 
         if shot.size == 0:
             return None
-        # print(shot.size)
-        tof_eps = 81920 * (25.0 / 4096) * 1e-9
 
-        tof_scale = epsilon / tof_eps
-        X = np.vstack((shot * epsilon * 1000, x, y, tof * tof_scale)).transpose()
+        X = np.vstack((shot * epsilon * 1000, x, y, tof * self.tof_scale)).transpose()
         dist = DBSCAN(
-            eps=epsilon, min_samples=min_samples, metric="euclidean", n_jobs=1
+            eps=epsilon, min_samples=min_samples, metric="euclidean", n_jobs=15
         ).fit(X)
-        labels = dist.labels_ + 1
-        return labels
+
+        return dist.labels_ + 1
 
     def cluster_properties(self, shot, x, y, tof, tot, labels):
-        import scipy.ndimage as nd
-
         label_index = np.unique(labels)
         tot_max = np.array(
             nd.maximum_position(tot, labels=labels, index=label_index)
         ).flatten()
-        # tof_min = np.array(nd.minimum_position(tof,labels=labels,index=label_index)).flatten()
-        # print(tot_max)
+
         tot_sum = nd.sum(tot, labels=labels, index=label_index)
         cluster_x = np.array(
             nd.sum(x * tot, labels=labels, index=label_index) / tot_sum

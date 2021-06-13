@@ -27,10 +27,10 @@ from .udpsampler import UdpSampler
 
 
 class PixelPipeline(AcquisitionPipeline):
-    """ An acquisition pipeline that includes the udpsampler and pixel processor
+    """An acquisition pipeline that includes the udpsampler and pixel processor
 
-        A pipeline that will read from a UDP address and decode the pixels a useable form.
-        This class can be used as a base for all acqusition pipelines.
+    A pipeline that will read from a UDP address and decode the pixels a useable form.
+    This class can be used as a base for all acqusition pipelines.
     """
 
     def __init__(self, data_queue, address, longtime, use_event=False, name="Pixel"):
@@ -135,8 +135,8 @@ class CentroidPipeline(PixelPipeline):
         self.info("Initializing Centroid pipeline")
         self._skip_centroid = 1
         self._tot_threshold = 0
-        self._samples = 3
-        self._epsilon = 3.0
+        self._samples = 5
+        self._epsilon = 2.0
 
         self.addStage(4, Centroiding)
 
