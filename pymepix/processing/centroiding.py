@@ -163,7 +163,7 @@ class Centroiding(BasePipelineObject):
 
         X = np.vstack((shot * epsilon * 1000, x, y, tof * self.tof_scale)).transpose()
         dist = DBSCAN(
-            eps=epsilon, min_samples=min_samples, metric="euclidean", n_jobs=15
+            eps=epsilon, min_samples=min_samples, metric="euclidean", n_jobs=1
         ).fit(X)
 
         return dist.labels_ + 1

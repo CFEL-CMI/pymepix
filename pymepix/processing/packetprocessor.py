@@ -143,8 +143,8 @@ class PacketProcessor(BasePipelineObject):
         self.init_new_process()
 
     def post_run(self):
-        self.info("\n post_run \n")
         self._packet_sock.close()
+        return None, None
 
     def process(self, data_type=None, data=None):
         if self._packet_sock.poll(timeout=0):
