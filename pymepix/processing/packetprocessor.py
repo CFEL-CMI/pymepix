@@ -147,7 +147,7 @@ class PacketProcessor(BasePipelineObject):
         return None, None
 
     def process(self, data_type=None, data=None):
-        if self._packet_sock.poll(timeout=0):
+        if self._packet_sock.poll(timeout=None):
 
             packet_view = memoryview(self._packet_sock.recv(copy=False))
             packet = np.frombuffer(packet_view[:-8], dtype=np.uint64)

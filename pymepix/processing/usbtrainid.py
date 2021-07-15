@@ -149,7 +149,7 @@ class USBTrainID(multiprocessing.Process, ProcessLogger):
                 np.save(filehandle, timingInfo["Train ID"])
                 # print(timingInfo['Train ID'], zeit)
 
-                if z_sock.poll(timeout=0):
+                if z_sock.poll(timeout=None):
                     cmd = z_sock.recv_string()
                     if cmd == "STOP RECORDING":
                         record = False
