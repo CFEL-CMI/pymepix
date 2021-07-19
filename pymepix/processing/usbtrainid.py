@@ -31,6 +31,7 @@ import zmq
 
 import pymepix.config.load_config as cfg
 from pymepix.core.log import ProcessLogger
+from zmq.sugar.constants import NOBLOCK
 
 
 # Class to write raw data to files using ZMQ and a new thread to prevent IO blocking
@@ -149,7 +150,7 @@ class USBTrainID(multiprocessing.Process, ProcessLogger):
                 np.save(filehandle, timingInfo["Train ID"])
                 # print(timingInfo['Train ID'], zeit)
 
-                if z_sock.poll(timeout=None):
+                if z_sock.poll(timeout=0):
                     cmd = z_sock.recv_string()
                     if cmd == "STOP RECORDING":
                         record = False
