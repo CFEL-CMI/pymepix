@@ -138,7 +138,7 @@ class CentroidPipeline(PixelPipeline):
         self._samples = 5
         self._epsilon = 2.0
 
-        self.addStage(4, Centroiding)
+        self.addStage(4, Centroiding, num_processes=25)
 
         self._reconfigureCentroid()
 
