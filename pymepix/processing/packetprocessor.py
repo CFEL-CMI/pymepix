@@ -182,6 +182,8 @@ class PacketProcessor(BasePipelineObject):
             if events is not None:
                 return MessageType.EventData, events
 
+        return None, None
+
     def filterBadTriggers(self):
         self._triggers = self._triggers[np.argmin(self._triggers) :]
 
