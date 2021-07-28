@@ -134,7 +134,7 @@ class Centroiding(BasePipelineObject):
         labels = self.find_cluster(
             shot, x, y, tof, epsilon=self.epsilon, min_samples=self.samples
         )
-        self._search_time += time.time() - start
+        self._search_time = time.time() - start
         label_filter = labels != 0
 
         if labels is None:
@@ -153,7 +153,7 @@ class Centroiding(BasePipelineObject):
             labels[label_filter],
         )
 
-        self._blob_time += time.time() - start
+        self._blob_time = time.time() - start
         return MessageType.CentroidData, props
 
     def find_cluster(self, shot, x, y, tof, epsilon=2, min_samples=2):
