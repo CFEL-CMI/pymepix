@@ -24,6 +24,7 @@ import multiprocessing
 import time
 from multiprocessing import Queue
 from multiprocessing.sharedctypes import Value
+import traceback
 
 from pymepix.core.log import ProcessLogger
 
@@ -197,6 +198,7 @@ class BasePipelineObject(multiprocessing.Process, ProcessLogger):
             except Exception as e:
                 self.error("Exception occured!!!")
                 self.error(e, exc_info=True)
+                self.error(traceback.format_exc())
                 break
         output_type, result = self.post_run()
         if (
