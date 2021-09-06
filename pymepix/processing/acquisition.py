@@ -21,8 +21,8 @@
 """Module that contains predefined acquisition pipelines for the user to use"""
 
 from .baseacquisition import AcquisitionPipeline
-from .centroiding import Centroiding
-from .packetprocessor import PacketProcessor
+from .pipeline_centroid_calculator import PipelineCentroidCalculator
+from .pipeline_packet_processor import PipelinePacketProcessor
 from .udpsampler import UdpSampler
 
 
@@ -40,7 +40,7 @@ class PixelPipeline(AcquisitionPipeline):
         self._event_window = (0, 10000)
 
         self.addStage(0, UdpSampler, address, longtime)
-        self.addStage(2, PacketProcessor, num_processes=2)
+        self.addStage(2, PipelinePacketProcessor, num_processes=2)
         self._reconfigureProcessor()
 
     def _reconfigureProcessor(self):
@@ -50,7 +50,7 @@ class PixelPipeline(AcquisitionPipeline):
             )
         )
         self.getStage(2).configureStage(
-            PacketProcessor,
+            PipelinePacketProcessor,
             handle_events=self._use_events,
             event_window=self._event_window,
         )
@@ -138,14 +138,14 @@ class CentroidPipeline(PixelPipeline):
         self._samples = 5
         self._epsilon = 2.0
 
-        self.addStage(4, Centroiding, num_processes=25)
+        self.addStage(4, PipelineCentroidCalculator, num_processes=25)
 
         self._reconfigureCentroid()
 
     def _reconfigureCentroid(self):
         self._reconfigureProcessor()
         p = self.getStage(4).configureStage(
-            Centroiding,
+            PipelineCentroidCalculator,
             skip_data=self._skip_centroid,
             tot_filter=self._tot_threshold,
             epsilon=self._epsilon,

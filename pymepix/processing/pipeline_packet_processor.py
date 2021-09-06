@@ -1,0 +1,86 @@
+# This file is part of Pymepix
+#
+# In all scientific work using Pymepix, please reference it as
+#
+# A. F. Al-Refaie, M. Johny, J. Correa, D. Pennicard, P. Svihra, A. Nomerotski, S. Trippel, and J. Küpper:
+# "PymePix: a python library for SPIDR readout of Timepix3", J. Inst. 14, P10003 (2019)
+# https://doi.org/10.1088/1748-0221/14/10/P10003
+# https://arxiv.org/abs/1905.07999
+#
+# Pymepix is free software: you can redistribute it and/or modify it under the terms of the GNU
+# General Public License as published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+# even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with this program. If not,
+# see <https://www.gnu.org/licenses/>.
+
+from enum import IntEnum
+
+import zmq
+
+from .basepipeline import BasePipelineObject
+from .logic.packet_processor import PacketProcessor
+
+
+class PixelOrientation(IntEnum):
+    """Defines how row and col are intepreted in the output"""
+
+    Up = 0
+    """Up is the default, x=column,y=row"""
+    Left = 1
+    """x=row, y=-column"""
+    Down = 2
+    """x=-column, y = -row """
+    Right = 3
+    """x=-row, y=column"""
+
+
+class PipelinePacketProcessor(BasePipelineObject):
+    """Processes Pixel packets for ToA, ToT,triggers and events
+
+    This class, creates a UDP socket connection to SPIDR and recivies the UDP packets from Timepix
+    It then pre-processes them and sends them off for more processing
+    """
+
+    def __init__(
+        self,
+        packet_processor: PacketProcessor = PacketProcessor(),
+        input_queue=None,
+        create_output=True,
+        num_outputs=1,
+        shared_output=None
+    ):
+        # set input_queue to None for now, or baseaqusition.build would have to be modified
+        # input_queue is replace by zmq
+        super().__init__(
+            self,
+            PipelinePacketProcessor.__name__,
+            input_queue=input_queue,
+            create_output=create_output,
+            num_outputs=num_outputs,
+            shared_output=shared_output,
+        )
+        self.packet_processor = packet_processor
+
+    def init_new_process(self):
+        """create connections and initialize variables in new process"""
+        self.debug("create ZMQ socket")
+        ctx = zmq.Context.instance()
+        self._packet_sock = ctx.socket(zmq.PULL)
+        self._packet_sock.connect("ipc:///tmp/packetProcessor")
+
+    def pre_run(self):
+        self.info("Running with triggers? {}".format(self._handle_events))
+        self.init_new_process()
+        self.packet_processor.pre_execution()
+
+    def post_run(self):
+        self._packet_sock.close()
+        return self.packet_processor.post_execution()
+
+    def process(self, data_type=None, data=None):
+        return self.packet_processor.process(self._packet_sock.recv(copy=False))
