@@ -19,5 +19,5 @@
 # see <https://www.gnu.org/licenses/>.
 
 from pymepix.processing import MessageType
-from pymepix.pymepix import PollBufferEmpty, Pymepix
+from pymepix.pymepix_connection import PollBufferEmpty, PymepixConnection
 from pymepix.timepixdef import *

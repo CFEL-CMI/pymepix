@@ -29,7 +29,7 @@ import pymepix.config.load_config as cfg
 from pymepix.processing.rawfilesampler import RawFileSampler
 
 from pymepix.processing.datatypes import MessageType
-from pymepix.pymepix import PollBufferEmpty, Pymepix
+from pymepix.pymepix_connection import PollBufferEmpty, PymepixConnection
 from pymepix.util.storage import open_output_file, store_raw, store_toa, store_tof
 
 logging.basicConfig(
@@ -40,7 +40,7 @@ logging.basicConfig(
 
 def connect_timepix(args):
     # Connect to SPIDR
-    pymepix = Pymepix((args.ip, args.port))
+    pymepix = PymepixConnection((args.ip, args.port))
     # If there are no valid timepix detected then quit()
     if len(pymepix) == 0:
         logging.error(

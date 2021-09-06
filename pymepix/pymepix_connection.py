@@ -32,7 +32,7 @@ class PollBufferEmpty(Exception):
     pass
 
 
-class Pymepix(Logger):
+class PymepixConnection(Logger):
     """High level class to work with timepix and perform acquistion
 
     This class performs connection to SPIDR, initilization of timepix and handling of acquisition.
