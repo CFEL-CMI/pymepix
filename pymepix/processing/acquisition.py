@@ -20,6 +20,8 @@
 
 """Module that contains predefined acquisition pipelines for the user to use"""
 
+from pymepix.processing.logic.centroid_calculator import CentroidCalculator
+from pymepix.processing.logic.packet_processor import PacketProcessor
 from .baseacquisition import AcquisitionPipeline
 from .pipeline_centroid_calculator import PipelineCentroidCalculator
 from .pipeline_packet_processor import PipelinePacketProcessor
@@ -51,8 +53,7 @@ class PixelPipeline(AcquisitionPipeline):
         )
         self.getStage(2).configureStage(
             PipelinePacketProcessor,
-            handle_events=self._use_events,
-            event_window=self._event_window,
+            packet_processor=PacketProcessor(self._use_events, self._event_window)
         )
 
     @property
@@ -146,10 +147,12 @@ class CentroidPipeline(PixelPipeline):
         self._reconfigureProcessor()
         p = self.getStage(4).configureStage(
             PipelineCentroidCalculator,
-            skip_data=self._skip_centroid,
-            tot_filter=self._tot_threshold,
-            epsilon=self._epsilon,
-            samples=self._samples,
+            centroid_calculator=CentroidCalculator(
+                # skip_data=self._skip_centroid, TODO: Currently not implemented
+                tot_threshold=self._tot_threshold,
+                epsilon=self._epsilon,
+                min_samples=self._samples
+            )
         )
 
     @property
