@@ -19,6 +19,7 @@
 # see <https://www.gnu.org/licenses/>.
 
 """Processors relating to centroiding"""
+from pymepix.processing.datatypes import MessageType
 from pymepix.processing.logic.centroid_calculator import CentroidCalculator
 
 from .basepipeline import BasePipelineObject
@@ -36,7 +37,6 @@ class PipelineCentroidCalculator(BasePipelineObject):
         shared_output=None,
     ):
         super().__init__(
-            self,
             PipelineCentroidCalculator.__name__,
             input_queue=input_queue,
             create_output=create_output,
@@ -45,5 +45,8 @@ class PipelineCentroidCalculator(BasePipelineObject):
         )
         self.centroid_calculator = centroid_calculator
 
-    def process(self, data_type, data):
-        return self.centroid_calculator.process((data_type, data))
+    def process(self, data_type=None, data=None):
+        if data_type == MessageType.EventData:
+            return MessageType.CentroidData, self.centroid_calculator.process(data)
+
+        return None, None

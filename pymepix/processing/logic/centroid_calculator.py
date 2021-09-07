@@ -73,9 +73,10 @@ class CentroidCalculator(ProcessingStep):
 
     def __centroid_chunks_to_centroids(self, chunks):
         centroids = [[] for i in range(7)]
-        for chunk in chunks:
-            for index, coordinate in enumerate(chunk):
-                centroids[index].append(coordinate)
+        for chunk in list(chunks):
+            if chunk != None:
+                for index, coordinate in enumerate(chunk):
+                    centroids[index].append(coordinate)
 
         return [np.concatenate(coordinate) for coordinate in centroids]
 
