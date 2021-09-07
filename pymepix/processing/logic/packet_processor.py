@@ -64,6 +64,9 @@ class PacketProcessor(ProcessingStep):
 
         return None
 
+    def pre_process(self):
+        self.info("Running with triggers? {}".format(self._handle_events))
+
     def post_process(self):
         return self.find_events_fast_post()
 

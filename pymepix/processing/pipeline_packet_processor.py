@@ -19,25 +19,12 @@
 # see <https://www.gnu.org/licenses/>.
 
 from enum import IntEnum
+from pymepix.processing.datatypes import MessageType
 
 import zmq
 
 from .basepipeline import BasePipelineObject
 from .logic.packet_processor import PacketProcessor
-
-
-class PixelOrientation(IntEnum):
-    """Defines how row and col are intepreted in the output"""
-
-    Up = 0
-    """Up is the default, x=column,y=row"""
-    Left = 1
-    """x=row, y=-column"""
-    Down = 2
-    """x=-column, y = -row """
-    Right = 3
-    """x=-row, y=column"""
-
 
 class PipelinePacketProcessor(BasePipelineObject):
     """Processes Pixel packets for ToA, ToT,triggers and events
@@ -57,9 +44,8 @@ class PipelinePacketProcessor(BasePipelineObject):
         # set input_queue to None for now, or baseaqusition.build would have to be modified
         # input_queue is replace by zmq
         super().__init__(
-            self,
             PipelinePacketProcessor.__name__,
-            input_queue=input_queue,
+            input_queue=None,
             create_output=create_output,
             num_outputs=num_outputs,
             shared_output=shared_output,
@@ -74,13 +60,18 @@ class PipelinePacketProcessor(BasePipelineObject):
         self._packet_sock.connect("ipc:///tmp/packetProcessor")
 
     def pre_run(self):
-        self.info("Running with triggers? {}".format(self._handle_events))
         self.init_new_process()
-        self.packet_processor.pre_execution()
+        self.packet_processor.pre_process()
 
     def post_run(self):
         self._packet_sock.close()
-        return self.packet_processor.post_execution()
+        return None, self.packet_processor.post_process()
 
     def process(self, data_type=None, data=None):
-        return self.packet_processor.process(self._packet_sock.recv(copy=False))
+        # timestamps are not required for online processing
+        result = self.packet_processor.process(self._packet_sock.recv(copy=False))
+        if result is not None:
+            events, _timestamps = result
+            if events is not None:
+                return MessageType.EventData, events
+        return None, None
