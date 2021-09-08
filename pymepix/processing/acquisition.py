@@ -134,119 +134,18 @@ class CentroidPipeline(PixelPipeline):
             self, data_queue, address, longtime, use_event=True, name="Centroid"
         )
         self.info("Initializing Centroid pipeline")
-        self._skip_centroid = 1
-        self._tot_threshold = 0
-        self._samples = 5
-        self._epsilon = 2.0
+        self.centroid_calculator=CentroidCalculator()
 
-        self.addStage(4, PipelineCentroidCalculator, num_processes=25)
+        self.addStage(4, PipelineCentroidCalculator, num_processes=6)
 
         self._reconfigureCentroid()
 
     def _reconfigureCentroid(self):
         self._reconfigureProcessor()
-        p = self.getStage(4).configureStage(
+        self.getStage(4).configureStage(
             PipelineCentroidCalculator,
-            centroid_calculator=CentroidCalculator(
-                # skip_data=self._skip_centroid, TODO: Currently not implemented
-                tot_threshold=self._tot_threshold,
-                epsilon=self._epsilon,
-                min_samples=self._samples
-            )
+            centroid_calculator=self.centroid_calculator
         )
-
-    @property
-    def centroidSkip(self):
-        """Perform centroiding on every nth packet
-
-        Parameters
-        -----------
-        value: int
-
-
-        """
-        return self._skip_centroid
-
-    @centroidSkip.setter
-    def centroidSkip(self, value):
-        self.info("Setting Centroid skip to {}".format(value))
-        self._skip_centroid = value
-        self._reconfigureCentroid()
-        if self.isRunning:
-            skip = self._skip_centroid
-            for p in self.getStage(4).processes:
-                p.centroidSkip = skip
-
-    @property
-    def epsilon(self):
-        """Perform centroiding on every nth packet
-
-        Parameters
-        -----------
-        value: int
-
-
-        """
-        return self._epsilon
-
-    @epsilon.setter
-    def epsilon(self, value):
-        self._epsilon = value
-        self._reconfigureCentroid()
-        self.info("Setting epsilon skip to {}".format(value))
-        if self.isRunning:
-            skip = self._epsilon
-            for p in self.getStage(4).processes:
-                p.epsilon = skip
-
-    @property
-    def samples(self):
-        """Perform centroiding on every nth packet
-
-        Parameters
-        -----------
-        value: int
-
-
-        """
-        return self._samples
-
-    @samples.setter
-    def samples(self, value):
-        self._samples = value
-        self._reconfigureCentroid()
-        if self.isRunning:
-            skip = self._samples
-            for p in self.getStage(4).processes:
-                p.samples = skip
-
-    @property
-    def totThreshold(self):
-        """Determines which time over threhsold values to filter before centroiding
-
-        This is useful in reducing the computational time in centroiding and can filter out
-        noise. Changes take effect immediately
-
-        Parameters
-        -----------
-        value: int
-
-
-        Returns
-        -----------
-        int
-
-        """
-        return self._tot_threshold
-
-    @totThreshold.setter
-    def totThreshold(self, value):
-        self._tot_threshold = value
-        self._reconfigureCentroid()
-        if self.isRunning:
-            skip = self._tot_threshold
-            for p in self.getStage(4).processes:
-                p.totThreshold = skip
 
     @property
     def numBlobProcesses(self):
@@ -254,8 +153,6 @@ class CentroidPipeline(PixelPipeline):
 
         Setting this will spawn the appropriate number of processes to perform centroiding.
         Changes take effect on next acquisition.
-
-
         """
         return self.getStage(4).numProcess
 

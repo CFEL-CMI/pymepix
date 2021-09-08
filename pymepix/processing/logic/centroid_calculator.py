@@ -8,38 +8,72 @@ from pymepix.processing.logic.processing_step import ProcessingStep
 
 class CentroidCalculator(ProcessingStep):
 
-    def __init__(self, tot_threshold=0, epsilon=2, min_samples=5, chunk_size_limit=6_500, 
+    def __init__(self, tot_threshold=0, epsilon=2, min_samples=5, triggers_processed=1, chunk_size_limit=6_500, 
         cent_timewalk_lut=None):
 
         super().__init__("CentroidCalculator")
-        self._epsilon = epsilon
-        self._min_samples = min_samples
-        self._tof_scale = 1e7
-        self._tot_threshold = tot_threshold
-        self._cent_timewalk_lut = cent_timewalk_lut
-        self._chunk_size_limit = chunk_size_limit
+        self._epsilon = mp.Value('d', epsilon)
+        self._min_samples = mp.Value('i', min_samples)
+        self._tot_threshold = mp.Value('i', tot_threshold)
+        self._triggers_processed = mp.Value('i', triggers_processed)
 
-        self.removed_by_dbscan = 0
+        self._chunk_size_limit = chunk_size_limit
+        self._tof_scale = 1e7
+        self._cent_timewalk_lut = cent_timewalk_lut
+
+    @property
+    def epsilon(self):
+        return self._epsilon.value
+
+    @epsilon.setter
+    def epsilon(self, epsilon):
+        self._epsilon.value = epsilon
+
+    @property
+    def min_samples(self):
+        return self._min_samples.value
+
+    @min_samples.setter
+    def min_samples(self, min_samples):
+        self._min_samples.value = min_samples
+
+    @property
+    def tot_threshold(self):
+        """Determines which time over threshold values to filter before centroiding
+
+        This is useful in reducing the computational time in centroiding and can filter out
+        noise. """
+        return self._tot_threshold.value
+
+    @tot_threshold.setter
+    def tot_threshold(self, tot_threshold):
+        self._tot_threshold.value = tot_threshold
+
+    @property
+    def triggers_processed(self):
+        """ Setting for the number of packets skiped during processing. Every packet_skip packet is processed. 
+        This means for a value of 1 every packet is processed. For 2 only every 2nd packet is processed. """
+        return self._triggers_processed.value
+
+    @triggers_processed.setter
+    def triggers_processed(self, triggers_processed):
+        self._triggers_processed.value = triggers_processed
 
     def process(self, data):
         if data is not None:
-            shot, x, y, tof, tot = data
-
+            shot, x, y, tof, tot = self.__skip_triggers(*data)
             chunks = self.__divide_into_chunks(shot, x, y, tof, tot)
-            # chunks = [data]
             centroids_in_chunks = self.perform_centroiding(chunks)
 
             return self.__centroid_chunks_to_centroids(centroids_in_chunks)
         else:
             return None
 
-    def debug_condition(self, chunks, size):
-        sum = 0
-        found_triggers = []
-        for chunk in chunks:
-            sum += chunk[0].shape[0]
-            found_triggers += np.unique(chunk[0]).tolist()
-        return sum != size or np.all(np.unique(found_triggers, return_counts=True)[1] > 1)
+    def __skip_triggers(self, shot, x, y, tof, tot):
+        unique_shots = np.unique(shot)
+        selected_shots = unique_shots[::self.triggers_processed]
+        mask = np.isin(shot, selected_shots)
+        return shot[mask], x[mask], y[mask], tof[mask], tot[mask]
 
     def __divide_into_chunks(self, shot, x, y, tof, tot):
         # Reordering the voxels can have an impact on the clusterings result. See CentroidCalculator.perform_clustering string doc for further information!
@@ -86,7 +120,7 @@ class CentroidCalculator(ProcessingStep):
     def calculate_centroids(self, chunk):
         shot, x, y, tof, tot = chunk
 
-        tot_filter = tot > self._tot_threshold
+        tot_filter = tot > self.tot_threshold
         # Filter out pixels
         shot = shot[tot_filter]
         x = x[tot_filter]
@@ -97,8 +131,6 @@ class CentroidCalculator(ProcessingStep):
         labels = self.perform_clustering(shot, x, y, tof)
 
         label_filter = labels != 0
-
-        self.removed_by_dbscan += np.where(label_filter == False)[0].shape[0]
 
         if labels is not None and labels[label_filter].size > 0:
             return self.calculate_centroids_properties(
@@ -119,10 +151,10 @@ class CentroidCalculator(ProcessingStep):
             Martin Ester, Hans-Peter Kriegel, Jiirg Sander, Xiaowei Xu: A Density Based Algorith for Discovering Clusters [p. 229-230] (https://www.aaai.org/Papers/KDD/1996/KDD96-037.pdf)
             A more specific explaination can be found here: https://stats.stackexchange.com/questions/306829/why-is-dbscan-deterministic"""
         if x.size >= 0:
-            X = np.column_stack((shot * self._epsilon * 1_000, x, y, tof * self._tof_scale))
+            X = np.column_stack((shot * self.epsilon * 1_000, x, y, tof * self._tof_scale))
 
             dist = DBSCAN(
-                eps=self._epsilon, min_samples=self._min_samples, metric="euclidean", n_jobs=1
+                eps=self.epsilon, min_samples=self.min_samples, metric="euclidean", n_jobs=1
             ).fit(X)
 
             return dist.labels_ + 1
