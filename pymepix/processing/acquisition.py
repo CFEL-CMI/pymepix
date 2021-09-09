@@ -38,9 +38,7 @@ class PixelPipeline(AcquisitionPipeline):
     def __init__(self, data_queue, address, longtime, use_event=False, name="Pixel"):
         AcquisitionPipeline.__init__(self, name, data_queue)
         self.info("Initializing Pixel pipeline")
-        # TODO: Check event_window init value, which order should this be? Probably neet to change to 10_000 / 10e6
-        # Check also in PackatProcessor init method default value and adjust in processingconfig if required!!
-        self.packet_processor = PacketProcessor(handle_events=use_event, event_window=(0, 10000))
+        self.packet_processor = PacketProcessor(handle_events=use_event, event_window=(0, 1E-3))
 
         self.addStage(0, UdpSampler, address, longtime)
         self.addStage(2, PipelinePacketProcessor, num_processes=2)

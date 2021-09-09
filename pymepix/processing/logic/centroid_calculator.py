@@ -8,7 +8,7 @@ from pymepix.processing.logic.processing_step import ProcessingStep
 
 class CentroidCalculator(ProcessingStep):
 
-    def __init__(self, tot_threshold=0, epsilon=2, min_samples=5, triggers_processed=1, chunk_size_limit=6_500, 
+    def __init__(self, tot_threshold=0, epsilon=2, min_samples=3, triggers_processed=1, chunk_size_limit=6_500, 
         cent_timewalk_lut=None):
 
         super().__init__("CentroidCalculator")
