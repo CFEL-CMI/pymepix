@@ -1,4 +1,6 @@
 from enum import IntEnum
+from multiprocessing import Value
+from ctypes import c_bool
 
 import numpy as np
 from pymepix.core.log import Logger
@@ -24,8 +26,10 @@ class PacketProcessor(ProcessingStep):
                 orientation=PixelOrientation.Up, start_time=0, timewalk_lut=None):
     
         super().__init__("PacketProcessor")
-        self._handle_events = handle_events
-        self._min_window, self._max_window = event_window
+        self._handle_events = Value(c_bool, handle_events)
+        event_window_min, event_window_max = event_window
+        self._event_window_min = Value('d', event_window_min)
+        self._event_window_max = Value('d', event_window_max)
         self._orientation = orientation
         self._x_offset, self._y_offset = position_offset
         self._start_time =  start_time
@@ -34,6 +38,24 @@ class PacketProcessor(ProcessingStep):
         self._trigger_counter = 0
 
         self.clearBuffers()
+
+    @property
+    def event_window(self):
+        return (self._event_window_min.value, self._event_window_max.value)
+
+    @event_window.setter
+    def event_window(self, event_window):
+        event_window_min, event_window_max = event_window
+        self._event_window_min.value = event_window_min
+        self._event_window_max.value = event_window_max
+
+    @property
+    def handle_events(self):
+        return self._handle_events.value
+
+    @handle_events.setter
+    def handle_events(self, handle_events):
+        self._handle_events.value = handle_events
 
     def process(self, data):
         packet_view = memoryview(data)
@@ -59,13 +81,13 @@ class PacketProcessor(ProcessingStep):
                 if triggers.size > 0:
                     self.process_triggers(np.int64(triggers), longtime)
 
-                if self._handle_events:
+                if self.handle_events:
                     return self.find_events_fast()
 
         return None
 
     def pre_process(self):
-        self.info("Running with triggers? {}".format(self._handle_events))
+        self.info("Running with triggers? {}".format(self.handle_events))
 
     def post_process(self):
         return self.find_events_fast_post()
@@ -110,7 +132,7 @@ class PacketProcessor(ProcessingStep):
 
         m_trigTime = tdc_time
 
-        if self._handle_events:
+        if self.handle_events:
             if self._triggers is None:
                 self._triggers = m_trigTime
             else:
@@ -162,7 +184,7 @@ class PacketProcessor(ProcessingStep):
         # TODO: don't clatter queue with unnecessary stuff for now
         # self.pushOutput(MessageType.PixelData, (x, y, finalToA, ToT))
 
-        if self._handle_events:
+        if self.handle_events:
             if self._x is None:
                 self._x = x
                 self._y = y
@@ -236,7 +258,8 @@ class PacketProcessor(ProcessingStep):
                     tof = toa - start[event_mapping]
                     event_number = trigger_counter[event_mapping]
 
-                    exp_filter = (tof >= self._min_window) & (tof <= self._max_window)
+                    event_window_min, event_window_max = self.event_window
+                    exp_filter = (tof >= event_window_min) & (tof <= event_window_max)
 
                     result = (
                         event_number[exp_filter],

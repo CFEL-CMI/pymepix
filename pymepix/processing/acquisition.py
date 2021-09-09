@@ -38,86 +38,19 @@ class PixelPipeline(AcquisitionPipeline):
     def __init__(self, data_queue, address, longtime, use_event=False, name="Pixel"):
         AcquisitionPipeline.__init__(self, name, data_queue)
         self.info("Initializing Pixel pipeline")
-        self._use_events = use_event
-        self._event_window = (0, 10000)
+        # TODO: Check event_window init value, which order should this be? Probably neet to change to 10_000 / 10e6
+        # Check also in PackatProcessor init method default value and adjust in processingconfig if required!!
+        self.packet_processor = PacketProcessor(handle_events=use_event, event_window=(0, 10000))
 
         self.addStage(0, UdpSampler, address, longtime)
         self.addStage(2, PipelinePacketProcessor, num_processes=2)
         self._reconfigureProcessor()
 
     def _reconfigureProcessor(self):
-        self.debug(
-            "Configuring packet processor handle_events={} event_window={}".format(
-                self._use_events, self._event_window
-            )
-        )
         self.getStage(2).configureStage(
             PipelinePacketProcessor,
-            packet_processor=PacketProcessor(self._use_events, self._event_window)
+            packet_processor=self.packet_processor
         )
-
-    @property
-    def enableEvents(self):
-        """This either enables or disables TOF (Time of Flight) calculation
-
-        Enabling this will ask the packet processor to process both triggers and pixels
-        and compute time of flight rather than time of arrival. Changes take effect on the next
-        acquisition
-
-        Parameters
-        ------------
-        value : bool
-
-
-        Returns
-        ------------
-        bool
-
-        """
-        return self._use_events
-
-    @enableEvents.setter
-    def enableEvents(self, value):
-        self.info("Setting event to {}".format(value))
-        self._use_events = value
-        self._reconfigureProcessor()
-
-    @property
-    def eventWindow(self):
-        """In TOF mode (useEvents is true) the time window in seconds to output further down the pipeline
-
-        When in TOF mode, sets up the packet processor to only output events within a certain time window relative
-        to a trigger. Changes happen immediately.
-        For example to only consider events within a time window between 3 us and 8 us after the trigger do
-
-        >>> pixelpipeline.eventWindow = (3E-6,8E-6)
-
-
-
-        Parameters
-        ------------
-        value: :obj:`tuple` of 2 :obj:`float`
-            A tuple of two floats that represents the (min,max) time of flight window in seconds
-            This is useful to filter out a particular region
-
-
-        Returns
-        ----------
-        :obj:`tuple` of 2 floats
-            Currently set event window
-
-        """
-        return self._event_window
-
-    @eventWindow.setter
-    def eventWindow(self, value):
-        self._event_window = value
-        self._reconfigureProcessor()
-        if self.isRunning:
-            min_win, max_win = self._event_window
-            for p in self.getStage(2).processes:
-                p.minWindow = min_win
-                p.maxWindow = max_win
 
 
 class CentroidPipeline(PixelPipeline):
