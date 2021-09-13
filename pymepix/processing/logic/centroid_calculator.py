@@ -1,6 +1,7 @@
 import multiprocessing as mp
 
 import numpy as np
+from pymepix.processing.logic.processing_parameter import ProcessingParameter
 import scipy.ndimage as nd
 from sklearn.cluster import DBSCAN
 
@@ -9,13 +10,13 @@ from pymepix.processing.logic.processing_step import ProcessingStep
 class CentroidCalculator(ProcessingStep):
 
     def __init__(self, tot_threshold=0, epsilon=2, min_samples=3, triggers_processed=1, chunk_size_limit=6_500, 
-        cent_timewalk_lut=None):
+        cent_timewalk_lut=None, parameter_wrapper_class=ProcessingParameter):
 
         super().__init__("CentroidCalculator")
-        self._epsilon = mp.Value('d', epsilon)
-        self._min_samples = mp.Value('i', min_samples)
-        self._tot_threshold = mp.Value('i', tot_threshold)
-        self._triggers_processed = mp.Value('i', triggers_processed)
+        self._epsilon = parameter_wrapper_class(epsilon)
+        self._min_samples = parameter_wrapper_class(min_samples)
+        self._tot_threshold = parameter_wrapper_class(tot_threshold)
+        self._triggers_processed = parameter_wrapper_class(triggers_processed)
 
         self._chunk_size_limit = chunk_size_limit
         self._tof_scale = 1e7
