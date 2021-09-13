@@ -34,7 +34,8 @@ class RawFileSampler():
         output_file,
         number_of_processes=None,
         timewalk_file=None,
-        cent_timewalk_file=None
+        cent_timewalk_file=None,
+        progress_callback=None
     ):
         self._filename = file_name
         self._output_file = output_file
@@ -42,6 +43,7 @@ class RawFileSampler():
         self.cent_timewalk_file = cent_timewalk_file
 
         self._number_of_processes = number_of_processes
+        self._progress_callback = progress_callback
 
     def init_new_process(self, file, startTime=0):
         """create connections and initialize variables in new process"""
@@ -51,8 +53,6 @@ class RawFileSampler():
         self._longtime_lsb = 0
         self._packet_buffer = []
         self._last_longtime = 0
-        self._total_bytes = os.path.getsize(file)
-        self._read_bytes = 0
         timewalk_lut = None
         cent_timewalk_lut = None
         if self.timewalk_file is not None:
@@ -62,6 +62,7 @@ class RawFileSampler():
 
         self.packet_processor = PacketProcessor(start_time=startTime, timewalk_lut=timewalk_lut)
         self.centroid_calculator = CentroidCalculatorPooled(cent_timewalk_lut=cent_timewalk_lut)
+        # TODO: There was an error with the Pooled version!!!!
 
         self._startTime = startTime
 
@@ -92,19 +93,18 @@ class RawFileSampler():
         self._file.close()
 
     def bytes_from_file(self, chunksize=8192):
-        last_progress = 0
         print("Reading to memory", flush=True)
-        ba = np.fromfile(self._file, dtype="<u8")[:1_000_000]
+        ba = np.fromfile(self._file, dtype="<u8")
         print("Done", flush=True)
 
+        packets_to_process = len(ba)
+        packets_processed = 0
+
         for b in np.nditer(ba):
-            self._read_bytes += 8
-            progress = self._read_bytes * 100.0 / self._total_bytes
-            int_progress = int(progress)
-            if int_progress != 0 and int_progress % 5 == 0 and int_progress != last_progress:
-                print(f"Progress {progress:.1f} %", flush=True)
-                last_progress = int_progress
             yield b
+            packets_processed += 1
+            if self._progress_callback is not None:
+                self._progress_callback(packets_processed / packets_to_process)
 
     def handle_lsb_time(self, pixdata):
         self._longtime_lsb = (pixdata & 0x0000FFFFFFFF0000) >> 16
@@ -270,4 +270,3 @@ class RawFileSampler():
             self.push_data()
         
         self.post_run()
-        print(f'removed by dbscan: {self.centroid_calculator.removed_by_dbscan}')

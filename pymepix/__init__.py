@@ -21,3 +21,4 @@
 from pymepix.processing import MessageType
 from pymepix.pymepix_connection import PollBufferEmpty, PymepixConnection
 from pymepix.timepixdef import *
+from pymepix.post_processing import run_post_processing

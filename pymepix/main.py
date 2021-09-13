@@ -26,7 +26,7 @@ import logging
 import time
 
 import pymepix.config.load_config as cfg
-from pymepix.processing.rawfilesampler import RawFileSampler
+from pymepix.post_processing import run_post_processing
 
 from pymepix.processing.datatypes import MessageType
 from pymepix.pymepix_connection import PollBufferEmpty, PymepixConnection
@@ -106,14 +106,8 @@ def connect_timepix(args):
     pymepix.stop()
 
 def post_process(args):
-
-    file_sampler = RawFileSampler(args.file.name, args.output_file, args.number_of_processes, 
+    run_post_processing(args.file.name, args.output_file, args.number_of_processes, 
                                     args.timewalk_file, args.cent_timewalk_file)
-    start_time = time.time()
-    file_sampler.run()
-    stop_time = time.time()
-
-    print(f'took: {stop_time - start_time}s')
 
 def main():
 

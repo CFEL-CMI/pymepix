@@ -286,7 +286,7 @@ class PacketProcessor(ProcessingStep):
     def find_events_fast_post(self):
         """Call this function at the very end of to also have the last two trigger events processed"""
         # add an imaginary last trigger event after last pixel event for np.digitize to work
-        if self._toa is not None:
+        if self._toa is not None and self._toa.shape[0] > 0:
             self._triggers = np.concatenate(
                 (self._triggers, np.array([self._toa.max() + 1, self._toa.max() + 2]))
             )
