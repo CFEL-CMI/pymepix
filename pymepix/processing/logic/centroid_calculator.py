@@ -213,7 +213,7 @@ class CentroidCalculator(ProcessingStep):
 
 class CentroidCalculatorPooled(CentroidCalculator):
 
-    def __init__(self, number_of_processes=4, *args, **kwargs):
+    def __init__(self, number_of_processes=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._number_of_processes = number_of_processes
         

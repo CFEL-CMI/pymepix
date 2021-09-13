@@ -21,6 +21,7 @@
 """Processors relating to centroiding"""
 from pymepix.processing.datatypes import MessageType
 from pymepix.processing.logic.centroid_calculator import CentroidCalculator
+from pymepix.processing.logic.shared_processing_parameter import SharedProcessingParameter
 
 from .basepipeline import BasePipelineObject
 
@@ -30,7 +31,7 @@ class PipelineCentroidCalculator(BasePipelineObject):
 
     def __init__(
         self,
-        centroid_calculator: CentroidCalculator = CentroidCalculator(),
+        centroid_calculator: CentroidCalculator = CentroidCalculator(parameter_wrapper_class=SharedProcessingParameter),
         input_queue=None,
         create_output=True,
         num_outputs=1,
@@ -41,7 +42,7 @@ class PipelineCentroidCalculator(BasePipelineObject):
             input_queue=input_queue,
             create_output=create_output,
             num_outputs=num_outputs,
-            shared_output=shared_output,
+            shared_output=shared_output
         )
         self.centroid_calculator = centroid_calculator
 

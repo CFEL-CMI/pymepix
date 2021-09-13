@@ -1,9 +1,19 @@
 from multiprocessing import Value
 
-class SharedProcessingParameter:
+from pymepix.processing.logic.processing_parameter import ProcessingParameter
+
+class UnknownParameterTypeException(Exception):
+    pass
+
+class SharedProcessingParameter(ProcessingParameter):
 
     def __init__(self, value) :
-        super().__init__(Value(type(value), value))
+        if isinstance(value, int):
+            super().__init__(Value('i', value, lock=False))
+        elif isinstance(value, float):
+            super().__init__(Value('d', value, lock=False))
+        else:
+            raise UnknownParameterTypeException()
 
     @property
     def value(self):

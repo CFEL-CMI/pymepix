@@ -20,6 +20,7 @@
 
 from enum import IntEnum
 from pymepix.processing.datatypes import MessageType
+from pymepix.processing.logic.shared_processing_parameter import SharedProcessingParameter
 
 import zmq
 
@@ -35,7 +36,7 @@ class PipelinePacketProcessor(BasePipelineObject):
 
     def __init__(
         self,
-        packet_processor: PacketProcessor = PacketProcessor(),
+        packet_processor: PacketProcessor = PacketProcessor(parameter_wrapper_class=SharedProcessingParameter),
         input_queue=None,
         create_output=True,
         num_outputs=1,

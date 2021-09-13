@@ -52,6 +52,7 @@ class RawFileSampler():
         self._longtime_msb = 0
         self._longtime_lsb = 0
         self._packet_buffer = []
+        
         self._last_longtime = 0
         timewalk_lut = None
         cent_timewalk_lut = None
@@ -61,8 +62,7 @@ class RawFileSampler():
             cent_timewalk_lut = np.load(self.cent_timewalk_file)
 
         self.packet_processor = PacketProcessor(start_time=startTime, timewalk_lut=timewalk_lut)
-        self.centroid_calculator = CentroidCalculatorPooled(cent_timewalk_lut=cent_timewalk_lut)
-        # TODO: There was an error with the Pooled version!!!!
+        self.centroid_calculator = CentroidCalculator(cent_timewalk_lut=cent_timewalk_lut)
 
         self._startTime = startTime
 
