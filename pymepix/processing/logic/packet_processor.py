@@ -64,6 +64,7 @@ class PacketProcessor(ProcessingStep):
         # needs to be an integer or "(ltime >> 28) & 0x3" fails
         longtime = int(np.frombuffer(packet_view[-8:], dtype=np.uint64)[0])
 
+        event_data, pixel_data, timestamps = None, None, None
         if len(packet) > 0:
 
             header = ((packet & 0xF000000000000000) >> 60) & 0xF
@@ -77,15 +78,17 @@ class PacketProcessor(ProcessingStep):
             ]
 
             if pixels.size > 0:
-                self.process_pixels(np.int64(pixels), longtime)
+                pixel_data = self.process_pixels(np.int64(pixels), longtime)
 
                 if triggers.size > 0:
                     self.process_triggers(np.int64(triggers), longtime)
 
                 if self.handle_events:
-                    return self.find_events_fast()
+                    result = self.find_events_fast()
+                    if result is not None:
+                        event_data, timestamps = result
 
-        return None
+        return event_data, pixel_data, timestamps
 
     def pre_process(self):
         self.info("Running with triggers? {}".format(self.handle_events))
@@ -182,9 +185,6 @@ class PacketProcessor(ProcessingStep):
         x += self._x_offset
         y += self._y_offset
 
-        # TODO: don't clatter queue with unnecessary stuff for now
-        # self.pushOutput(MessageType.PixelData, (x, y, finalToA, ToT))
-
         if self.handle_events:
             if self._x is None:
                 self._x = x
@@ -196,6 +196,8 @@ class PacketProcessor(ProcessingStep):
                 self._y = np.append(self._y, y)
                 self._toa = np.append(self._toa, finalToA)
                 self._tot = np.append(self._tot, ToT)
+
+        return x, y, finalToA, ToT
 
     def correct_global_time(self, arr, ltime):
         pixelbits = (arr >> 28) & 0x3

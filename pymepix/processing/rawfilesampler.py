@@ -159,9 +159,9 @@ class RawFileSampler():
 
         return None
 
-    def __calculate_and_save_centroids(self, events, timestamps):
-        centroids = self.centroid_calculator.process(events)
-        self.saveToHDF5(self._output_file, events, centroids, timestamps)
+    def __calculate_and_save_centroids(self, event_data, _pixel_data, timestamps):
+        centroids = self.centroid_calculator.process(event_data)
+        self.saveToHDF5(self._output_file, event_data, centroids, timestamps)
 
     def saveToHDF5(self, output_file, raw, clusters, timeStamps):
         if output_file is not None:
