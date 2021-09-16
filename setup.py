@@ -37,7 +37,7 @@ requires = []
 
 install_requires = ["numpy", "sklearn", "pyyaml", "pyzmq", "pyserial", "h5py"]
 
-console_scripts = ["pymepix-acq=pymepix.pymepix:main"]
+console_scripts = ["pymepix-acq=pymepix.main:main"]
 
 entry_points = {"console_scripts": console_scripts}
 

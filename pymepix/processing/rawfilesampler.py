@@ -19,6 +19,7 @@
 # see <https://www.gnu.org/licenses/>.
 import time
 import os
+import struct
 
 import numpy as np
 import h5py
@@ -74,8 +75,6 @@ class RawFileSampler():
         except OSError:
             pass
 
-        self._file = open(self._filename, "rb")
-
         self.init_new_process(self._filename)
         self._last_update = time.time()
 
@@ -90,11 +89,11 @@ class RawFileSampler():
             self.__calculate_and_save_centroids(*result)
 
         self.centroid_calculator.post_process()
-        self._file.close()
 
     def bytes_from_file(self, chunksize=8192):
         print("Reading to memory", flush=True)
-        ba = np.fromfile(self._file, dtype="<u8")
+        with open(self._filename, 'rb') as file:
+            ba = np.fromfile(file, dtype="<u8")
         print("Done", flush=True)
 
         packets_to_process = len(ba)
@@ -219,7 +218,10 @@ class RawFileSampler():
 
                 ###############
                 # save time stamp data
-                if self._startTime is not None:
+                with open(self._filename, 'rb') as file:
+                    startTime = struct.unpack("L", file.read(8))[0]
+                
+                if startTime is not None:
                     names = ["trigger nr", "timestamp"]
                     if f.keys().__contains__("timing/timepix"):
                         for i, key in enumerate(names):
