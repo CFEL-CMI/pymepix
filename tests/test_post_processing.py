@@ -4,9 +4,9 @@ import h5py
 from pymepix.processing.rawfilesampler import RawFileSampler
 
 
-def test_run_17_no_time_walk_correction():
-    tmp_file_name = "tmp_run_0017_20191211-0013.hdf5"
-    file_sampler = RawFileSampler("run_0017_20191211-0013.raw", tmp_file_name)
+def test_converted_hdf5():
+    tmp_file_name = "run_0685_20191217-1533-new.hdf5"
+    file_sampler = RawFileSampler("run_0685_20191217-1533.raw", tmp_file_name)
     file_sampler.run()
 
     with h5py.File(tmp_file_name) as new_file:
@@ -18,7 +18,7 @@ def test_run_17_no_time_walk_correction():
         # for the processing in chunks. This is required as the DBSCAN algorithm can be non-deterministic regarding the order in some rare scenarios.
         # Martin Ester, Hans-Peter Kriegel, Jiirg Sander, Xiaowei Xu: A Density Based Algorith for Discovering Clusters [p. 229-230] (https://www.aaai.org/Papers/KDD/1996/KDD96-037.pdf)
         # https://stats.stackexchange.com/questions/306829/why-is-dbscan-deterministic
-        with h5py.File('run_0017_20191211-0013.hdf5') as old_file:
+        with h5py.File('run_0685_20191217-1533.hdf5') as old_file:
             order_new, order_old = new_file['centroided/x'][:].argsort(), old_file['centroided/x'][:].argsort()
             shot_new, shot_old = new_file['centroided/trigger nr'][:][order_new], old_file['centroided/trigger nr'][:][order_old]
             x_new, x_old = new_file['centroided/x'][:][order_new], old_file['centroided/x'][:][order_old]

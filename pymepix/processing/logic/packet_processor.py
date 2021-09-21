@@ -293,4 +293,10 @@ class PacketProcessor(ProcessingStep):
             self._triggers = np.concatenate(
                 (self._triggers, np.array([self._toa.max() + 1, self._toa.max() + 2]))
             )
-        return self.find_events_fast()
+
+        event_data, timestamps = None, None
+        result = self.find_events_fast()
+        if result is not None:
+            event_data, timestamps = result
+
+        return event_data, None, timestamps

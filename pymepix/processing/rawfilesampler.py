@@ -46,8 +46,11 @@ class RawFileSampler():
         self._number_of_processes = number_of_processes
         self._progress_callback = progress_callback
 
-    def init_new_process(self, file, startTime=0):
+    def init_new_process(self, file):
         """create connections and initialize variables in new process"""
+        self._startTime = None
+        with open(self._filename, 'rb') as file:
+            self._startTime = struct.unpack("L", file.read(8))[0]
 
         self._longtime = -1
         self._longtime_msb = 0
@@ -62,10 +65,8 @@ class RawFileSampler():
         if self.cent_timewalk_file is not None:
             cent_timewalk_lut = np.load(self.cent_timewalk_file)
 
-        self.packet_processor = PacketProcessor(start_time=startTime, timewalk_lut=timewalk_lut)
+        self.packet_processor = PacketProcessor(start_time=self._startTime, timewalk_lut=timewalk_lut)
         self.centroid_calculator = CentroidCalculator(cent_timewalk_lut=cent_timewalk_lut)
-
-        self._startTime = startTime
 
     def pre_run(self):
         """init stuff which should only be available in new process"""
@@ -217,11 +218,8 @@ class RawFileSampler():
                     f["raw/y"].attrs["unit"] = "pixel"
 
                 ###############
-                # save time stamp data
-                with open(self._filename, 'rb') as file:
-                    startTime = struct.unpack("L", file.read(8))[0]
-                
-                if startTime is not None:
+                # save time stamp data                
+                if self._startTime is not None:
                     names = ["trigger nr", "timestamp"]
                     if f.keys().__contains__("timing/timepix"):
                         for i, key in enumerate(names):
