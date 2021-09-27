@@ -4,3 +4,4 @@ pyzmq
 h5py
 pyyaml
 pyserial
+tqdm
