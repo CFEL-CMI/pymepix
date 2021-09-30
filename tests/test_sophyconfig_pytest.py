@@ -3,7 +3,7 @@ import threading
 
 import numpy as np
 
-from pymepix import Pymepix
+from pymepix.pymepix_connection import PymepixConnection
 from pymepix.config.sophyconfig import SophyConfig
 from pymepix.SPIDR.spidrcmds import SpidrCmds
 from pymepix.timepixdef import DacRegisterCodes
@@ -173,7 +173,7 @@ def test_send_config():
     server_thread.start()
     ip, port = server.server_address
 
-    tpx = Pymepix((ip, port))
+    tpx = PymepixConnection((ip, port))
     tpx[0].loadConfig(CONFIG_PATH)
 
     shutdown_event.set()

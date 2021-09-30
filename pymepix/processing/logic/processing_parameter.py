@@ -18,7 +18,15 @@
 # You should have received a copy of the GNU General Public License along with this program. If not,
 # see <https://www.gnu.org/licenses/>.
 
-from pymepix.processing import MessageType
-from pymepix.pymepix_connection import PollBufferEmpty, PymepixConnection
-from pymepix.timepixdef import *
-from pymepix.post_processing import run_post_processing
+class ProcessingParameter:
+
+    def __init__(self, value) :
+        self._value = value
+
+    @property
+    def value(self):
+        return self._value
+
+    @value.setter
+    def value(self, value):
+        self._value = value

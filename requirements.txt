@@ -1,6 +1,8 @@
+# This is only used for github actions. 
 numpy
 scikit-learn
 pyzmq
 h5py
 pyyaml
 pyserial
+tqdm

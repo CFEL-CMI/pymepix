@@ -201,11 +201,8 @@ class BasePipelineObject(multiprocessing.Process, ProcessLogger):
                 self.error(traceback.format_exc())
                 break
         output_type, result = self.post_run()
-        if (
-            output_type is not None and result is not None
-        ):  # TODO: not quite sure what happens without "enabled"
+        if output_type is not None and result is not None:
             self.pushOutput(output_type, result)
-        # print(f'iterations {self.loop_count}')
 
         self.info("Job complete")
 
