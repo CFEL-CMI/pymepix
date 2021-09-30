@@ -22,7 +22,7 @@ Outputs the help::
     positional arguments:
         {connect,post-process}
          connect             Connect to TimePix camera and acquire data.
-         post-process        Perform post-processing with a acquired raw data file.
+         post-process        Perform post-processing for an acquired raw data file.
 
     optional arguments:
         -h, --help            show this help message and exit
