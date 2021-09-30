@@ -1,3 +1,22 @@
+# This file is part of Pymepix
+#
+# In all scientific work using Pymepix, please reference it as
+#
+# A. F. Al-Refaie, M. Johny, J. Correa, D. Pennicard, P. Svihra, A. Nomerotski, S. Trippel, and J. Küpper:
+# "PymePix: a python library for SPIDR readout of Timepix3", J. Inst. 14, P10003 (2019)
+# https://doi.org/10.1088/1748-0221/14/10/P10003
+# https://arxiv.org/abs/1905.07999
+#
+# Pymepix is free software: you can redistribute it and/or modify it under the terms of the GNU
+# General Public License as published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+# even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with this program. If not,
+# see <https://www.gnu.org/licenses/>.
 from enum import IntEnum
 from multiprocessing import Value
 from ctypes import c_bool
@@ -23,6 +42,31 @@ class PixelOrientation(IntEnum):
 
 
 class PacketProcessor(ProcessingStep):
+    """ Class reposnsible to transform the raw data coming from the timepix directly into an easier 
+    processible data format. Takes into account the pixel- and trigger data to calculate toa and tof
+    dimensions.
+
+    Attributes
+    ----------
+    handle_events : boolean
+        Calculate events (tof) only if handle_events is True. Otherwise only pixel-data (toa only) is provided.
+    event_window : (float, float)
+        The range of tof, used for processing data. Information/ data outside of this range is discarded.
+    min_samples : (float, float)
+        Offset/ shift of x- and y-position
+    orientation : int
+    start_time : int
+    timewalk_lut
+        Data for correction of the time-walk
+    parameter_wrapper_classe : ProcessingParameter
+        Class used to wrap the processing parameters to make them changable while processing is running (useful for online optimization)
+
+    Methods
+    -------
+    process(data):
+        Process data and return the result. To use this class only this method should be used! Use the other methods only for testing or 
+        if you are sure about what you are doing
+    """
     def __init__(self, handle_events=True, event_window=(0.0, 10000.0), position_offset=(0, 0), 
                 orientation=PixelOrientation.Up, start_time=0, timewalk_lut=None, parameter_wrapper_class=ProcessingParameter):
     

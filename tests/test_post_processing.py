@@ -5,6 +5,15 @@ import os
 
 from pymepix.processing.rawfilesampler import RawFileSampler
 
+"""Perform the calculation of centroids (post-processing) for a complete, real-world dataset.
+The result is verified against data processed with the previously, internally used RawConverter. 
+The results of the RawConverter are therefore assumed to be absolute Truth. 
+
+If changes are expected due to adjustments in Clustering or Centroiding, the ground truth data has
+to be replaced or adjusted! If there are issues with this test do not assume the code to be wrong in any case
+as this test is only based on the RawConverters results. Different results are not necessarily bad! But check 
+your results very carefully if they differ!"""
+
 
 def test_converted_hdf5():
     folder_path = pathlib.Path(__file__).parent / "files"

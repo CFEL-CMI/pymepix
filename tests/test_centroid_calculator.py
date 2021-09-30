@@ -2,6 +2,13 @@ import numpy as np
 
 from pymepix.processing.logic.centroid_calculator import CentroidCalculator
 
+"""
+The purpose of this test is the validation of the implemented calculation of centroids. The implemented 
+centroiding consists of slightly more functionality than DBSCAN + calculation of centroids. In addition 
+the data is split into chunks to optimise the performance of DBSCAN. The following tests have the purpose to
+verify this splitting procedure.
+"""
+
 def test_calculate_centroid_properties_1():
     centroid_calculator = CentroidCalculator()
     shot = np.array([1, 1, 1, 1, 1])
@@ -45,11 +52,7 @@ def test_divide_into_chunks_1():
 
     data = [3, 1, 2, 4, 5, 6]
 
-    shot = np.repeat(data, factor)
-    x = np.repeat(data, factor)
-    y = np.repeat(data, factor)
-    tof = np.repeat(data, factor)
-    tot = np.repeat(data, factor)
+    shot, x, y, tof, tot = __create_timepix_data(data, factor)
 
     chunks = centroid_calculator._CentroidCalculator__divide_into_chunks(shot, x, y, tof, tot)
 
@@ -61,12 +64,7 @@ def test_divide_into_chunks_2():
     centroid_calculator = CentroidCalculator()
 
     factor = 1
-
-    shot = np.repeat([1, 2], factor)
-    x = np.repeat([1, 2], factor)
-    y = np.repeat([1, 2], factor)
-    tof = np.repeat([1, 2], factor)
-    tot = np.repeat([1, 2], factor)
+    shot, x, y, tof, tot = __create_timepix_data([1, 2], factor)
 
     np.testing.assert_array_equal([1, 2],
         centroid_calculator._CentroidCalculator__divide_into_chunks(shot, x, y, tof, tot)[0][1])
@@ -75,12 +73,7 @@ def test_divide_into_chunks_3():
     centroid_calculator = CentroidCalculator()
 
     factor = 1
-
-    shot = np.repeat([1, 2], factor)
-    x = np.repeat([1, 2], factor)
-    y = np.repeat([1, 2], factor)
-    tof = np.repeat([1, 2], factor)
-    tot = np.repeat([1, 2], factor)
+    shot, x, y, tof, tot = __create_timepix_data([1, 2], factor)
 
     chunks = centroid_calculator._CentroidCalculator__divide_into_chunks(shot, x, y, tof, tot)
     sum = 0
@@ -99,11 +92,7 @@ def test_divide_into_chunks_4():
 
     data = [3, 1, 2, 4, 5, 6, 4, 4, 4]
 
-    shot = np.repeat(data, factor)
-    x = np.repeat(data, factor)
-    y = np.repeat(data, factor)
-    tof = np.repeat(data, factor)
-    tot = np.repeat(data, factor)
+    shot, x, y, tof, tot = __create_timepix_data(data, factor)
 
     chunks = centroid_calculator._CentroidCalculator__divide_into_chunks(shot, x, y, tof, tot)
     sum = 0
@@ -122,11 +111,7 @@ def test_divide_into_chunks_5():
 
     data = [3, 1, 2, 4, 5, 6, 1, 1]
 
-    shot = np.repeat(data, factor)
-    x = np.repeat(data, factor)
-    y = np.repeat(data, factor)
-    tof = np.repeat(data, factor)
-    tot = np.repeat(data, factor)
+    shot, x, y, tof, tot = __create_timepix_data(data, factor)
 
     chunks = centroid_calculator._CentroidCalculator__divide_into_chunks(shot, x, y, tof, tot)
     sum = 0
@@ -144,12 +129,7 @@ def test_divide_into_chunks_6():
     factor = 1
 
     data = range(0, 10_000)
-
-    shot = np.repeat(data, factor)
-    x = np.repeat(data, factor)
-    y = np.repeat(data, factor)
-    tof = np.repeat(data, factor)
-    tot = np.repeat(data, factor)
+    shot, x, y, tof, tot = __create_timepix_data(data, factor)
 
     chunks = centroid_calculator._CentroidCalculator__divide_into_chunks(shot, x, y, tof, tot)
     sum = 0
@@ -175,3 +155,11 @@ def test_process():
 def assertCentroidsEqual(expected, actual):
     for i in range(len(expected)):
         np.testing.assert_array_equal(expected[i], actual[i])
+
+def __create_timepix_data(data, factor):
+    shot = np.repeat(data, factor)
+    x = np.repeat(data, factor)
+    y = np.repeat(data, factor)
+    tof = np.repeat(data, factor)
+    tot = np.repeat(data, factor)
+    return shot, x, y, tof, tot

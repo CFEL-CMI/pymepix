@@ -196,30 +196,31 @@ class RawFileSampler():
 
                 ###############
                 # save raw data
-                names = ["trigger nr", "x", "y", "tof", "tot"]
-                if f.keys().__contains__("raw"):
-                    for i, key in enumerate(names):
-                        dset = f["raw"][key]
-                        dset.resize(dset.shape[0] + len(raw[i]), axis=0)
-                        dset[-len(raw[i]) :] = raw[i]
-                else:
-                    grp = f.create_group("raw")
-                    grp.attrs["description"] = "timewalk correted raw events"
-                    grp.attrs["nr events"] = 0
-                    grp.create_dataset("trigger nr", data=raw[0].astype(np.uint64), maxshape=(None,))
-                    grp.create_dataset("x", data=raw[1].astype(np.uint8), maxshape=(None,))
-                    grp.create_dataset("y", data=raw[2].astype(np.uint8), maxshape=(None,))
-                    grp.create_dataset("tof", data=raw[3], maxshape=(None,))
-                    grp.create_dataset("tot", data=raw[4].astype(np.uint32), maxshape=(None,))
+                if raw is not None:
+                    names = ["trigger nr", "x", "y", "tof", "tot"]
+                    if f.keys().__contains__("raw"):
+                        for i, key in enumerate(names):
+                            dset = f["raw"][key]
+                            dset.resize(dset.shape[0] + len(raw[i]), axis=0)
+                            dset[-len(raw[i]) :] = raw[i]
+                    else:
+                        grp = f.create_group("raw")
+                        grp.attrs["description"] = "timewalk correted raw events"
+                        grp.attrs["nr events"] = 0
+                        grp.create_dataset("trigger nr", data=raw[0].astype(np.uint64), maxshape=(None,))
+                        grp.create_dataset("x", data=raw[1].astype(np.uint8), maxshape=(None,))
+                        grp.create_dataset("y", data=raw[2].astype(np.uint8), maxshape=(None,))
+                        grp.create_dataset("tof", data=raw[3], maxshape=(None,))
+                        grp.create_dataset("tot", data=raw[4].astype(np.uint32), maxshape=(None,))
 
-                    f["raw/tof"].attrs["unit"] = "s"
-                    f["raw/tot"].attrs["unit"] = "s"
-                    f["raw/x"].attrs["unit"] = "pixel"
-                    f["raw/y"].attrs["unit"] = "pixel"
+                        f["raw/tof"].attrs["unit"] = "s"
+                        f["raw/tot"].attrs["unit"] = "s"
+                        f["raw/x"].attrs["unit"] = "pixel"
+                        f["raw/y"].attrs["unit"] = "pixel"
 
                 ###############
                 # save time stamp data                
-                if self._startTime is not None:
+                if timeStamps is not None and self._startTime is not None:
                     names = ["trigger nr", "timestamp"]
                     if f.keys().__contains__("timing/timepix"):
                         for i, key in enumerate(names):

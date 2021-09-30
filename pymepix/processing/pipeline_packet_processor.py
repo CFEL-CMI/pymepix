@@ -54,7 +54,6 @@ class PipelinePacketProcessor(BasePipelineObject):
         self.packet_processor = packet_processor
 
     def init_new_process(self):
-        """create connections and initialize variables in new process"""
         self.debug("create ZMQ socket")
         ctx = zmq.Context.instance()
         self._packet_sock = ctx.socket(zmq.PULL)

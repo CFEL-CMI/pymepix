@@ -28,9 +28,7 @@ import time
 import pymepix.config.load_config as cfg
 from pymepix.post_processing import run_post_processing
 
-from pymepix.processing.datatypes import MessageType
 from pymepix.pymepix_connection import PollBufferEmpty, PymepixConnection
-from pymepix.util.storage import open_output_file, store_raw, store_toa, store_tof
 
 logging.basicConfig(
     level=logging.INFO,
@@ -58,19 +56,6 @@ def connect_timepix(args):
     # Set the bias voltage
     pymepix.biasVoltage = args.bias
 
-    ext = "raw"
-    if args.decode:
-        logging.info("Decoding data enabled")
-        if args.tof:
-            logging.info("Tof calculation enabled")
-            ext = "tof"
-        else:
-            ext = "toa"
-    else:
-        logging.info("No decoding selected")
-
-    output_file = open_output_file(args.output, ext)
-
     total_time = args.time
 
     # self._timepix._spidr.resetTimers()
@@ -93,15 +78,6 @@ def connect_timepix(args):
         except PollBufferEmpty:
             continue
         logging.debug("Datatype: {} Data:{}".format(data_type, data))
-        if data_type is MessageType.RawData:
-            if not args.decode:
-                store_raw(output_file, data)
-        elif data_type is MessageType.PixelData:
-            if args.decode and not args.tof:
-                store_toa(output_file, data)
-        elif data_type is MessageType.PixelData:
-            if args.decode and args.tof:
-                store_tof(output_file, data)
 
     pymepix.stop()
 

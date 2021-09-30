@@ -35,10 +35,13 @@ class PixelPipeline(AcquisitionPipeline):
     This class can be used as a base for all acqusition pipelines.
     """
 
-    def __init__(self, data_queue, address, longtime, use_event=False, name="Pixel"):
+    def __init__(self, data_queue, address, longtime, use_event=False, name="Pixel", event_window=(0, 1E-3)):
+        """ 
+        Parameters:
+        use_event (boolean): If packets are forwarded to the centroiding. If True centroids are calculated."""
         AcquisitionPipeline.__init__(self, name, data_queue)
         self.info("Initializing Pixel pipeline")
-        self.packet_processor = PacketProcessor(handle_events=use_event, event_window=(0, 1E-3))
+        self.packet_processor = PacketProcessor(handle_events=use_event, event_window=event_window)
 
         self.addStage(0, UdpSampler, address, longtime)
         self.addStage(2, PipelinePacketProcessor, num_processes=2)
@@ -56,8 +59,6 @@ class CentroidPipeline(PixelPipeline):
 
     Same as the pixel pipeline but also includes centroid processing, note that this can be extremely slow
     when dealing with a huge number of objects
-
-
     """
 
     def __init__(self, data_queue, address, longtime):
