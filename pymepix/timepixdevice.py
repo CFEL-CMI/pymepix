@@ -38,11 +38,7 @@ class BadPixelFormat(Exception):
 
 
 class TimepixDevice(Logger):
-    """ Provides high level control of a timepix/medipix object
-
-
-
-    """
+    """ Provides high level control of a timepix/medipix object """
 
     def update_timer(self):
         """Heartbeat thread"""
@@ -87,8 +83,6 @@ class TimepixDevice(Logger):
         self._run_timer = True
         self._pause_timer = False
 
-        self._config_class = SophyConfig
-
         self.setEthernetFilter(0xFFFF)
 
         # Start the timer thread
@@ -97,6 +91,10 @@ class TimepixDevice(Logger):
         self._timer_thread.start()
         self.pauseHeartbeat()
         self._acq_running = False
+
+    @property
+    def config(self):
+        return self.__config
 
     def setupAcquisition(self, acquisition_klass, *args, **kwargs):
         self.info("Setting up acquisition class")
@@ -109,36 +107,32 @@ class TimepixDevice(Logger):
         self.loadConfig()
         self.setConfigClass(SophyConfig)
 
-    def setConfigClass(self, klass):
+    def setConfigClass(self, klass: TimepixConfig):
         if issubclass(klass, TimepixConfig):
             self._config_class = klass
         else:
             raise ConfigClassException
 
     def loadConfig(self, *args, **kwargs):
-        """
-        Loads dac settings from the Config class
-        """
+        """ Loads dac settings from the Config class """
 
-        config = self._config_class(*args, **kwargs)
+        self.__config = self._config_class(*args, **kwargs)
 
-        for code, value in config.dacCodes():
+        for code, value in self.__config.dacCodes():
             self.info("Setting DAC {},{}".format(code, value))
             self.setDac(code, value)
-            # time.sleep(0.5)
 
-        if config.thresholdPixels() is not None:
-            self.pixelThreshold = config.thresholdPixels()
+        if self.__config.thresholdPixels is not None:
+            self.pixelThreshold = self.__config.thresholdPixels
 
-        if config.maskPixels() is not None:
-            self.pixelMask = config.maskPixels()
+        if self.__config.maskPixels is not None:
+            self.pixelMask = self.__config.maskPixels
 
-        if config.testPixels() is not None:
-            self.pixelTest = config.maskPixels()
+        if self.__config.testPixels is not None:
+            self.pixelTest = self.__config.testPixels
 
         self.uploadPixels()
         self.refreshPixels()
-        # print(self.pixelThreshold)
 
     def setupDevice(self):
         """

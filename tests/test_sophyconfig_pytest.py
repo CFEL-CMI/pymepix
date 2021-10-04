@@ -1,6 +1,9 @@
+import os
 import socketserver
 import threading
-
+import shutil
+import pathlib
+import os
 import numpy as np
 
 from pymepix import Pymepix
@@ -9,7 +12,9 @@ from pymepix.SPIDR.spidrcmds import SpidrCmds
 from pymepix.timepixdef import DacRegisterCodes
 from pymepix.util.spidrDummyTCP import TPX3Handler
 
-CONFIG_PATH = "test_assets/test_config_W0028_H06_50V.spx"
+path = pathlib.Path(__file__).parent
+
+CONFIG_PATH = path / "test_assets/test_config_W0028_H06_50V.spx"
 ADDRESS = ("192.168.1.10", 50000)
 
 
@@ -78,7 +83,7 @@ def test_read_config():
 def test_pixelmask():
     """Check whether the pixelmask is in an appropriate format"""
     spx = SophyConfig(CONFIG_PATH)
-    mask = spx.maskPixels()
+    mask = spx.maskPixels
     test = spx.testPixels()
     thresh = spx.thresholdPixels()
 
@@ -90,6 +95,22 @@ def test_pixelmask():
     # there should be more open pixels than masked ones
     assert np.count_nonzero(mask == 0) > np.count_nonzero(mask == 1)
 
+def test_save_pixelmask():
+    tmp_filename = CONFIG_PATH.with_suffix('.tmp')
+    shutil.copyfile(CONFIG_PATH, tmp_filename)
+    spx = SophyConfig(tmp_filename)
+    mask = spx.maskPixels
+
+    mask[0, 0] = 1
+    spx.maskPixels = mask
+
+    spx.saveMask()
+
+    new_spx = SophyConfig(tmp_filename)
+    new_mask = new_spx.maskPixels
+    os.remove(tmp_filename)
+
+    assert np.array_equal(mask, new_mask)
 
 class TestTPX3Handler(TPX3Handler):
     """The handler class for a socketserver to capture and evaluate the config packets from pymepix
@@ -181,6 +202,7 @@ def test_send_config():
 
 
 if __name__ == "__main__":
-    test_read_config()
-    test_pixelmask()
-    test_send_config()
+    #test_read_config()
+    #test_pixelmask()
+    #test_send_config()
+    test_save_pixelmask()

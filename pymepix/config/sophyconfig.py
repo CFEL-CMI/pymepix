@@ -20,16 +20,22 @@
 
 import xml.etree.ElementTree as et
 import zipfile
+import os
+import tempfile
 
 import numpy as np
+from pymepix.core.log import Logger
 
 from .timepixconfig import TimepixConfig
 
 
-class SophyConfig(TimepixConfig):
+class SophyConfig(TimepixConfig, Logger):
     """This class provides functionality for interpreting a .spx config file from SoPhy."""
 
     def __init__(self, filename):
+        Logger.__init__(self, SophyConfig.__name__)
+        self.__filename = filename
+
         self._dac_codes = {
             "Ibias_Preamp_ON": 1,
             "Ibias_Preamp_OFF": 2,
@@ -71,7 +77,7 @@ class SophyConfig(TimepixConfig):
             "Ibias_CP_PLL": 128,
             "PLL_Vcntrl": 128,
         }
-        self.loadFile(filename)
+        self.loadFile(self.__filename)
 
     def loadFile(self, filename):
         spx = zipfile.ZipFile(filename)
@@ -81,6 +87,45 @@ class SophyConfig(TimepixConfig):
         self.parseDAC(xml_string)
 
         self.parsePixelConfig(spx, names[-3:])
+
+    def saveMask(self):
+        old_file = zipfile.ZipFile(self.__filename, mode='r')
+        
+        names = old_file.namelist()
+        mask_filename = names[-3]
+
+        buffer = old_file.read(mask_filename)
+        buffer_header = buffer[:27]
+
+        new_buffer = buffer_header + SophyConfig.__transform_to_bytes(self._mask)
+
+        SophyConfig.__replace_in_zip(self.__filename, mask_filename, new_buffer)
+
+    @staticmethod
+    def __transform_to_bytes(mask):
+        return mask.copy().transpose().flatten().tobytes()
+
+    @staticmethod
+    def __transform_from_bytes(bytes):
+        return np.frombuffer(bytes, dtype=np.int16).reshape(256, 256).transpose().copy()
+
+    @staticmethod
+    def __replace_in_zip(zip_filename, filename_to_replace, data_to_replace):
+
+        tmpfd, tmpname = tempfile.mkstemp(dir=os.path.dirname(zip_filename))
+        os.close(tmpfd)
+        
+        with zipfile.ZipFile(zip_filename, mode='r') as zin:
+            with zipfile.ZipFile(tmpname, mode='w') as zout:
+                for name in zin.namelist():
+                    if name != filename_to_replace:
+                        zout.writestr(name, zin.read(name))
+                    else:
+                        zout.writestr(filename_to_replace, data_to_replace)
+
+         # replace with the temp archive
+        os.remove(zip_filename)
+        os.rename(tmpname, zip_filename)
 
     def parseDAC(self, xmlstring):
         """Reads and formats DAC parameters"""
@@ -99,7 +144,7 @@ class SophyConfig(TimepixConfig):
             dac_value = int(data.items()[-1][-1])
 
             self._dac_values[dac_key] = dac_value
-        print(f"DAC Codes: {type(self.dacCodes())} \n{self.dacCodes()}")
+        self.debug(f"DAC Codes: {type(self.dacCodes())} \n{self.dacCodes()}")
 
     def dacCodes(self):
         """Accessor for the dac parameters
@@ -132,9 +177,7 @@ class SophyConfig(TimepixConfig):
         The spx config file saves the pixel information row by row while
         the timepix camera expects the information column wise."""
         buffer = zip_file.read(file_names[0])
-        self._mask = np.fliplr(
-            np.frombuffer(buffer[27:], dtype=np.int16).reshape(256, 256).transpose()
-        ).copy()
+        self._mask = SophyConfig.__transform_from_bytes(buffer[27:])
         buffer = zip_file.read(file_names[1])
         self._test = np.fliplr(
             np.frombuffer(buffer[27:], dtype=np.int16).reshape(256, 256).transpose()
@@ -147,6 +190,7 @@ class SophyConfig(TimepixConfig):
             .transpose()
         )
 
+    @property
     def maskPixels(self):
         """Accessor for the mask pixels [0, 1]
 
@@ -155,7 +199,12 @@ class SophyConfig(TimepixConfig):
         :obj:`numpy.ndarray` (256, 256)
             The information which pixels are to be masked"""
         return 1 - (self._mask // 256)
+    
+    @maskPixels.setter
+    def maskPixels(self, mask_pixels):
+        self._mask = (1 - mask_pixels) * 256
 
+    @property
     def testPixels(self):
         """Accessor for the test pixels
 
@@ -164,6 +213,7 @@ class SophyConfig(TimepixConfig):
         :obj:`numpy.ndarray` (256, 256)"""
         return self._test
 
+    @property
     def thresholdPixels(self):
         """Accessor for the pixel thresholds [0, 15]
 

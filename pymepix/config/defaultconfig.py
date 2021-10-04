@@ -24,8 +24,9 @@ from .timepixconfig import TimepixConfig
 class DefaultConfig(TimepixConfig):
     """Provides default values for DAC parameters"""
 
-    def __init__(self):
-        pass
+    def biasVoltage(self):
+        """Returns bias Voltage"""
+        return None
 
     def dacCodes(self):
         """Accessor for the dac parameters
@@ -55,3 +56,18 @@ class DefaultConfig(TimepixConfig):
             (18, 128),
         ]  # TPX3_PLL_VCNTRL       [0-   ]
         return codes
+    
+    @property
+    def maskPixels(self):
+        """Returns mask pixels"""
+        return None
+
+    @property
+    def testPixels(self):
+        """Returns test pixels"""
+        return None
+
+    @property
+    def thresholdPixels(self):
+        """Returns threshold pixels"""
+        return None

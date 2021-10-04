@@ -19,26 +19,38 @@
 # see <https://www.gnu.org/licenses/>.
 
 
-class TimepixConfig(object):
+from abc import ABC, abstractmethod
+
+
+class TimepixConfig(ABC):
+
     def __init__(self):
         pass
 
+    @abstractmethod
     def biasVoltage(self):
         """Returns bias Voltage"""
         pass
 
+    @abstractmethod
     def dacCodes(self):
         """ Returns an iterator with format daccode,value"""
         pass
-
+    
+    @property
+    @abstractmethod
     def maskPixels(self):
         """Returns mask pixels"""
         pass
 
+    @property
+    @abstractmethod
     def testPixels(self):
         """Returns test pixels"""
         pass
 
+    @property
+    @abstractmethod
     def thresholdPixels(self):
         """Returns threshold pixels"""
         pass
