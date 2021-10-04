@@ -117,7 +117,7 @@ class Raw2Disk(ProcessLogger):
                     filename = cmd
                     files = np.sort(glob.glob(f"{filename}*.raw"))
                     if len(files) > 0:
-                        index = int(files[-1].split("_")[1]) + 1
+                        index = int(files[-1].split("_")[-2]) + 1
                     else:
                         index = 0
                     raw_filename = (

@@ -19,12 +19,11 @@
 # see <https://www.gnu.org/licenses/>.
 
 
+from abc import abstractmethod
 import logging
-import threading
-from multiprocessing import Queue
+import multiprocessing as mp
 
 __all__ = ["Logger", "ProcessLogger"]
-
 
 class PymepixLogger(object):
     """Base class for logging in pymepix
@@ -41,91 +40,19 @@ class PymepixLogger(object):
 
     """
 
-    _proc_log_queue = Queue()
-
-    _init = False
-
-    @classmethod
-    def getLogQueue(cls):
-        """Provides logging queue for multiprocessing logging
-
-        Returns
-        --------
-        :obj:`multiprocessing.Queue`
-            Queue where logs should go
-
-        """
-        return cls._proc_log_queue
-
-    @classmethod
-    def _logging_thread(cls):
-        """This thread collects logs from Processes and writes them to stream"""
-
-        thread_log = PymepixLogger.getLogger("log_thread")
-        log_queue = cls.getLogQueue()
-
-        thread_log.info("Starting Multiprocess logging")
-        while True:
-            name, log_level, message, args, kwargs = log_queue.get()
-            _log = logging.getLogger(name)
-            _log.log(log_level, message, *args, **kwargs)
-
-    @classmethod
-    def getRootLogger(cls):
-        return cls._root_logger
-
-    @classmethod
-    def getLogger(cls, name):
-        return logging.getLogger("pymepix.{}".format(name))
-
-    @classmethod
-    def reInit(cls):
-        if cls._init is False:
-            cls._root_logger = logging.getLogger("pymepix")
-
-            cls._root_logger.info("Reinitializing PymepixLogger")
-            cls._log_thread = threading.Thread(target=cls._logging_thread)
-            cls._log_thread.daemon = True
-            cls._log_thread.start()
-        cls._init = True
+    
 
     def __init__(self, name):
+        self._logger = self.getLogger(name)
         self._log_name = "pymepix.{}".format(name)
-        PymepixLogger.reInit()
 
     @property
     def logName(self):
         return self._log_name
 
-    def info(self, message, *args, **kwargs):
-        pass
-
-    def warning(self, message, *args, **kwargs):
-        pass
-
-    def debug(self, message, *args, **kwargs):
-        pass
-
-    def error(self, message, *args, **kwargs):
-        pass
-
-    def critical(self, message, *args, **kwargs):
-        pass
-
-
-class Logger(PymepixLogger):
-    """Standard logging using logger library
-
-    Parameters
-    -----------
-    name : str
-        Name used for logging
-
-    """
-
-    def __init__(self, name):
-        PymepixLogger.__init__(self, name)
-        self._logger = logging.getLogger(self.logName)
+    @abstractmethod
+    def getLogger(cls, name):
+        pass 
 
     def info(self, message, *args, **kwargs):
         """ See :class:`logging.Logger` """
@@ -148,8 +75,8 @@ class Logger(PymepixLogger):
         self._logger.critical(message, *args, **kwargs)
 
 
-class ProcessLogger(PymepixLogger):
-    """Sends logs to queue to be processed by logging thread
+class Logger(PymepixLogger):
+    """Standard logging using logger library
 
     Parameters
     -----------
@@ -161,27 +88,22 @@ class ProcessLogger(PymepixLogger):
     def __init__(self, name):
         PymepixLogger.__init__(self, name)
         self._logger = logging.getLogger(self.logName)
-        self._log_queue = PymepixLogger.getLogQueue()
 
-    def info(self, message, *args, **kwargs):
-        """ See :class:`logging.Logger` """
-        self._log_queue.put((self._log_name, logging.INFO, message, args, kwargs))
+    def getLogger(cls, name):
+        return logging.getLogger("pymepix.{}".format(name))
 
-    def warning(self, message, *args, **kwargs):
-        """ See :class:`logging.Logger` """
-        self._log_queue.put((self._log_name, logging.WARNING, message, args, kwargs))
 
-    def debug(self, message, *args, **kwargs):
-        """ See :class:`logging.Logger` """
-        self._log_queue.put((self._log_name, logging.DEBUG, message, args, kwargs))
+class ProcessLogger(PymepixLogger):
+    """Sends logs to queue to be processed by logging thread
 
-    def error(self, message, *args, **kwargs):
-        """ See :class:`logging.Logger` """
-        self._log_queue.put((self._log_name, logging.ERROR, message, args, kwargs))
+    Parameters
+    -----------
+    name : str
+        Name used for logging
 
-    def critical(self, message, *args, **kwargs):
-        """ See :class:`logging.Logger` """
-        self._log_queue.put((self._log_name, logging.CRITICAL, message, args, kwargs))
+    """
+    def getLogger(self, name):
+        return mp.get_logger()
 
 
 def main():

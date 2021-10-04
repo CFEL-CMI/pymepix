@@ -17,8 +17,27 @@
 #
 # You should have received a copy of the GNU General Public License along with this program. If not,
 # see <https://www.gnu.org/licenses/>.
+from multiprocessing import Value
 
-from pymepix.processing import MessageType
-from pymepix.pymepix_connection import PollBufferEmpty, PymepixConnection
-from pymepix.timepixdef import *
-from pymepix.post_processing import run_post_processing
+from pymepix.processing.logic.processing_parameter import ProcessingParameter
+
+class UnknownParameterTypeException(Exception):
+    pass
+
+class SharedProcessingParameter(ProcessingParameter):
+
+    def __init__(self, value) :
+        if isinstance(value, int):
+            super().__init__(Value('i', value, lock=False))
+        elif isinstance(value, float):
+            super().__init__(Value('d', value, lock=False))
+        else:
+            raise UnknownParameterTypeException()
+
+    @property
+    def value(self):
+        return self._value.value
+
+    @value.setter
+    def value(self, value):
+        self._value.value = value

@@ -1,5 +1,3 @@
-*.raw
-*.hdf5
 *.dat
 *.egg
 *.egg-info/
@@ -11,3 +9,6 @@
 .DS_Store
 .vscode/settings.json
 build/
+venv
+.idea
+

@@ -309,7 +309,7 @@ def main():
     import time
     from multiprocessing.sharedctypes import Value
 
-    from pymepix.processing.packetprocessor import PacketProcessor
+    from pymepix.processing.pipeline_packet_processor import PipelinePacketProcessor
     from pymepix.processing.udpsampler import UdpSampler
 
     # Create the logger
@@ -321,10 +321,10 @@ def main():
 
     acqpipline = AcquisitionPipeline("Test", end_queue)
 
-    test_value = Value("I", 0)
+    longtime = Value("I", 0)
 
-    acqpipline.addStage(0, UdpSampler, ("127.0.0.1", 50000), test_value)
-    acqpipline.addStage(2, PacketProcessor, num_processes=4)
+    acqpipline.addStage(0, UdpSampler, ("127.0.0.1", 50000), longtime)
+    acqpipline.addStage(2, PipelinePacketProcessor, num_processes=4)
 
     def get_queue_thread(queue):
         while True:

@@ -17,9 +17,6 @@
 #
 # You should have received a copy of the GNU General Public License along with this program. If not,
 # see <https://www.gnu.org/licenses/>.
-
-"""Main module for pymepix"""
-
 import threading
 import time
 from collections import deque
@@ -27,7 +24,6 @@ from multiprocessing import Queue
 
 import pymepix.config.load_config as cfg
 from pymepix.core.log import Logger
-
 from .SPIDR.spidrcontroller import SPIDRController
 from .timepixdevice import TimepixDevice
 
@@ -36,7 +32,7 @@ class PollBufferEmpty(Exception):
     pass
 
 
-class Pymepix(Logger):
+class PymepixConnection(Logger):
     """High level class to work with timepix and perform acquistion
 
     This class performs connection to SPIDR, initilization of timepix and handling of acquisition.
@@ -269,150 +265,3 @@ class Pymepix(Logger):
 
     def getDevice(self, num):
         return self._timepix_devices[num]
-
-
-def main():
-    import argparse
-    import logging
-    import time
-
-    from .processing.datatypes import MessageType
-    from .util.storage import open_output_file, store_raw, store_toa, store_tof
-
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    )
-
-    parser = argparse.ArgumentParser(description="Timepix acquisition script")
-    parser.add_argument(
-        "-i",
-        "--ip",
-        dest="ip",
-        type=str,
-        default=cfg.default_cfg["timepix"]["tpx_ip"],
-        help="IP address of Timepix",
-    )
-    parser.add_argument(
-        "-p",
-        "--port",
-        dest="port",
-        type=int,
-        default=50000,
-        help="TCP port to use for the connection",
-    )
-    parser.add_argument(
-        "-s", "--spx", dest="spx", type=str, help="Sophy config file to load"
-    )
-    parser.add_argument(
-        "-v",
-        "--bias",
-        dest="bias",
-        type=float,
-        default=50,
-        help="Bias voltage in Volts",
-    )
-    parser.add_argument(
-        "-t",
-        "--time",
-        dest="time",
-        type=float,
-        help="Acquisition time in seconds",
-        required=True,
-    )
-    parser.add_argument(
-        "-o",
-        "--output",
-        dest="output",
-        type=str,
-        help="output filename prefix",
-        required=True,
-    )
-    parser.add_argument(
-        "-d",
-        "--decode",
-        dest="decode",
-        type=bool,
-        help="Store decoded values instead",
-        default=False,
-    )
-    parser.add_argument(
-        "-T",
-        "--tof",
-        dest="tof",
-        type=bool,
-        help="Compute TOF if decode is enabled",
-        default=False,
-    )
-
-    args = parser.parse_args()
-
-    # Connect to SPIDR
-    pymepix = Pymepix((args.ip, args.port))
-    # If there are no valid timepix detected then quit()
-    if len(pymepix) == 0:
-        logging.error(
-            "-------ERROR: SPIDR FOUND BUT NO VALID TIMEPIX DEVICE DETECTED ---------- "
-        )
-        quit()
-    if args.spx:
-        logging.info("Opening Sophy file {}".format(args.spx))
-        pymepix[0].loadConfig(args.spx)
-
-    # Switch to TOF mode if set
-    if args.decode and args.tof:
-        pymepix[0].acquisition.enableEvents = True
-
-    # Set the bias voltage
-    pymepix.biasVoltage = args.bias
-
-    ext = "raw"
-    if args.decode:
-        logging.info("Decoding data enabled")
-        if args.tof:
-            logging.info("Tof calculation enabled")
-            ext = "tof"
-        else:
-            ext = "toa"
-    else:
-        logging.info("No decoding selected")
-
-    output_file = open_output_file(args.output, ext)
-
-    total_time = args.time
-
-    # self._timepix._spidr.resetTimers()
-    # self._timepix._spidr.restartTimers()
-    # time.sleep(1)  # give camera time to reset timers
-
-    # Start acquisition
-    pymepix.start()
-    # start raw2disk
-    # pymepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0].outfile_name = args.output
-    # pymepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0]._raw2Disk.timer = 1
-    # pymepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0].record = 1
-
-    start_time = time.time()
-    logging.info("------Starting acquisition---------")
-
-    while time.time() - start_time < total_time:
-        try:
-            data_type, data = pymepix.poll()
-        except PollBufferEmpty:
-            continue
-        logging.debug("Datatype: {} Data:{}".format(data_type, data))
-        if data_type is MessageType.RawData:
-            if not args.decode:
-                store_raw(output_file, data)
-        elif data_type is MessageType.PixelData:
-            if args.decode and not args.tof:
-                store_toa(output_file, data)
-        elif data_type is MessageType.PixelData:
-            if args.decode and args.tof:
-                store_tof(output_file, data)
-
-    pymepix.stop()
-
-
-if __name__ == "__main__":
-    main()
