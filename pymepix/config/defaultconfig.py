@@ -18,6 +18,7 @@
 # You should have received a copy of the GNU General Public License along with this program. If not,
 # see <https://www.gnu.org/licenses/>.
 
+import numpy as np
 from .timepixconfig import TimepixConfig
 
 
@@ -60,7 +61,7 @@ class DefaultConfig(TimepixConfig):
     @property
     def maskPixels(self):
         """Returns mask pixels"""
-        return None
+        return np.zeros(shape=(256, 256), dtype=np.uint8)
 
     @property
     def testPixels(self):
@@ -70,4 +71,4 @@ class DefaultConfig(TimepixConfig):
     @property
     def thresholdPixels(self):
         """Returns threshold pixels"""
-        return None
+        return np.zeros(shape=(256, 256), dtype=np.uint8)

@@ -22,6 +22,8 @@ import threading
 import time
 from multiprocessing.sharedctypes import Value
 
+from pymepix.processing.acquisition import PixelPipeline
+
 from .config import DefaultConfig, SophyConfig, TimepixConfig
 
 # from .config.sophyconfig import SophyConfig
@@ -60,7 +62,7 @@ class TimepixDevice(Logger):
             )
             time.sleep(1.0)
 
-    def __init__(self, spidr_device, data_queue):
+    def __init__(self, spidr_device, data_queue, pipeline_class=PixelPipeline):
 
         self._device = spidr_device
         Logger.__init__(self, "Timepix " + self.devIdToString())
@@ -72,9 +74,8 @@ class TimepixDevice(Logger):
         self._device.reinitDevice()
 
         self._longtime = Value("L", 0)
-        # TODO: this dosn't work with GUI as setupAcquisition get's called here and
-        #  in pymepixviewer and thus the zmq socket get's initialized twice.
-        # self.setupAcquisition(PixelPipeline)
+        
+        self.setupAcquisition(pipeline_class)
 
         self._initDACS()
 

@@ -24,6 +24,7 @@ from multiprocessing import Queue
 
 import pymepix.config.load_config as cfg
 from pymepix.core.log import Logger
+from pymepix.processing.acquisition import PixelPipeline
 from .SPIDR.spidrcontroller import SPIDRController
 from .timepixdevice import TimepixDevice
 
@@ -85,7 +86,7 @@ class PymepixConnection(Logger):
             data_type, data = value
             self._event_callback(data_type, data)
 
-    def __init__(self, spidr_address="default", src_ip_port="default"):
+    def __init__(self, spidr_address="default", src_ip_port="default", pipeline_class=PixelPipeline):
         Logger.__init__(self, "Pymepix")
         if spidr_address == "default":
             spidr_address = (cfg.default_cfg["timepix"]["tpx_ip"], 50000)
@@ -96,7 +97,7 @@ class PymepixConnection(Logger):
         self._timepix_devices = []
 
         self._data_queue = Queue()
-        self._createTimepix()
+        self._createTimepix(pipeline_class)
         self._spidr.setBiasSupplyEnable(True)
         self.biasVoltage = 50
         self.enablePolling()
@@ -187,12 +188,12 @@ class PymepixConnection(Logger):
     def _pollCallback(self, data_type, data):
         self._poll_buffer.append((data_type, data))
 
-    def _createTimepix(self):
+    def _createTimepix(self, pipeline_class=PixelPipeline):
 
         for x in self._spidr:
             status, enabled, locked = x.linkStatus
             if enabled != 0 and locked == enabled:
-                self._timepix_devices.append(TimepixDevice(x, self._data_queue))
+                self._timepix_devices.append(TimepixDevice(x, self._data_queue, pipeline_class))
 
         self._num_timepix = len(self._timepix_devices)
         self.info("Found {} Timepix/Medipix devices".format(len(self._timepix_devices)))
