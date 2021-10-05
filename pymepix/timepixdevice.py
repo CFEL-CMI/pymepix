@@ -309,6 +309,27 @@ class TimepixDevice(Logger):
             self.pauseHeartbeat()
             self._acq_running = False
 
+    def start_recording(self, path):
+        udp_sampler = self._acquisition_pipeline._stages[0]
+        udp_sampler._pipeline_objects[0].record = True
+        udp_sampler.udp_sock.send_string(path)
+        res = udp_sampler.udp_sock.recv_string()
+        if res == "OPENED":
+            path = udp_sampler.udp_sock.recv_string()
+            self.debug(f"Started recording to {path}")
+        else:
+            self.warning(f"Error while starting recording: {res}")
+
+    def stop_recording(self):
+        pipeline = self._acquisition_pipeline._stages[0]
+        pipeline._pipeline_objects[0].record = False
+        pipeline._pipeline_objects[0].close_file = True
+        res = pipeline.udp_sock.recv_string()
+        if res == "CLOSED":
+            self.info(f"Finished recording")
+        else:
+            self.warning(f"Error during recording: {res}")
+
     # -----General Configuration-------
     @property
     def polarity(self):

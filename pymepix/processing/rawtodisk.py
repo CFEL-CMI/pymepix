@@ -115,20 +115,11 @@ class Raw2Disk(ProcessLogger):
                     shutdown = True
                 else:  # Interpret as file name / path
                     filename = cmd
-                    files = np.sort(glob.glob(f"{filename}*.raw"))
-                    if len(files) > 0:
-                        index = int(files[-1].split("_")[-2]) + 1
-                    else:
-                        index = 0
-                    raw_filename = (
-                        f'{filename}_{index:04d}_{time.strftime("%Y%m%d-%H%M")}.raw'
-                    )
-                    directory, name = os.path.split(raw_filename)
-                    if (not os.path.exists(raw_filename)) and os.path.isdir(directory):
-                        self.info(f"File {raw_filename} opening")
+                    if not os.path.exists(filename):
+                        self.info(f"File {filename} opening")
 
                         # Open filehandle
-                        filehandle = open(raw_filename, "wb")
+                        filehandle = open(filename, "wb")
                         filehandle.write(
                             time.time_ns().to_bytes(8, "little")
                         )  # add start time into file
@@ -137,7 +128,7 @@ class Raw2Disk(ProcessLogger):
                         waiting = False
                         writing = True
                         self.writing = True
-                        z_sock.send_string(raw_filename)
+                        z_sock.send_string(filename)
                     else:
                         self.info(f"{cmd} not a valid command")
                         z_sock.send_string(f"{cmd} in an INVALID command")
@@ -167,7 +158,7 @@ class Raw2Disk(ProcessLogger):
                 z_sock.send_string("CLOSED")
                 filehandle = None
                 max_sock.send_string(
-                    raw_filename
+                    filename
                 )  # send filename to maxwell for conversion
             waiting = True
 

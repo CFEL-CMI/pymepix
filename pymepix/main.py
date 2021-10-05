@@ -20,6 +20,7 @@
 
 """ Main module for pymepix """
 
+import os
 import time
 import argparse
 import logging
@@ -37,49 +38,42 @@ logging.basicConfig(
 
 
 def connect_timepix(args):
-    # Connect to SPIDR
-    pymepix = PymepixConnection((args.ip, args.port))
-    # If there are no valid timepix detected then quit()
-    if len(pymepix) == 0:
-        logging.error(
-            "-------ERROR: SPIDR FOUND BUT NO VALID TIMEPIX DEVICE DETECTED ---------- "
-        )
-        quit()
-    if args.spx:
-        logging.info("Opening Sophy file {}".format(args.spx))
-        pymepix[0].loadConfig(args.spx)
+    if not os.path.exists(args.output):
+        
+        # Connect to SPIDR
+        pymepix = PymepixConnection((args.ip, args.port))
+        # If there are no valid timepix detected then quit()
+        if len(pymepix) == 0:
+            logging.error(
+                "-------ERROR: SPIDR FOUND BUT NO VALID TIMEPIX DEVICE DETECTED ---------- "
+            )
+            quit()
+        if args.spx:
+            logging.info("Opening Sophy file {}".format(args.spx))
+            pymepix[0].loadConfig(args.spx)
 
-    # Switch to TOF mode if set
-    if args.decode and args.tof:
-        pymepix[0].acquisition.enableEvents = True
+        # Switch to TOF mode if set
+        if args.decode and args.tof:
+            pymepix[0].acquisition.enableEvents = True
 
-    # Set the bias voltage
-    pymepix.biasVoltage = args.bias
+        # Set the bias voltage
+        pymepix.biasVoltage = args.bias
 
-    total_time = args.time
+        # self._timepix._spidr.resetTimers()
+        # self._timepix._spidr.restartTimers()
+        # time.sleep(1)  # give camera time to reset timers
 
-    # self._timepix._spidr.resetTimers()
-    # self._timepix._spidr.restartTimers()
-    # time.sleep(1)  # give camera time to reset timers
+        # Start acquisition
+        pymepix.start()
 
-    # Start acquisition
-    pymepix.start()
-    # start raw2disk
-    # pymepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0].outfile_name = args.output
-    # pymepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0]._raw2Disk.timer = 1
-    # pymepix._timepix_devices[0]._acquisition_pipeline._stages[0]._pipeline_objects[0].record = 1
+        pymepix._timepix_devices[0].start_recording(args.output)
+        time.sleep(args.time)
+        pymepix._timepix_devices[0].stop_recording()
 
-    start_time = time.time()
-    logging.info("------Starting acquisition---------")
+        pymepix.stop()
 
-    while time.time() - start_time < total_time:
-        try:
-            data_type, data = pymepix.poll()
-        except PollBufferEmpty:
-            continue
-        logging.debug("Datatype: {} Data:{}".format(data_type, data))
-
-    pymepix.stop()
+    else:
+        logging.info(f'Outputfile {args.output} already exists. Please make sure the specified file does not exist.')
 
 def post_process(args):
     run_post_processing(args.file.name, args.output_file, args.number_of_processes, 
