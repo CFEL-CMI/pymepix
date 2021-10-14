@@ -191,6 +191,10 @@ class SophyConfig(TimepixConfig, Logger):
         )
 
     @property
+    def filename(self):
+        return self.__filename
+
+    @property
     def maskPixels(self):
         """Accessor for the mask pixels [0, 1]
 

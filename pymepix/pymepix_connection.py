@@ -94,7 +94,7 @@ class PymepixConnection(Logger):
             src_ip_port = (cfg.default_cfg["timepix"]["pc_ip"], 0)
         self._spidr = SPIDRController(spidr_address, src_ip_port)
 
-        self._timepix_devices = []
+        self._timepix_devices: list[TimepixDevice] = []
 
         self._data_queue = Queue()
         self._createTimepix(pipeline_class)
@@ -258,11 +258,11 @@ class PymepixConnection(Logger):
     def numDevices(self):
         return self._num_timepix
 
-    def __getitem__(self, key):
+    def __getitem__(self, key)-> TimepixDevice:
         return self._timepix_devices[key]
 
     def __len__(self):
         return len(self._timepix_devices)
 
-    def getDevice(self, num):
+    def getDevice(self, num) -> TimepixDevice:
         return self._timepix_devices[num]
