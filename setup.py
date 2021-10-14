@@ -35,7 +35,15 @@ provides = ["pymepix"]
 
 requires = []
 
-install_requires = ["numpy", "scikit-learn", "pyyaml", "pyzmq", "pyserial", "h5py", "tqdm"]
+install_requires = [
+    "numpy",
+    "scikit-learn",
+    "pyyaml",
+    "pyzmq",
+    "pyserial",
+    "h5py",
+    "tqdm",
+]
 
 console_scripts = ["pymepix-acq=pymepix.main:main"]
 
@@ -82,7 +90,9 @@ setup(
     download_url="https://stash.desy.de/projects/CMIPUBLIC/repos/timepix",
     classifiers=classifiers,
     packages=packages,
-    include_package_data=True,
+    # include_package_data=True,
+    # package_dir={"pymepix": "pymepix"},
+    package_data={"": ["*.yaml"]},
     entry_points=entry_points,
     long_description=long_description,
     long_description_content_type="text/markdown",

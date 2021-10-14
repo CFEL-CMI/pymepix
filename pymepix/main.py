@@ -39,7 +39,7 @@ logging.basicConfig(
 
 def connect_timepix(args):
     if not os.path.exists(args.output):
-        
+
         # Connect to SPIDR
         pymepix = PymepixConnection((args.ip, args.port))
         # If there are no valid timepix detected then quit()
@@ -73,18 +73,34 @@ def connect_timepix(args):
         pymepix.stop()
 
     else:
-        logging.info(f'Outputfile {args.output} already exists. Please make sure the specified file does not exist.')
+        logging.info(
+            f"Outputfile {args.output} already exists. Please make sure the specified file does not exist."
+        )
+
 
 def post_process(args):
-    run_post_processing(args.file.name, args.output_file, args.number_of_processes, 
-                                    args.timewalk_file, args.cent_timewalk_file)
+    run_post_processing(
+        args.file.name,
+        args.output_file,
+        args.number_of_processes,
+        args.timewalk_file,
+        args.cent_timewalk_file,
+    )
+
 
 def main():
 
     parser = argparse.ArgumentParser(description="Timepix acquisition script")
-    subparsers = parser.add_subparsers(required=True)
+    subparsers = parser.add_subparsers(
+        description="Processing type",
+        help="Select which type of process should be executed",
+        required=True,
+        dest="command",
+    )
 
-    parser_connect = subparsers.add_parser('connect', help='Connect to TimePix camera and acquire data.')
+    parser_connect = subparsers.add_parser(
+        "connect", help="Connect to TimePix camera and acquire data."
+    )
     parser_connect.set_defaults(func=connect_timepix)
 
     parser_connect.add_argument(
@@ -147,15 +163,17 @@ def main():
         default=False,
     )
 
-    parser_post_process = subparsers.add_parser('post-process', help='Perform post-processing with a acquired raw data file.')
+    parser_post_process = subparsers.add_parser(
+        "post-process", help="Perform post-processing with a acquired raw data file."
+    )
     parser_post_process.set_defaults(func=post_process)
     parser_post_process.add_argument(
         "-f",
         "--file",
         dest="file",
-        type=argparse.FileType('rb'),
+        type=argparse.FileType("rb"),
         help="Raw data file for postprocessing",
-        required=True
+        required=True,
     )
     parser_post_process.add_argument(
         "-o",
@@ -163,21 +181,21 @@ def main():
         dest="output_file",
         type=str,
         help="Filename where the processed data is stored",
-        required=True
+        required=True,
     )
     parser_post_process.add_argument(
         "-t",
         "--timewalk_file",
         dest="timewalk_file",
-        type=argparse.FileType('rb'),
-        help="File containing the time walk information"
+        type=argparse.FileType("rb"),
+        help="File containing the time walk information",
     )
     parser_post_process.add_argument(
         "-c",
         "--cent_timewalk_file",
         dest="cent_timewalk_file",
-        type=argparse.FileType('rb'),
-        help="File containing the centroided time walk information"
+        type=argparse.FileType("rb"),
+        help="File containing the centroided time walk information",
     )
     parser_post_process.add_argument(
         "-n",
@@ -185,7 +203,7 @@ def main():
         dest="number_of_processes",
         type=int,
         default=-1,
-        help="The number of processes used for the centroiding (default: None which ensures all existing system cores are used')"
+        help="The number of processes used for the centroiding (default: None which ensures all existing system cores are used')",
     )
 
     args = parser.parse_args()
