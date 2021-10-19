@@ -33,23 +33,11 @@ from pymepix.core.log import ProcessLogger
 class Raw2Disk(ProcessLogger):
     """
     Class for asynchronously writing raw files
-    Intended to allow writing of raw data while minimizing impact on UDP reception reliability
-
-    Constructor
-    ------
-    Raw2Disk(context): Constructor. Need to pass a ZMQ context object to ensure that inproc sockets can be created
-
-    Methods
-    -------
-
-    open_file(filename): Creates a file with a given filename and path
-
-    write(data): Writes data to the file. Parameter is buffer type (e.g. bytearray or memoryview)
-
-    close(): Close the file currently in progress
+    Intended to allow writing of raw data while minimizing impact on UDP reception reliability.
     """
 
     def __init__(self, context=None):
+        """ Need to pass a ZMQ context object to ensure that inproc sockets can be created """
         ProcessLogger.__init__(self, "Raw2Disk")
 
         self.info("init raw2disk")
@@ -171,6 +159,8 @@ class Raw2Disk(ProcessLogger):
 
     def open_file(self, socket, filename):
         """
+        Creates a file with a given filename and path.
+
         this doesn't work anylonger using 2 sockets for the communication
         functionality needs to be put outside where you have access to the socket
         """
@@ -188,7 +178,10 @@ class Raw2Disk(ProcessLogger):
             return False
 
     def close(self, socket):
-        """call in main below"""
+        """
+        Close the file currently in progress.
+        call in main below
+        """
         if self.writing is True:
             self.my_sock.send(b"EOF")
             response = socket.recv_string()
@@ -202,7 +195,10 @@ class Raw2Disk(ProcessLogger):
             return False
 
     def write(self, data):
-        """Not sure how useful this function actually is...
+        """
+        Writes data to the file. Parameter is buffer type (e.g. bytearray or memoryview)
+
+        Not sure how useful this function actually is...
         It completes the interface for this class but from a performance point of view it doesn't improve things.
         How could this be benchmarked?
         """

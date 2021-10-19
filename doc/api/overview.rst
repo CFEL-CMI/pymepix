@@ -6,11 +6,11 @@ General overview
 The main Pymepix library is built up in several different submodules
 which each tackle a different task in working with the Timepix camera.
 As seen in the API index those are
-    * `config`
-    * `core`
-    * `processing`
-    * `SPIDR`
-    * `util`
+* `config`
+* `core`
+* `processing`
+* `SPIDR`
+* `util`
 
 The top layer Pymepix consists of `pymepix`, `timepixdef` and `timepixdevice`.
 

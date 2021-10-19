@@ -61,4 +61,4 @@ These need to be uploaded to timepix before they take effect:
 
     >>> tpx0.uploadPixels()
 
-The full list of parameters that can be set can be found in :ref:`timepixdevice`.
+The full list of parameters that can be set can be found in :meth:`timepixdevice`.

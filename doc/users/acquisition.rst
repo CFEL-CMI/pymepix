@@ -112,7 +112,7 @@ example to enable TOFs you can do:
 
 >>> timepix[0].acquisition.enableEvents = True
 
-A list of pipelines and setting can be found in :ref:`acquisition`
+A list of pipelines and setting can be found in :meth:`acquisition`
 
 
 

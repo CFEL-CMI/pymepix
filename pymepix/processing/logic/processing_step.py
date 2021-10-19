@@ -30,8 +30,8 @@ class ProcessingStep(Logger, ABC):
     
     Currently the picture is the following:
      - For post processing the CentroidCalculator and the PacketProcessor are used directly
-     - PipelineCentroidCalculator and PipelinePacketProcessor build on top of CentroidCalculator and PacketProcessor
-     to provide an integration in the existing online processing pipeline for online analysis."""
+     - PipelineCentroidCalculator and PipelinePacketProcessor build on top of CentroidCalculator and PacketProcessor to provide an integration in the existing online processing pipeline for online analysis.
+    """
 
     def __init__(self, name):
         super().__init__(name)
