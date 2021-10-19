@@ -17,12 +17,3 @@ API reference
 
    api/overview
    api/modules
-
-
-.. comment
-   Local Variables:
-   coding: utf-8
-   mode: fly-spell
-   fill-column: 100
-   truncate-lines: t
-   End:

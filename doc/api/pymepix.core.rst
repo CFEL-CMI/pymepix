@@ -4,14 +4,18 @@ pymepix.core package
 Submodules
 ----------
 
-.. toctree::
+pymepix.core.log module
+-----------------------
 
-   pymepix.core.log
+.. automodule:: pymepix.core.log
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 Module contents
 ---------------
 
 .. automodule:: pymepix.core
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -25,6 +25,9 @@ class UnknownParameterTypeException(Exception):
     pass
 
 class SharedProcessingParameter(ProcessingParameter):
+    """ Variang of the ProcessingParameter used for sharing among multiple processes. This class has to be used 
+    if running with the multiprocessing pipeline to ensure all instances of the processing classes are updated
+    when parameters are changed. """
 
     def __init__(self, value) :
         if isinstance(value, int):

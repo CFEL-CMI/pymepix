@@ -1,6 +1,7 @@
 # This is only used for github actions. 
 numpy
 scikit-learn
+scipy
 pyzmq
 h5py
 pyyaml

@@ -57,9 +57,12 @@ An acquisition pipeline determines which steps work in what order on the incomin
 Each pipeline consists of acquisition stages (`baseacquisition`),
 where one stage holds the information about one logical step in the pipeline.
 Those tasks are currently `udpsampler` (capturing the packets), `rawtodisk` (saving the raw data),
-`packetprocessor` (interpreting the raw packets) and `centroiding` (compress data by finding blob centers).
+`pipline_packet_processor` (interpreting the raw packets) and `pipeline_centroid_calculator` (compress data by finding blob centers).
 Each of these specific pipeline steps overwrites the `BasePipelineObject`,
 which is in fact a python `multiprocessing.Process`.
+
+The majority of the logic for the pipeline_packet_processor and the pipeline_centroid_calculator is separated in the classes `centroid_calculator` 
+and `packet_processor`. The `pipeline_` classes only add functionality for the integration of those classes into the multiprocessing pipeline.
 
 Each stage knows the task it has to fulfill and then creates one or multiple processes
 to work on that task in parallel.
