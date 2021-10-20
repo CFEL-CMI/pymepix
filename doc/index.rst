@@ -5,7 +5,7 @@
 
     users/doc
     api
-    source
+    source/modules
     references
 
 Pymepix Documentation
