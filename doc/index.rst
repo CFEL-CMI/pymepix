@@ -5,6 +5,7 @@
 
     users/doc
     api
+    source
     references
 
 Pymepix Documentation
