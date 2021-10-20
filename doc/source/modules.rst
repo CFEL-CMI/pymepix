@@ -1,5 +1,5 @@
-pymepix
-=======
+test
+====
 
 .. toctree::
    :maxdepth: 4
