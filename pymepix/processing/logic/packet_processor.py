@@ -46,21 +46,6 @@ class PacketProcessor(ProcessingStep):
     processible data format. Takes into account the pixel- and trigger data to calculate toa and tof
     dimensions.
 
-    Attributes
-    ----------
-    handle_events : boolean
-        Calculate events (tof) only if handle_events is True. Otherwise only pixel-data (toa only) is provided.
-    event_window : (float, float)
-        The range of tof, used for processing data. Information/ data outside of this range is discarded.
-    min_samples : (float, float)
-        Offset/ shift of x- and y-position
-    orientation : int
-    start_time : int
-    timewalk_lut
-        Data for correction of the time-walk
-    parameter_wrapper_classe : ProcessingParameter
-        Class used to wrap the processing parameters to make them changable while processing is running (useful for online optimization)
-
     Methods
     -------
     process(data):
@@ -69,6 +54,24 @@ class PacketProcessor(ProcessingStep):
     """
     def __init__(self, handle_events=True, event_window=(0.0, 10000.0), position_offset=(0, 0), 
                 orientation=PixelOrientation.Up, start_time=0, timewalk_lut=None, parameter_wrapper_class=ProcessingParameter):
+        """
+        Constructor for the PacketProcessor.
+
+        Parameters
+        ----------
+        handle_events : boolean
+            Calculate events (tof) only if handle_events is True. Otherwise only pixel-data (toa only) is provided.
+        event_window : (float, float)
+            The range of tof, used for processing data. Information/ data outside of this range is discarded.
+        min_samples : (float, float)
+            Offset/ shift of x- and y-position
+        orientation : int
+        start_time : int
+        timewalk_lut
+            Data for correction of the time-walk
+        parameter_wrapper_classe : ProcessingParameter
+            Class used to wrap the processing parameters to make them changable while processing is running (useful for online optimization)
+        """
     
         super().__init__("PacketProcessor")
         self._handle_events = parameter_wrapper_class(handle_events)
@@ -96,6 +99,7 @@ class PacketProcessor(ProcessingStep):
 
     @property
     def handle_events(self):
+        """:noindex:"""
         return self._handle_events.value
 
     @handle_events.setter

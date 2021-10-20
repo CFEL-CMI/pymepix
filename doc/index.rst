@@ -3,7 +3,7 @@
     :titlesonly:
     :maxdepth: 4
 
-    doc
+    users/doc
     api
     references
 

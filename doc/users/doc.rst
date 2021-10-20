@@ -1,5 +1,13 @@
+.. currentmodule:: pymepix
+
+==========
+User Guide
+==========
+
+Pymepix documentation
+
 .. toctree::
-    :maxdepth: 3
+    :maxdepth: 1
 
     Introduction <introduction>
     Getting started <getting_started>
@@ -9,3 +17,9 @@
     Examples <examples>
     pymepix-acq <pymepixacq>
     Troubleshooting <troubleshooting>
+
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
+

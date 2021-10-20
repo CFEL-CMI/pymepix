@@ -32,24 +32,6 @@ class CentroidCalculator(ProcessingStep):
     of the clusters first and the centroids. The data processed is not the direct raw data but the 
     data that has been processed by the PacketProcessor before (x, y, tof, tot).
 
-    Attributes
-    ----------
-    tot_threshold : int
-        Threshold applied before calculating the clusters. A higher threshold can lead to more clusters found in some cases.
-    epsilon : float
-        see DBSCAN
-    min_samples : int
-        see DBSCAN
-    triggers_processed : int
-        every triggers_processed trigger is used for the calculation. Increasing the value can speed up online processing if the 
-        data rate is too high to process all triggers directly.
-    chunk_size_limit : int
-        Maximum size of the chunks to increase the performance of DBSCAN. Higher and Lower values might increase the runtime.
-    cent_timewalk_lut
-        Data for correction of the time-walk
-    parameter_wrapper_classe : ProcessingParameter
-        Class used to wrap the processing parameters to make them changable while processing is running (useful for online optimization)
-
     Methods
     -------
     process(data):
@@ -59,6 +41,27 @@ class CentroidCalculator(ProcessingStep):
 
     def __init__(self, tot_threshold=0, epsilon=2, min_samples=3, triggers_processed=1, chunk_size_limit=6_500, 
         cent_timewalk_lut=None, parameter_wrapper_class=ProcessingParameter):
+        """
+        Constructor for  the CentroidCalculator.
+
+        Parameters
+        ----------
+        tot_threshold : int
+            Threshold applied before calculating the clusters. A higher threshold can lead to more clusters found in some cases.
+        epsilon : float
+            see DBSCAN
+        min_samples : int
+            see DBSCAN
+        triggers_processed : int
+            every triggers_processed trigger is used for the calculation. Increasing the value can speed up online processing if the 
+            data rate is too high to process all triggers directly.
+        chunk_size_limit : int
+            Maximum size of the chunks to increase the performance of DBSCAN. Higher and Lower values might increase the runtime.
+        cent_timewalk_lut
+            Data for correction of the time-walk
+        parameter_wrapper_classe : ProcessingParameter
+            Class used to wrap the processing parameters to make them changable while processing is running (useful for online optimization)
+        """
 
         super().__init__("CentroidCalculator")
         self._epsilon = parameter_wrapper_class(epsilon)
