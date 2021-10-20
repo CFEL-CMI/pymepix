@@ -42,7 +42,8 @@ with open(setup_path, "r") as f:
             desired.remove(line_list[0])
 project = name
 
-sys.path.insert(0, os.path.abspath("../pymepix"))
+sys.path.insert(0, os.path.abspath("."))
+sys.path.insert(0, os.path.abspath("../"))
 
 # -- General configuration ------------------------------------------------
 
