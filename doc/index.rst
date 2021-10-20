@@ -4,7 +4,7 @@
     :maxdepth: 4
 
     users/doc
-    api
+    source
     references
 
 Pymepix Documentation
