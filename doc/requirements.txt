@@ -1,2 +1,1 @@
 sphinx
--r ../requirements.txt

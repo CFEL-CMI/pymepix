@@ -23,3 +23,4 @@ python:
   setup_py_install: true
   install:
     - requirements: doc/requirements.txt
+    - requirements: requirements.txt
