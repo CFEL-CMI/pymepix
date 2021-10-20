@@ -43,7 +43,7 @@ with open(setup_path, "r") as f:
 project = name
 
 sys.path.insert(0, os.path.abspath("../../lib"))
-sys.path.insert(0, os.path.abspath("../"))
+sys.path.append(0, os.path.abspath("../"))
 print(sys.path)
 
 # -- General configuration ------------------------------------------------
