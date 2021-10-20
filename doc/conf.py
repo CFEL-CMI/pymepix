@@ -23,6 +23,10 @@ import os
 import pathlib
 import sys
 
+from sphinx.ext.apidoc import main as sphinx_apidoc
+
+sphinx_apidoc(["-o", "source", "../pymepix"])
+
 # accessing the setup.py file to get current information about the project
 name, project, version, release, author, copyright = [""] * 6
 desired = ["copyright", "project", "name", "version", "release", "author"]

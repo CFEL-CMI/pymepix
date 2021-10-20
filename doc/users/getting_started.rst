@@ -35,7 +35,7 @@ second line must be executed.
 .. code:: shell
     :number-lines: 1
 
-    sphinx-apidoc -o ./doc/api ./pymepix
+    sphinx-apidoc -o ./doc/source/ ./pymepix
     python setup.py build_sphinx
 
 
