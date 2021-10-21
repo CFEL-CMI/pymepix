@@ -53,7 +53,7 @@ class PacketProcessor(ProcessingStep):
         if you are sure about what you are doing
     """
     def __init__(self, handle_events=True, event_window=(0.0, 10000.0), position_offset=(0, 0), 
-                orientation=PixelOrientation.Up, start_time=0, timewalk_lut=None, parameter_wrapper_class=ProcessingParameter):
+                orientation=PixelOrientation.Up, start_time=0, timewalk_lut=None, *args, **kwargs):
         """
         Constructor for the PacketProcessor.
 
@@ -73,11 +73,11 @@ class PacketProcessor(ProcessingStep):
             Class used to wrap the processing parameters to make them changable while processing is running (useful for online optimization)
         """
     
-        super().__init__("PacketProcessor")
-        self._handle_events = parameter_wrapper_class(handle_events)
+        super().__init__("PacketProcessor", *args, **kwargs)
+        self._handle_events = self.parameter_wrapper_class(handle_events)
         event_window_min, event_window_max = event_window
-        self._event_window_min = parameter_wrapper_class(event_window_min)
-        self._event_window_max = parameter_wrapper_class(event_window_max)
+        self._event_window_min = self.parameter_wrapper_class(event_window_min)
+        self._event_window_max = self.parameter_wrapper_class(event_window_max)
         self._orientation = orientation
         self._x_offset, self._y_offset = position_offset
         self._start_time =  start_time

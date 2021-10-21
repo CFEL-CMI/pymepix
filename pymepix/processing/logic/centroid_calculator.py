@@ -40,7 +40,7 @@ class CentroidCalculator(ProcessingStep):
     """
 
     def __init__(self, tot_threshold=0, epsilon=2, min_samples=3, triggers_processed=1, chunk_size_limit=6_500, 
-        cent_timewalk_lut=None, parameter_wrapper_class=ProcessingParameter):
+        cent_timewalk_lut=None, *args, **kwargs):
         """
         Constructor for  the CentroidCalculator.
 
@@ -63,11 +63,11 @@ class CentroidCalculator(ProcessingStep):
             Class used to wrap the processing parameters to make them changable while processing is running (useful for online optimization)
         """
 
-        super().__init__("CentroidCalculator")
-        self._epsilon = parameter_wrapper_class(epsilon)
-        self._min_samples = parameter_wrapper_class(min_samples)
-        self._tot_threshold = parameter_wrapper_class(tot_threshold)
-        self._triggers_processed = parameter_wrapper_class(triggers_processed)
+        super().__init__("CentroidCalculator", *args, **kwargs)
+        self._epsilon = self.parameter_wrapper_class(epsilon)
+        self._min_samples = self.parameter_wrapper_class(min_samples)
+        self._tot_threshold = self.parameter_wrapper_class(tot_threshold)
+        self._triggers_processed = self.parameter_wrapper_class(triggers_processed)
 
         self._chunk_size_limit = chunk_size_limit
         self._tof_scale = 1e7

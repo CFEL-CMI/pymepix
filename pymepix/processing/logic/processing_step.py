@@ -20,6 +20,7 @@
 from abc import abstractmethod, ABC
 
 from pymepix.core.log import Logger
+from pymepix.processing.logic.processing_parameter import ProcessingParameter
 
 class ProcessingStep(Logger, ABC):
     """Representation of one processing step in the pipeline for processing timepix raw data. 
@@ -33,8 +34,9 @@ class ProcessingStep(Logger, ABC):
      - PipelineCentroidCalculator and PipelinePacketProcessor build on top of CentroidCalculator and PacketProcessor to provide an integration in the existing online processing pipeline for online analysis.
     """
 
-    def __init__(self, name):
+    def __init__(self, name, parameter_wrapper_class=ProcessingParameter):
         super().__init__(name)
+        self.parameter_wrapper_class = parameter_wrapper_class
 
     def pre_process(self):
         pass
