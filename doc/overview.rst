@@ -89,3 +89,9 @@ util module
 | `spidrDummyTCP` accepts packets in so the configuration of timepix can be tested.
 | `spidrDummyUDP` samples and sends packets from a given file into the void.
   This can be used to test the pipeline functionality by capturing those packets with Pymepix.
+
+Class overview
+--------------
+
+.. raw:: html
+<object data="users/assets/pymepix_class_diagram.svg" type="image/svg+xml"></object>
