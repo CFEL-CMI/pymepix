@@ -94,4 +94,5 @@ Class overview
 --------------
 
 .. raw:: html
-<object data="users/assets/pymepix_class_diagram.svg" type="image/svg+xml"></object>
+
+    <object data="users/assets/pymepix_class_diagram.svg" type="image/svg+xml"></object>
