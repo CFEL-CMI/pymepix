@@ -61,7 +61,7 @@ Those tasks are currently `udpsampler` (capturing the packets), `rawtodisk` (sav
 Each of these specific pipeline steps overwrites the `BasePipelineObject`,
 which is in fact a python `multiprocessing.Process`.
 
-The majority of the logic for the pipeline_packet_processor and the pipeline_centroid_calculator is separated in the classes `centroid_calculator` 
+The majority of the logic for the pipeline_packet_processor and the pipeline_centroid_calculator is separated in the classes `centroid_calculator`
 and `packet_processor`. The `pipeline_` classes only add functionality for the integration of those classes into the multiprocessing pipeline.
 
 Each stage knows the task it has to fulfill and then creates one or multiple processes
