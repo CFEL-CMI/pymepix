@@ -95,4 +95,4 @@ Class overview
 
 .. raw:: html
 
-    :file: ./users/assets/pymepix_class_diagram.svg
+    <img src="https://raw.githubusercontent.com/CFEL-CMI/pymepix/develop/doc/users/assets/pymepix_class_diagram.svg" type="image/svg+xml"></img>
