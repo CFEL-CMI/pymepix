@@ -1,3 +1,1 @@
-numpy
-sklearn
-sphinx>=2
+sphinx

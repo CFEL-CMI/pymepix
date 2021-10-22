@@ -1,30 +1,31 @@
-##############################################################################
-##
 # This file is part of Pymepix
 #
+# In all scientific work using Pymepix, please reference it as
+#
+# A. F. Al-Refaie, M. Johny, J. Correa, D. Pennicard, P. Svihra, A. Nomerotski, S. Trippel, and J. Küpper:
+# "PymePix: a python library for SPIDR readout of Timepix3", J. Inst. 14, P10003 (2019)
+# https://doi.org/10.1088/1748-0221/14/10/P10003
 # https://arxiv.org/abs/1905.07999
 #
+# Pymepix is free software: you can redistribute it and/or modify it under the terms of the GNU
+# General Public License as published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
 #
-# Pymepix is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+# even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
 #
-# Pymepix is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with Pymepix.  If not, see <http://www.gnu.org/licenses/>.
-#
-##############################################################################
+# You should have received a copy of the GNU General Public License along with this program. If not,
+# see <https://www.gnu.org/licenses/>.
 
 import weakref
-from .spidrcmds import SpidrCmds
+
 import numpy as np
-from .spidrdefs import SpidrRegs
+
 from pymepix.core.log import Logger
+
+from .spidrcmds import SpidrCmds
+from .spidrdefs import SpidrRegs
 
 
 class SpidrDevice(Logger):
@@ -49,7 +50,7 @@ class SpidrDevice(Logger):
         self._ctrl = weakref.proxy(spidr_ctrl)
         self._dev_num = device_num
 
-        self.info('Device {} with id {} created'.format(self._dev_num, self.deviceId))
+        self.info("Device {} with id {} created".format(self._dev_num, self.deviceId))
 
         self.clearPixelConfig()
 
@@ -84,7 +85,9 @@ class SpidrDevice(Logger):
 
     def setHeaderFilter(self, eth_mask, cpu_mask):
         to_write = (eth_mask & 0xFFFF) | ((cpu_mask & 0xFFFF) << 16)
-        self._ctrl.requestSetInt(SpidrCmds.CMD_SET_HEADERFILTER, self._dev_num, to_write)
+        self._ctrl.requestSetInt(
+            SpidrCmds.CMD_SET_HEADERFILTER, self._dev_num, to_write
+        )
 
     def reset(self):
         self._ctrl.requestSetInt(SpidrCmds.CMD_RESET_DEVICE, self._dev_num, 0)
@@ -101,10 +104,12 @@ class SpidrDevice(Logger):
 
     def getDac(self, dac_code):
 
-        dac_data = self._ctrl.requestGetInt(SpidrCmds.CMD_GET_DAC, self._dev_num, dac_code)
+        dac_data = self._ctrl.requestGetInt(
+            SpidrCmds.CMD_GET_DAC, self._dev_num, dac_code
+        )
 
         if (dac_data >> 16) & 0xFFFF != dac_code:
-            raise Exception('DAC code mismatch')
+            raise Exception("DAC code mismatch")
 
         return dac_data & 0xFFFF
 
@@ -177,17 +182,23 @@ class SpidrDevice(Logger):
         self._ctrl.requestSetInt(SpidrCmds.CMD_GET_PWRPULSECONFIG, self._dev_num, value)
 
     def uploadPacket(self, packet):
-        self._ctrl.requestSetIntBytes(SpidrCmds.CMD_UPLOAD_PACKET, self._dev_num, len(packet), packet)
+        self._ctrl.requestSetIntBytes(
+            SpidrCmds.CMD_UPLOAD_PACKET, self._dev_num, len(packet), packet
+        )
 
     @property
     def TpPeriodPhase(self):
-        tp_data = self._ctrl.requestGetInt(SpidrCmds.CMD_GET_TPPERIODPHASE, self._dev_num)
+        tp_data = self._ctrl.requestGetInt(
+            SpidrCmds.CMD_GET_TPPERIODPHASE, self._dev_num
+        )
 
         return tp_data & 0xFFFF, (tp_data >> 16) & 0xFFFF
 
     def setTpPeriodPhase(self, period, phase):
         tp_data = ((phase & 0xFFFF) << 16) | (period & 0xFFFF)
-        self._ctrl.requestSetInt(SpidrCmds.CMD_SET_TPPERIODPHASE, self._dev_num, tp_data)
+        self._ctrl.requestSetInt(
+            SpidrCmds.CMD_SET_TPPERIODPHASE, self._dev_num, tp_data
+        )
 
     @property
     def tpNumber(self):
@@ -199,7 +210,9 @@ class SpidrDevice(Logger):
 
     @property
     def columnTestPulseRegister(self):
-        _cptr = self._ctrl.requestGetBytes(SpidrCmds.CMD_GET_CTPR, self._dev_num, 256 // 8)
+        _cptr = self._ctrl.requestGetBytes(
+            SpidrCmds.CMD_GET_CTPR, self._dev_num, 256 // 8
+        )
         # Store it locally for use
         self._cptr = _cptr
         return _cptr
@@ -213,11 +226,13 @@ class SpidrDevice(Logger):
 
         for y in range(256):
             # print('Requested row {}'.format(y))
-            column, pixelrow = self._ctrl.requestGetIntBytes(SpidrCmds.CMD_GET_PIXCONF, self._dev_num, 256, y)
+            column, pixelrow = self._ctrl.requestGetIntBytes(
+                SpidrCmds.CMD_GET_PIXCONF, self._dev_num, 256, y
+            )
 
             # print ('Column : {} Pixels: {}'.format(row,pixelcolumn))
             self._pixel_mask[column, :] = pixelrow[:] & 0x1
-            self._pixel_threshold[column, :] = (pixelrow[:] >> 1) & 0xf
+            self._pixel_threshold[column, :] = (pixelrow[:] >> 1) & 0xF
             self._pixel_test[column, :] = (pixelrow[:] >> 5) & 0x1
             # self._pixel_config[self._pixel_idx][column,:] = pixelrow[:]
 
@@ -265,84 +280,72 @@ class SpidrDevice(Logger):
         raise NotImplementedError
 
     def _formatPixelBits(self, matrix_packet):
-        '''
+        """
         Formats pixel information according to spidr's needs.
-        6 bit for each pixel, so 3 bytes every 4 pixels
-        '''
+
+        6 bits are needed for each pixel, (1 4 1)
+        so we pack the information for 4 pixels in 3 bytes.
+        """
         size = matrix_packet.size * 3 // 4
         formatted = np.zeros((size,), dtype=np.uint8)
 
         for x in range(0, matrix_packet.size, 4):
-            pixel1, pixel2, pixel3, pixel4 = matrix_packet[x: x + 4]
+            pixel1, pixel2, pixel3, pixel4 = matrix_packet[x : x + 4]
 
             byte1 = (pixel1 << 2) | (pixel2 >> 4)
-            byte2 = ((pixel2 << 4) & 0xf0) | (pixel3 >> 2)
-            byte3 = ((pixel3 << 6) & 0xc0) | pixel4
+            byte2 = ((pixel2 << 4) & 0xF0) | (pixel3 >> 2)
+            byte3 = ((pixel3 << 6) & 0xC0) | pixel4
 
             position = x * 3 // 4
-            formatted[position:(position+3)] = [byte1, byte2, byte3]
+            formatted[position : (position + 3)] = [byte1, byte2, byte3]
 
         return formatted
 
     def _uploadFormatted(self, columns_per_packet):
-        '''
-        Packs the pixel config informtation for each pixel as testbit - threshold - masking bit.
-        A pixel is masked if the according last bit is 1.
-        '''
+        """
+        Packs and sends pixel config.
 
-        # TIMEPIX_BITS=6
-        # nbytes = columns_per_packet*(256*TIMEPIX_BITS)//8
-
-        # for x in range(0,256,columns_per_packet):
-        #     for col in range(0,columns_per_packet):
-        #         to_write = self._pixel_config[self._pixel_idx][x+col,:]
-        #         offset = 0
-        #         packet = np.packbits(np.unpackbits(to_write).reshape(-1,8)[:,2:8].reshape(-1))
-
-        #     self._ctrl.req
+        Packs the pixel config information for each pixel as testbit (1b) - threshold (4b) - masking bit (1b).
+        A pixel is masked if the according bit is 1.
+        """
         self.resetPixels()
 
-        final_pixels = (self._pixel_mask) | (self._pixel_threshold & 0xf) << 1 | (self._pixel_test & 1) << 5
-        self.debug('FINAL_PIXELS {}'.format(final_pixels))
         # Flatten and unpack the bits of the matrix selecting only the necessary bits
+        final_pixels = (
+            self._pixel_mask
+            | (self._pixel_threshold & 0xF) << 1
+            | (self._pixel_test & 1) << 5
+        )
+        self.debug("FINAL_PIXELS {}".format(final_pixels))
 
-        for x in range(0, 255, 3):  # create 85 packets of 3 rows and a last one of one row
+        # create 85 packets of 3 rows and a last one of one row
+        for x in range(0, 255, 3):
             start_col = x
             end_col = x + 3
-            matrix_packet = final_pixels[start_col:end_col,:].reshape(768)
-            # @print (matrix_packet.shape,matrix_packet.dtype)
-            # print ('Sending packet with columns {}-{}'.format(start_col,end_col))
-            self._ctrl.requestSetIntBytes(SpidrCmds.CMD_SET_PIXCONF, self._dev_num, x,
-                                          self._formatPixelBits(matrix_packet))
-
-            # self._ctrl.request(self.CMD_SET_PIXCONF, self._dev_num, )
-
-            # request_packet = np.ndarray(shape=(512,),dtype=np.int32)
-
-            # request_packet[0] = socket.htonl(SpidrCmds.CMD_SET_PIXCONF)
-            # message_length = (4+1+matrix_packet_int.shape[0])*4
-            # request_packet[1] = socket.htonl(message_length)
-            # request_packet[2]=0
-            # request_packet[3] = socket.htonl(self._dev_num)
-            # request_packet[4] = 0
-            # #request_packet[4:4+column_mask.shape[0]] = column_mask[:]
-            # start= 5
-            # end = start + matrix_packet_int.shape[0]
-            # request_packet[start:end] = matrix_packet_int[:]
-
-            # self._ctrl.customRequest(request_packet,message_length)
+            matrix_packet = final_pixels[start_col:end_col, :].reshape(768)
+            self._ctrl.requestSetIntBytes(
+                SpidrCmds.CMD_SET_PIXCONF,
+                self._dev_num,
+                x,
+                self._formatPixelBits(matrix_packet),
+            )
 
         # last row
         matrix_packet = final_pixels[255, :].reshape(256)
-        # matrix_packet = np.insert(matrix_packet, 0, 255 & 0xff, axis=0)
-        self._ctrl.requestSetIntBytes(SpidrCmds.CMD_SET_PIXCONF, self._dev_num, 255,
-                                      self._formatPixelBits(matrix_packet))
 
+        self._ctrl.requestSetIntBytes(
+            SpidrCmds.CMD_SET_PIXCONF,
+            self._dev_num,
+            255,
+            self._formatPixelBits(matrix_packet),
+        )
         # Should be length 393216
 
     @property
     def timer(self):
-        return tuple(self._ctrl.requestGetInts(SpidrCmds.CMD_GET_TIMER, self._dev_num, 2))
+        return tuple(
+            self._ctrl.requestGetInts(SpidrCmds.CMD_GET_TIMER, self._dev_num, 2)
+        )
 
     @timer.setter
     def timer(self, time):
@@ -352,18 +355,24 @@ class SpidrDevice(Logger):
 
     @property
     def shutterStart(self):
-        return tuple(self._ctrl.requestGetInts(SpidrCmds.CMD_GET_SHUTTERSTART, self._dev_num, 2))
+        return tuple(
+            self._ctrl.requestGetInts(SpidrCmds.CMD_GET_SHUTTERSTART, self._dev_num, 2)
+        )
 
     @property
     def shutterEnd(self):
-        return tuple(self._ctrl.requestGetInts(SpidrCmds.CMD_GET_SHUTTEREND, self._dev_num, 2))
+        return tuple(
+            self._ctrl.requestGetInts(SpidrCmds.CMD_GET_SHUTTEREND, self._dev_num, 2)
+        )
 
     def t0Sync(self):
         self._ctrl.requestSetInt(SpidrCmds.CMD_T0_SYNC, self._dev_num, 0)
 
     @property
     def pixelPacketCounter(self):
-        return self._ctrl.getSpidrReg(SpidrRegs.SPIDR_PIXEL_PKTCOUNTER_I + self._dev_num)
+        return self._ctrl.getSpidrReg(
+            SpidrRegs.SPIDR_PIXEL_PKTCOUNTER_I + self._dev_num
+        )
 
     def getDacOut(self, nr_samples):
         return self._ctrl.getAdc(self._dev_num, nr_samples)
@@ -373,12 +382,14 @@ class SpidrDevice(Logger):
 
         val = self._ctrl.requestGetInt(SpidrCmds.CMD_GET_IPADDR_SRC, self._dev_num)
 
-        return "{}.{}.{}.{}".format((val >> 24) & 0xFF, (val >> 16) & 0xFF, (val >> 8) & 0xFF, (val >> 0) & 0xFF)
+        return "{}.{}.{}.{}".format(
+            (val >> 24) & 0xFF, (val >> 16) & 0xFF, (val >> 8) & 0xFF, (val >> 0) & 0xFF
+        )
 
     @ipAddrSrc.setter
     def ipAddrSrc(self, ipaddr):
 
-        split = ipaddr.split['.']
+        split = ipaddr.split["."]
 
         first = int(split[0]) & 0xFF
         second = int(split[1]) & 0xFF
@@ -392,11 +403,13 @@ class SpidrDevice(Logger):
     def ipAddrDest(self):
         val = self._ctrl.requestGetInt(SpidrCmds.CMD_GET_IPADDR_DEST, self._dev_num)
 
-        return "{}.{}.{}.{}".format((val >> 24) & 0xFF, (val >> 16) & 0xFF, (val >> 8) & 0xFF, (val >> 0) & 0xFF)
+        return "{}.{}.{}.{}".format(
+            (val >> 24) & 0xFF, (val >> 16) & 0xFF, (val >> 8) & 0xFF, (val >> 0) & 0xFF
+        )
 
     @ipAddrDest.setter
     def ipAddrDest(self, ipaddr):
-        split = ipaddr.split['.']
+        split = ipaddr.split["."]
 
         first = int(split[0]) & 0xFF
         second = int(split[1]) & 0xFF
@@ -416,4 +429,6 @@ class SpidrDevice(Logger):
 
     @serverPort.setter
     def serverPort(self, value):
-        return self._ctrl.requestSetInt(SpidrCmds.CMD_SET_SERVERPORT, self._dev_num, value)
+        return self._ctrl.requestSetInt(
+            SpidrCmds.CMD_SET_SERVERPORT, self._dev_num, value
+        )

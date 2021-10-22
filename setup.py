@@ -19,94 +19,101 @@
 #
 # You should have received a copy of the GNU General Public License along with this program. If not,
 # see <https://www.gnu.org/licenses/>.
+from distutils.core import setup
 
-author = 'CFEL Controlled Molecule Imaging group'
-copyright = '2018–2020 CFEL-CMI <jochen.kuepper@cfel.de>'
-name = 'pymepix'
-version = '1.1.dev0'
+from setuptools import find_packages
+
+author = "CFEL Controlled Molecule Imaging group"
+copyright = "2018–2020 CFEL-CMI <cmidaq@desy.de>"
+name = "pymepix"
+version = "1.1.dev0"
 release = version
 
+packages = find_packages(exclude=("tests", "doc"))
 
-
-import os
-from setuptools import Distribution
-from setuptools import setup, find_packages
-from setuptools.command.install import install
-
-from distutils.core import setup
-from distutils.command.install_scripts import install_scripts
-from distutils import log
-
-packages = find_packages(exclude=('tests', 'doc'))
-
-provides = ['pymepix', ]
+provides = ["pymepix"]
 
 requires = []
 
-install_requires = ['numpy', 'sklearn']
+install_requires = [
+    "numpy",
+    "scikit-learn",
+    "scipy",
+    "pyyaml",
+    "pyzmq",
+    "pyserial",
+    "h5py",
+    "tqdm",
+]
 
-console_scripts = ['pymepix-acq=pymepix.pymepix:main']
+console_scripts = ["pymepix-acq=pymepix.main:main"]
 
-entry_points = {'console_scripts': console_scripts, }
+entry_points = {"console_scripts": console_scripts}
 
 classifiers = [
-    'Development Status :: 5 - Production/Stable',
-    'Environment :: Console',
-    'Environment :: No Input/Output (Daemon)',
-    'Environment :: Win32 (MS Windows)',
-    'Intended Audience :: Developers',
-    'Intended Audience :: Science/Research',
-    'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
-    'Operating System :: MacOS :: MacOS X',
-    'Operating System :: Microsoft :: Windows',
-    'Operating System :: POSIX',
-    'Operating System :: POSIX :: Linux',
-    'Operating System :: Unix',
-    'Operating System :: OS Independent',
-    'Programming Language :: Python',
-    'Programming Language :: Python :: 3 :: Only',
-    'Programming Language :: Python :: 3.4',
-    'Programming Language :: Python :: 3.5',
-    'Programming Language :: Python :: 3.6',
-    'Programming Language :: Python :: 3.7',
-    'Topic :: Scientific/Engineering',
-    'Topic :: Software Development :: Libraries',
-    'Topic :: System :: Hardware :: Hardware Drivers',
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Environment :: No Input/Output (Daemon)",
+    "Environment :: Win32 (MS Windows)",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: Unix",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.4",
+    "Programming Language :: Python :: 3.5",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: System :: Hardware :: Hardware Drivers",
 ]
 
 long_description = None
-with open('README.md') as f:
+with open("README.md") as f:
     long_description = f.read()
 
-setup(name=name,
-      # Original author: Ahmed Al Refaie
-      author = author,
-      author_email = 'cmidaq@cfel.de',
-      maintainer = 'Hubertus Bromberger and CFEL-CMI group',
-      maintainer_email = 'cmidaq@cfel.de',
-      version = version,
-      description = 'Timepix Python library',
-      download_url = 'https://stash.desy.de/projects/CMIPUBLIC/repos/timepix',
-      classifiers = classifiers,
-      packages = packages,
-      include_package_data = True,
-      entry_points = entry_points,
-      long_description = long_description,
-      long_description_content_type = 'text/markdown',
-      provides = provides,
-      requires = requires,
-      install_requires = install_requires,
-      command_options = {
-          'build_sphinx': {
-              'project': ('setup.py', name),
-              'version': ('setup.py', version),
-              'release': ('setup.py', release),
-              'source_dir': ('setup.py', 'doc'),
-              'copyright': ('setup.py', copyright)}
-      },
-      )
+setup(
+    name=name,
+    # Original author: Ahmed Al Refaie
+    author=author,
+    author_email="cmidaq@cfel.de",
+    maintainer="Hubertus Bromberger and CFEL-CMI group",
+    maintainer_email="cmidaq@cfel.de",
+    version=version,
+    description="Timepix Python library",
+    download_url="https://stash.desy.de/projects/CMIPUBLIC/repos/timepix",
+    classifiers=classifiers,
+    packages=packages,
+    # include_package_data=True,
+    # package_dir={"pymepix": "pymepix"},
+    package_data={"": ["*.yaml"]},
+    entry_points=entry_points,
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    provides=provides,
+    requires=requires,
+    install_requires=install_requires,
+    command_options={
+        "build_sphinx": {
+            "project": ("setup.py", name),
+            "version": ("setup.py", version),
+            "release": ("setup.py", release),
+            "source_dir": ("setup.py", "doc"),
+            "copyright": ("setup.py", copyright),
+        }
+    },
+)
 
-### Local Variables:
-### fill-column: 100
-### truncate-lines: t
-### End:
+# Local Variables:
+# fill-column: 100
+# truncate-lines: t
+# End:

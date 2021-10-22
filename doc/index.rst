@@ -3,10 +3,9 @@
     :titlesonly:
     :maxdepth: 4
 
-    doc
-    api
+    users/doc
+    source
     references
-    todolist
 
 Pymepix Documentation
 =============================================

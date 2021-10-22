@@ -20,11 +20,13 @@ Data:
     :uint64: global timer from Timepix at time packets were recieved
 
 Example:
-::
 
-    data_type,data = timepix.poll()
+.. code:: python
+    :number-lines: 1
+
+    data_type, data = timepix.poll()
     if data_type is MessageType.RawData:
-        packets,longtime = data
+        packets, longtime = data
 
 --------------
 Decoded Pixels
@@ -39,13 +41,14 @@ Data:
     :array(float): global time of arrival in seconds
     :array(uint64)): time over threshold in nanoseconds
 
-
 Example:
-::
 
-    data_type,data = timepix.poll()
+.. code:: python
+    :number-lines: 1
+
+    data_type, data = timepix.poll()
     if data_type is MessageType.PixelData:
-        x,y,toa,tot = data
+        x, y, toa, tot = data
 
 ----------------
 Decoded Triggers
@@ -60,11 +63,13 @@ Data:
 
 
 Example:
-::
 
-    data_type,data = timepix.poll()
+.. code:: python
+    :number-lines: 1
+
+    data_type, data = timepix.poll()
     if data_type is MessageType.TriggerData:
-        t_num,t_time = data
+        t_num, t_time = data
 
 
 --------------------
@@ -83,11 +88,13 @@ Data:
 
 
 Example:
-::
 
-    data_type,data = timepix.poll()
+.. code:: python
+    :number-lines: 1
+
+    data_type, data = timepix.poll()
     if data_type is MessageType.EventData:
-        trigger,x,y,tof,tot = data
+        trigger, x, y, tof, tot = data
 
 
 -------------
@@ -99,18 +106,19 @@ Data Type:
 
 Data:
     :array(uint64): trigger number
-    :array(uint64): center of mass x position
-    :array(uint64): center of mass y position
-    :array(uint64): total area
-    :array(uint64): total time over threshold
-    :array(uint64): Ignore (used in future)
-    :array(uint64): Ignore (used in future)
-    :array(uint64)): time of flight
+    :array(float): center of mass x position
+    :array(float): center of mass y position
+    :array(float): minimum cluster time of flight
+    :array(float): average cluster time over threshold
+    :array(uint64): maximum cluster time over threshold
+    :array(uint64): cluster size
 
 
 Example:
-::
 
-    data_type,data = timepix.poll()
+.. code:: python
+    :number-lines: 1
+
+    data_type, data = timepix.poll()
     if data_type is MessageType.CentroidData:
-        trigger,x,y,area,integral,nu,nu,tof = data
+        trigger, x, y, tof, avg_tot, max_tot, size = data
