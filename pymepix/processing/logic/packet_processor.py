@@ -17,14 +17,14 @@
 #
 # You should have received a copy of the GNU General Public License along with this program. If not,
 # see <https://www.gnu.org/licenses/>.
+from ctypes import c_bool
 from enum import IntEnum
 from multiprocessing import Value
-from ctypes import c_bool
 
 import numpy as np
+
 from pymepix.core.log import Logger
 from pymepix.processing.logic.processing_parameter import ProcessingParameter
-
 from pymepix.processing.logic.processing_step import ProcessingStep
 
 
@@ -42,18 +42,28 @@ class PixelOrientation(IntEnum):
 
 
 class PacketProcessor(ProcessingStep):
-    """ Class reposnsible to transform the raw data coming from the timepix directly into an easier 
+    """ Class reposnsible to transform the raw data coming from the timepix directly into an easier
     processible data format. Takes into account the pixel- and trigger data to calculate toa and tof
     dimensions.
 
     Methods
     -------
     process(data):
-        Process data and return the result. To use this class only this method should be used! Use the other methods only for testing or 
+        Process data and return the result. To use this class only this method should be used! Use the other methods only for testing or
         if you are sure about what you are doing
     """
-    def __init__(self, handle_events=True, event_window=(0.0, 10000.0), position_offset=(0, 0), 
-                orientation=PixelOrientation.Up, start_time=0, timewalk_lut=None, *args, **kwargs):
+
+    def __init__(
+        self,
+        handle_events=True,
+        event_window=(0.0, 10000.0),
+        position_offset=(0, 0),
+        orientation=PixelOrientation.Up,
+        start_time=0,
+        timewalk_lut=None,
+        *args,
+        **kwargs
+    ):
         """
         Constructor for the PacketProcessor.
 
@@ -72,7 +82,7 @@ class PacketProcessor(ProcessingStep):
         parameter_wrapper_classe : ProcessingParameter
             Class used to wrap the processing parameters to make them changable while processing is running (useful for online optimization)
         """
-    
+
         super().__init__("PacketProcessor", *args, **kwargs)
         self._handle_events = self.parameter_wrapper_class(handle_events)
         event_window_min, event_window_max = event_window
@@ -80,7 +90,7 @@ class PacketProcessor(ProcessingStep):
         self._event_window_max = self.parameter_wrapper_class(event_window_max)
         self._orientation = orientation
         self._x_offset, self._y_offset = position_offset
-        self._start_time =  start_time
+        self._start_time = start_time
         self._timewalk_lut = timewalk_lut
 
         self._trigger_counter = 0
@@ -281,8 +291,12 @@ class PacketProcessor(ProcessingStep):
                 # Get our start/end triggers to bin events accordingly
                 start = self._triggers[0:-1:]
                 if start.size > 0:
+                    # FIXME: if start.size == 1, this breaks...
+                    # reproduce with 'data/debug_20220210.raw' and size=90
                     trigger_counter = np.arange(
-                        self._trigger_counter, self._trigger_counter + start.size - 1, dtype=int
+                        self._trigger_counter,
+                        self._trigger_counter + start.size - 1,
+                        dtype=int,
                     )
                     self._trigger_counter = trigger_counter[-1] + 1
 
@@ -326,7 +340,7 @@ class PacketProcessor(ProcessingStep):
                         )  # timestamp in ns for trigger event
                         return result, (np.unique(result[0]), timeStamps)
 
-        return None # Clear out the triggers since they have nothing
+        return None  # Clear out the triggers since they have nothing
 
     def __exist_enough_triggers(self):
         return self._triggers is not None and self._triggers.size >= 4

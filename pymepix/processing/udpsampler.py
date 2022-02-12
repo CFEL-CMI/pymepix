@@ -250,6 +250,11 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
         start = time.time()
         while True:
             if enabled:
+                # FIXME: if we run this in centroiding or TOF with spidrDummyUDP
+                # packets don't get submitted to packet_processor when the spidrDummyUDP is called a
+                # 2nd or 3rd time
+                # maybe this is caused by packetprocessor trigger_counter[-1] problem
+                # resetting the mode/rebuilding the pipeline solves that problem
                 try:
                     self._recv_bytes += self._sock.recv_into(
                         self._packet_buffer_view[self._recv_bytes :]

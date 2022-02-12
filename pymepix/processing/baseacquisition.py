@@ -324,7 +324,7 @@ def main():
     longtime = Value("I", 0)
 
     acqpipline.addStage(0, UdpSampler, ("127.0.0.1", 50000), longtime)
-    acqpipline.addStage(2, PipelinePacketProcessor, num_processes=4)
+    acqpipline.addStage(2, PipelinePacketProcessor, num_processes=1)
 
     def get_queue_thread(queue):
         while True:
