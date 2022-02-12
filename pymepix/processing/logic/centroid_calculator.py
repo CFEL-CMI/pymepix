@@ -185,7 +185,8 @@ class CentroidCalculator(ProcessingStep):
         # remember, that in 3.10 or 3.11 try catch should become less expensive
         try:
             joined_chunks = np.concatenate(list(chunks), axis=0)
-        except:
+        except Exception as e:
+            self.debug(str(e))
             joined_chunks = None
 
         return joined_chunks
