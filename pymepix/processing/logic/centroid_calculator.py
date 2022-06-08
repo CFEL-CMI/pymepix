@@ -180,13 +180,7 @@ class CentroidCalculator(ProcessingStep):
                 for index, coordinate in enumerate(chunk):
                     centroids[index].append(coordinate)"""
 
-        try:
-            joined_chunks = np.concatenate(list(chunks), axis=1)
-        except Exception as e:
-            self.debug(str(e))
-            joined_chunks = None
-
-        return joined_chunks
+        return np.concatenate(list(filter(None,chunks)), axis=1)
 
     def perform_centroiding(self, chunks):
         return map(self.calculate_centroids, chunks)
