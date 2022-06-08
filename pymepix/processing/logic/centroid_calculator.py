@@ -180,11 +180,8 @@ class CentroidCalculator(ProcessingStep):
                 for index, coordinate in enumerate(chunk):
                     centroids[index].append(coordinate)"""
 
-        # list_chunks = list(chunks)
-        # TODO check if try catch is faster or if list_chunks[0] == None
-        # remember, that in 3.10 or 3.11 try catch should become less expensive
         try:
-            joined_chunks = np.concatenate(list(chunks), axis=0)
+            joined_chunks = np.concatenate(list(chunks), axis=1)
         except Exception as e:
             self.debug(str(e))
             joined_chunks = None
