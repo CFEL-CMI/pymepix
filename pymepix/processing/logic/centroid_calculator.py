@@ -127,7 +127,7 @@ class CentroidCalculator(ProcessingStep):
             chunks = self.__divide_into_chunks(shot, x, y, tof, tot)
             centroids_in_chunks = self.perform_centroiding(chunks)
 
-            return self.__centroid_chunks_to_centroids(centroids_in_chunks)
+            return self.centroid_chunks_to_centroids(centroids_in_chunks)
         else:
             return None
 
@@ -172,7 +172,7 @@ class CentroidCalculator(ProcessingStep):
 
         return trigger_chunks
 
-    def __centroid_chunks_to_centroids(self, chunks):
+    def centroid_chunks_to_centroids(self, chunks):
         # range(7) because the centroids have 7 dimensions: shot, x, y, tof, tot avg, tot max, cluster size
         """centroids = [[] for i in range(7)]
         for chunk in list(chunks):
@@ -180,7 +180,7 @@ class CentroidCalculator(ProcessingStep):
                 for index, coordinate in enumerate(chunk):
                     centroids[index].append(coordinate)"""
         joined_chunks = list(filter(None, chunks))
-        if joined_chunks != [] :
+        if joined_chunks:
             return np.concatenate(joined_chunks, axis=1)
         else:
             return None
