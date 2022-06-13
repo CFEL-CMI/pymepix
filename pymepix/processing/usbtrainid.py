@@ -31,7 +31,7 @@ import zmq
 
 import pymepix.config.load_config as cfg
 from pymepix.core.log import ProcessLogger
-from zmq.sugar.constants import NOBLOCK
+#from zmq.sugar.constants import NOBLOCK
 
 
 # Class to write raw data to files using ZMQ and a new thread to prevent IO blocking

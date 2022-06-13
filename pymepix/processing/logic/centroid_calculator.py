@@ -127,7 +127,7 @@ class CentroidCalculator(ProcessingStep):
             chunks = self.__divide_into_chunks(shot, x, y, tof, tot)
             centroids_in_chunks = self.perform_centroiding(chunks)
 
-            return self.__centroid_chunks_to_centroids(centroids_in_chunks)
+            return self.centroid_chunks_to_centroids(centroids_in_chunks)
         else:
             return None
 
@@ -172,24 +172,18 @@ class CentroidCalculator(ProcessingStep):
 
         return trigger_chunks
 
-    def __centroid_chunks_to_centroids(self, chunks):
+    def centroid_chunks_to_centroids(self, chunks):
         # range(7) because the centroids have 7 dimensions: shot, x, y, tof, tot avg, tot max, cluster size
         """centroids = [[] for i in range(7)]
         for chunk in list(chunks):
             if chunk != None:
                 for index, coordinate in enumerate(chunk):
                     centroids[index].append(coordinate)"""
-
-        # list_chunks = list(chunks)
-        # TODO check if try catch is faster or if list_chunks[0] == None
-        # remember, that in 3.10 or 3.11 try catch should become less expensive
-        try:
-            joined_chunks = np.concatenate(list(chunks), axis=0)
-        except Exception as e:
-            self.debug(str(e))
-            joined_chunks = None
-
-        return joined_chunks
+        joined_chunks = list(filter(None, chunks))
+        if joined_chunks:
+            return np.concatenate(joined_chunks, axis=1)
+        else:
+            return None
 
     def perform_centroiding(self, chunks):
         return map(self.calculate_centroids, chunks)

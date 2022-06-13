@@ -45,6 +45,18 @@ def test_calculate_centroid_properties_3():
     expected_result = [1, 2], [0, 1], [0, 1], [1/5, 1/5], [1, 1], [1, 1], [5, 5]
     assertCentroidsEqual(expected_result, centroid_calculator.calculate_centroids_properties(shot, x, y, tof, tot, label))
 
+def test_centroid_chunks_to_centroids():
+    centroid_calculator = CentroidCalculator()
+
+    list1 = [tuple([np.zeros((i,)) for j in range(7)]) for i in range(1,4)]
+    list2 = [list1[0], None, list1[1], None, list1[2], None,]
+    list3 = [ None, None, None]
+
+    assert centroid_calculator.centroid_chunks_to_centroids(map(lambda x: x,list1)).shape == (7, 6)
+    assert centroid_calculator.centroid_chunks_to_centroids(map(lambda x: x,list2)).shape == (7, 6)
+    assert centroid_calculator.centroid_chunks_to_centroids(map(lambda x: x,list3)) == None
+
+
 def test_divide_into_chunks_1():
     centroid_calculator = CentroidCalculator()
 
