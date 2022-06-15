@@ -279,8 +279,8 @@ class PacketProcessor(ProcessingStep):
 
             if self.__toa_is_not_empty():
                 # Get our start/end triggers to bin events accordingly
-                start = self._triggers[0:-1:]
-                if start.size > 0:
+                start = self._triggers
+                if start.size > 1:
                     trigger_counter = np.arange(
                         self._trigger_counter, self._trigger_counter + start.size - 1, dtype=int
                     )
