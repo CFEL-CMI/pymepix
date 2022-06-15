@@ -304,7 +304,7 @@ class PacketProcessor(ProcessingStep):
                         self.error("Flushing triggers!!!")
                         self._triggers = self._triggers[-2:]
                         return None
-                    self._triggers = self._triggers[-2:]
+                    self._triggers = self._triggers[-1:]
 
                     tof = toa - start[event_mapping]
                     event_number = trigger_counter[event_mapping]
