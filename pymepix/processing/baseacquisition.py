@@ -164,15 +164,16 @@ class AcquisitionStage(Logger):
 
     def start(self):
         for p in self._pipeline_objects:
+            zmq_port = cfg.default_cfg['zmq_port']
             if p.name.find("UdpSampler-") > -1:
                 self.udp_sock = self.ctx.socket(zmq.PAIR)
-                self.udp_sock.bind("tcp://127.0.0.1:40000")
-                self.info('zmq bind on "tcp://127.0.0.1:40000"')
+                self.udp_sock.bind(f"tcp://127.0.0.1:{zmq_port}")
+                self.info(f'zmq bind on "tcp://127.0.0.1:{zmq_port}"')
 
                 if cfg.default_cfg["trainID"]["connected"]:
                     self.train_sock = self.ctx.socket(zmq.PAIR)
-                    self.train_sock.bind("ipc:///tmp/train_sock")
-                    self.info('trainID bind on "ipc:///tmp/train_sock"')
+                    self.train_sock.bind(f"ipc:///tmp/train_sock{zmq_port}")
+                    self.info(f'trainID bind on "ipc:///tmp/train_sock{zmq_port}"')
                     self.startTrainID()
             p.start()
 
@@ -195,11 +196,11 @@ class AcquisitionStage(Logger):
         else:
             for p in self._pipeline_objects:
                 if p.name.find("UdpSampler-") > -1:
-                    self.debug(f'closing zmq socket for "tcp://127.0.0.1:40000"')
+                    self.debug(f"closing zmq socket for tcp://127.0.0.1:{cfg.default_cfg['zmq_port']}")
                     self.udp_sock.close()
                     if cfg.default_cfg["trainID"]["connected"]:
                         self.stopTrainID()
-                        self.debug(f'closing zmq socket for "icp:///tmp/train_sock"')
+                        self.debug(f"closing zmq socket for icp:///tmp/train_sock{cfg.default_cfg['zmq_port']}")
                         self.train_sock.close()
                 p.enable = False
                 self.info("Joining thread {}".format(p))

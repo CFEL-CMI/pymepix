@@ -26,6 +26,7 @@ import zmq
 
 from .basepipeline import BasePipelineObject
 from .logic.packet_processor import PacketProcessor
+import pymepix.config.load_config as cfg
 
 class PipelinePacketProcessor(BasePipelineObject):
     """Processes Pixel packets for ToA, ToT, triggers and events
@@ -57,7 +58,7 @@ class PipelinePacketProcessor(BasePipelineObject):
         self.debug("create ZMQ socket")
         ctx = zmq.Context.instance()
         self._packet_sock = ctx.socket(zmq.PULL)
-        self._packet_sock.connect("ipc:///tmp/packetProcessor")
+        self._packet_sock.connect(f"ipc:///tmp/packetProcessor{cfg.default_cfg['zmq_port']}")
 
     def pre_run(self):
         self.init_new_process()

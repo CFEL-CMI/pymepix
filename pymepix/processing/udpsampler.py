@@ -30,6 +30,7 @@ from pymepix.core.log import ProcessLogger
 
 # from pymepix.processing.basepipeline import BasePipelineObject
 from pymepix.processing.rawtodisk import Raw2Disk
+import pymepix.config.load_config as cfg
 
 
 class UdpSampler(multiprocessing.Process, ProcessLogger):
@@ -94,7 +95,7 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
             self.debug("create packetprocessor socket")
             ctx = zmq.Context.instance()
             self._packet_sock = ctx.socket(zmq.PUSH)
-            self._packet_sock.bind("ipc:///tmp/packetProcessor")
+            self._packet_sock.bind(f"ipc:///tmp/packetProcessor{cfg.default_cfg['zmq_port']}")
         except Exception as e:
             self.error("Exception occured in init!!!")
             self.error(e, exc_info=True)
@@ -379,7 +380,7 @@ def main():
 
     ctx = zmq.Context.instance()
     z_sock = ctx.socket(zmq.PAIR)
-    z_sock.bind("tcp://127.0.0.1:40000")
+    z_sock.bind(f"tcp://127.0.0.1:{cfg.default_cfg['zmq_port']}")
     # z_sock.send_string('hallo')
     # print(z_sock.recv_string())
 

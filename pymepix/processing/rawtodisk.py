@@ -46,11 +46,10 @@ class Raw2Disk(ProcessLogger):
         self.writing = False  # Keep track of whether we're currently writing a file
         self.stop_thr = False
 
-        self.sock_addr = f"inproc://filewrite-43"
+        self.sock_addr = f"inproc://filewrite-{cfg.default_cfg['zmq_port']}"
         self.my_context = context or zmq.Context.instance()
-        self.my_sock = self.my_context.socket(
-            zmq.PAIR
-        )  # Paired socket allows two-way communication
+        # Paired socket allows two-way communication
+        self.my_sock = self.my_context.socket(zmq.PAIR)  
         self.my_sock.bind(self.sock_addr)
 
         self.write_thr = threading.Thread(
@@ -79,12 +78,12 @@ class Raw2Disk(ProcessLogger):
         inproc_sock.connect(sock_addr)
         # socket for cummunication with main
         z_sock = context.socket(zmq.PAIR)
-        z_sock.connect("tcp://127.0.0.1:40000")
-        self.info("zmq connect to 'tcp://127.0.0.1:40000'")
+        z_sock.connect(f"tcp://127.0.0.1:{cfg.default_cfg['zmq_port']}")
+        self.info(f"zmq connect to tcp://127.0.0.1:{cfg.default_cfg['zmq_port']}")
 
         # socket to maxwell
         max_sock = context.socket(zmq.PUSH)
-        max_sock.connect("tcp://131.169.193.62:13049")
+        max_sock.connect("tcp://131.169.193.43:13049")
 
         # State machine etc. local variables
         waiting = True
@@ -240,7 +239,7 @@ def main_process():
     # zmq socket for communication with write2disk thread
     ctx = zmq.Context.instance()
     z_sock = ctx.socket(zmq.PAIR)
-    z_sock.bind("tcp://127.0.0.1:40000")
+    z_sock.bind(f"tcp://127.0.0.1:{cfg.default_cfg['zmq_port']}")
 
     write2disk = Raw2Disk()
     """
