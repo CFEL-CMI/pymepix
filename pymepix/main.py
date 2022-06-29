@@ -162,6 +162,14 @@ def main():
         help="Compute TOF if decode is enabled",
         default=False,
     )
+    parser_connect.add_argument(
+        "-c",
+        "--config",
+        dest="cfg",
+        type=str,
+        default="defaut.yaml",
+        help="Config file",
+    )
 
     parser_post_process = subparsers.add_parser(
         "post-process", help="Perform post-processing with a acquired raw data file."
@@ -208,6 +216,7 @@ def main():
 
     args = parser.parse_args()
 
+    cfg.load_config(args.cfg)
     args.func(args)
 
 

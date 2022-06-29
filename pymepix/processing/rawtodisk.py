@@ -27,6 +27,7 @@ import numpy as np
 import zmq
 
 from pymepix.core.log import ProcessLogger
+import pymepix.config.load_config as cfg
 
 
 # Class to write raw data to files using ZMQ and a new thread to prevent IO blocking

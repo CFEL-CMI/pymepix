@@ -19,25 +19,27 @@
 # see <https://www.gnu.org/licenses/>.
 # global import for config file
 
-import os
+from pathlib import Path, PurePath
 import sys
 
 import yaml
+import random
 
 global default_cfg
 
 # print("\033[93m" + "USB trainID not started" + "\033[0m")
 
 
-def _load_config():
+def load_config(config_name = "default.yaml"):
     global default_cfg
-    cfg_file = os.path.join(os.path.dirname(__file__), "default.yaml")
-    if os.path.isfile(cfg_file):
+    cfg_file = Path(PurePath(__file__).parent, config_name)
+    if Path(cfg_file).is_file():
         with open(cfg_file, "r") as f:
             default_cfg = yaml.safe_load(f)
     else:
         print(f"Cannot find config {cfg_file} file")
         sys.exit()
+    # choose random port for ZMQ connections
+    default_cfg['zmq_port'] = random.randint(2000, 65000)
 
-
-_load_config()
+load_config()

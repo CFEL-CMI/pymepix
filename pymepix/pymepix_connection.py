@@ -86,7 +86,10 @@ class PymepixConnection(Logger):
             data_type, data = value
             self._event_callback(data_type, data)
 
-    def __init__(self, spidr_address="default", src_ip_port="default", pipeline_class=PixelPipeline):
+    def __init__(self,
+                 spidr_address=(cfg.default_cfg["timepix"]["tpx_ip"], 50000),
+                 src_ip_port=('192.168.1.1', 8192), 
+                 pipeline_class=PixelPipeline):
         Logger.__init__(self, "Pymepix")
         if spidr_address == "default":
             spidr_address = (cfg.default_cfg["timepix"]["tpx_ip"], 50000)
