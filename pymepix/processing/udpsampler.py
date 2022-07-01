@@ -111,7 +111,7 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
         except OSError:
             self.warning("NIC memory you try to allocate is too much.")
         self._sock.settimeout(1.0)
-        self.info("Establishing connection to : {}".format(address))
+        self.info("Establishing connection to : {}:{}".format(*address))
         self._sock.bind(address)
 
     def get_useful_packets(self, packet):

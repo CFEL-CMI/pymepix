@@ -40,8 +40,8 @@ logging.basicConfig(
 def connect_timepix(args):
     if not os.path.exists(args.output):
 
-        # get TPX port for camera, if not specified in config, use default / 0
-        pc_port = int(cfg.default_cfg.get('timepix').get('pc_port', 0))
+        # get TPX port for camera, if not specified in config, use default
+        pc_port = int(cfg.default_cfg.get('timepix').get('pc_port', 8192))
         # Connect to SPIDR
         pymepix = PymepixConnection(spidr_address=(args.ip, args.port),
                                     src_ip_port=(cfg.default_cfg['timepix']['pc_ip'], pc_port))
