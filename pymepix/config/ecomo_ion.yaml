@@ -1,3 +1,4 @@
+name: 'ions'
 timepix:
    pc_ip : '192.168.1.1'
    udp_port: 11113

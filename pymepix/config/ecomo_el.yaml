@@ -1,3 +1,4 @@
+name: 'electrons'
 timepix:
    pc_ip : '192.168.1.1'
    pc_port: 5566
