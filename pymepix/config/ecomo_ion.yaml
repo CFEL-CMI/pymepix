@@ -1,8 +1,8 @@
 timepix:
    pc_ip : '192.168.1.1'
-   pc_port: 11113
-   tpx_ip : '192.168.1.15'
-   sophy_config : 'path_to_sophy_config'
+   udp_port: 11113
+   tpx_ip : '192.168.1.11'
+   sophy_config : '/home/cfelcmi/timepix/10Gb2_50V_IKrum150.spx'
 trainID:
    connected: False
    device : '/dev/ttyUSB0'

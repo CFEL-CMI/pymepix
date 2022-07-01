@@ -2,7 +2,7 @@ timepix:
    pc_ip : '192.168.1.1'
    pc_port: 5566
    tpx_ip : '192.168.1.10'
-   sophy_config : 'path_to_sophy_config'
+   sophy_config : '/home/cfelcmi/timepix/ElectronTPX_IKrum150.spx'
 trainID:
    connected: False
    device : '/dev/ttyUSB0'
