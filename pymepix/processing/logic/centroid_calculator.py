@@ -48,6 +48,7 @@ class CentroidCalculator(ProcessingStep):
         triggers_processed=1,
         chunk_size_limit=6_500,
         cent_timewalk_lut=None,
+        dbscan_clustering=True,
         *args,
         **kwargs,
     ):
@@ -82,6 +83,7 @@ class CentroidCalculator(ProcessingStep):
         self._chunk_size_limit = chunk_size_limit
         self._tof_scale = 1e7
         self._cent_timewalk_lut = cent_timewalk_lut
+        self._dbscan_clustering = dbscan_clustering
 
     @property
     def epsilon(self):
@@ -113,7 +115,7 @@ class CentroidCalculator(ProcessingStep):
 
     @property
     def triggers_processed(self):
-        """ Setting for the number of packets skiped during processing. Every packet_skip packet is processed.
+        """ Setting for the number of packets skipped during processing. Every packet_skip packet is processed.
         This means for a value of 1 every packet is processed. For 2 only every 2nd packet is processed. """
         return self._triggers_processed.value
 
@@ -191,15 +193,19 @@ class CentroidCalculator(ProcessingStep):
     def calculate_centroids(self, chunk):
         shot, x, y, tof, tot = chunk
 
-        tot_filter = tot > self.tot_threshold
-        # Filter out pixels
-        shot = shot[tot_filter]
-        x = x[tot_filter]
-        y = y[tot_filter]
-        tof = tof[tot_filter]
-        tot = tot[tot_filter]
+        if self._dbscan_clustering:
+            tot_filter = tot > self.tot_threshold
+            # Filter out pixels
+            shot = shot[tot_filter]
+            x = x[tot_filter]
+            y = y[tot_filter]
+            tof = tof[tot_filter]
+            tot = tot[tot_filter]
 
-        labels = self.perform_clustering(shot, x, y, tof)
+            labels = self.perform_clustering_dbscan(shot, x, y, tof)
+
+        else:
+            pass
 
         label_filter = labels != 0
 
@@ -215,7 +221,7 @@ class CentroidCalculator(ProcessingStep):
 
         return None
 
-    def perform_clustering(self, shot, x, y, tof):
+    def perform_clustering_dbscan(self, shot, x, y, tof):
         """ The clustering with DBSCAN, which is performed in this function is dependent on the
             order of the data in rare cases. Therefore reordering in any means can
             lead to slightly changed results, which should not be an issue.

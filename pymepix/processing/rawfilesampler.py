@@ -36,7 +36,8 @@ class RawFileSampler():
         number_of_processes=None,
         timewalk_file=None,
         cent_timewalk_file=None,
-        progress_callback=None
+        progress_callback=None,
+        dbscan_clustering=True
     ):
         self._filename = file_name
         self._output_file = output_file
@@ -45,6 +46,8 @@ class RawFileSampler():
 
         self._number_of_processes = number_of_processes
         self._progress_callback = progress_callback
+
+        self._dbscan_clustering = dbscan_clustering
 
     def init_new_process(self, file):
         """create connections and initialize variables in new process"""
@@ -66,7 +69,8 @@ class RawFileSampler():
             cent_timewalk_lut = np.load(self.cent_timewalk_file)
 
         self.packet_processor = PacketProcessor(start_time=self._startTime, timewalk_lut=timewalk_lut)
-        self.centroid_calculator = CentroidCalculator(cent_timewalk_lut=cent_timewalk_lut)
+        self.centroid_calculator = CentroidCalculator(cent_timewalk_lut=cent_timewalk_lut,\
+                                                      dbscan_clustering = self._dbscan_clustering)
 
     def pre_run(self):
         """init stuff which should only be available in new process"""
