@@ -70,7 +70,8 @@ class RawFileSampler():
 
         self.packet_processor = PacketProcessor(start_time=self._startTime, timewalk_lut=timewalk_lut)
         self.centroid_calculator = CentroidCalculator(cent_timewalk_lut=cent_timewalk_lut,\
-                                                      dbscan_clustering = self._dbscan_clustering)
+                                                      dbscan_clustering=self._dbscan_clustering,\
+                                                      number_of_processes=self._number_of_processes)
 
     def pre_run(self):
         """init stuff which should only be available in new process"""
@@ -209,7 +210,7 @@ class RawFileSampler():
                             dset[-len(raw[i]) :] = raw[i]
                     else:
                         grp = f.create_group("raw")
-                        grp.attrs["description"] = "timewalk correted raw events"
+                        grp.attrs["description"] = "timewalk corrected raw events"
                         grp.attrs["nr events"] = 0
                         grp.create_dataset("trigger nr", data=raw[0].astype(np.uint64), maxshape=(None,))
                         grp.create_dataset("x", data=raw[1].astype(np.uint8), maxshape=(None,))
