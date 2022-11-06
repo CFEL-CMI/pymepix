@@ -17,6 +17,8 @@
 #
 # You should have received a copy of the GNU General Public License along with this program. If not,
 # see <https://www.gnu.org/licenses/>.
+
+import argparse
 import socket
 import struct
 import time
@@ -25,13 +27,44 @@ import numpy as np
 
 
 def main():
-    HOST, PORT = "127.0.0.1", 50000
+
+    parser = argparse.ArgumentParser(description="Dummy UDP sender")
+
+    parser.add_argument(
+        "--ip",
+        dest="ip",
+        type=str,
+        default='127.0.0.1',
+        help="IP address of Timepix",
+    )
+    
+    parser.add_argument(
+        "--port",
+        dest="port",
+        type=int,
+        default=50000,
+        help="Port address of Timepix",
+    )
+    
+    parser.add_argument(
+        "--filename",
+        dest="filename",
+        type=str,
+        default='',
+        help="filename of source data",
+    )
+    
+
+    args = parser.parse_args()
+
+
+    HOST, PORT = args.ip, args.port
     # data = " ".join(sys.argv[1:])
 
     # SOCK_DGRAM is the socket type to use for UDP sockets
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-    fName = "data/pyrrole__100.raw"
+    fName = args.filename
 
     data = np.fromfile(fName, dtype=np.uint64)
     total = len(data)
