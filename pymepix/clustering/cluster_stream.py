@@ -1,3 +1,4 @@
+import numpy as np
 class ClusterStream():
 
     def __init__(self, dim=256, max_dist_tof=1e-8, min_cluster_size=5, tot_offset=0.0, *args, **kwargs):
