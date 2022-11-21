@@ -143,6 +143,55 @@ class CentroidCalculator(ProcessingStep):
     def triggers_processed(self, triggers_processed):
         self._triggers_processed.value = triggers_processed
 
+    @property
+    def cs_sensor_size(self):
+        """ Setting for the number of packets skipped during processing. Every packet_skip packet is processed.
+        This means for a value of 1 every packet is processed. For 2 only every 2nd packet is processed. """
+        return self._cs_sensor_size.value
+    @cs_sensor_size.setter
+    def cs_sensor_size(self, cs_sensor_size):
+        self._cs_sensor_size.value = cs_sensor_size
+
+    @property
+    def cs_min_cluster_size(self):
+        """ Setting for the number of packets skipped during processing. Every packet_skip packet is processed.
+        This means for a value of 1 every packet is processed. For 2 only every 2nd packet is processed. """
+        return self._cs_min_cluster_size.value
+    @cs_min_cluster_size.setter
+    def cs_min_cluster_size(self, cs_min_cluster_size):
+        self._cs_min_cluster_size.value = cs_min_cluster_size
+
+    @property
+    def cs_tot_tolerance(self):
+        """ Setting for the number of packets skipped during processing. Every packet_skip packet is processed.
+        This means for a value of 1 every packet is processed. For 2 only every 2nd packet is processed. """
+        return self._cs_tot_tolerance.value
+    @cs_tot_tolerance.setter
+    def cs_tot_tolerance(self, cs_tot_tolerance):
+        self._cs_tot_tolerance.value = cs_tot_tolerance
+
+    @property
+    def cs_max_dist_tof(self):
+        """ Setting for the number of packets skipped during processing. Every packet_skip packet is processed.
+        This means for a value of 1 every packet is processed. For 2 only every 2nd packet is processed. """
+        return self._cs_max_dist_tof.value
+    @cs_max_dist_tof.setter
+    def cs_max_dist_tof(self, cs_max_dist_tof):
+        self._cs_max_dist_tof.value = cs_max_dist_tof
+
+    @property
+    def cs_tot_offset(self):
+        """ Setting for the number of packets skipped during processing. Every packet_skip packet is processed.
+        This means for a value of 1 every packet is processed. For 2 only every 2nd packet is processed. """
+        return self._cs_tot_offset.value
+    @cs_tot_offset.setter
+    def cs_tot_offset(self, cs_tot_offset):
+        self._cs_tot_offset.value = cs_tot_offset
+
+
+
+
+
     def process(self, data):
 
         if data is None:
@@ -240,16 +289,16 @@ class CentroidCalculator(ProcessingStep):
             return None
 
     def perform_centroiding_dbscan(self, chunks):
-        #with Pool(self.number_of_processes) as p:
-        #    return p.map(self.calculate_centroids_dbscan, chunks)
-        return map(self.calculate_centroids_dbscan, chunks)
+        with Pool(self.number_of_processes) as p:
+            return p.map(self.calculate_centroids_dbscan, chunks)
+        #return map(self.calculate_centroids_dbscan, chunks)
 
     def perform_centroiding_cluster_stream(self, chunks):
         self.cstream = ClusterStream(self._cs_sensor_size.value, self._cs_max_dist_tof.value,\
                                      self._cs_min_cluster_size.value, self._cs_tot_offset.value)
-        #with Pool(self.number_of_processes) as p:
-        #    return p.map(self.calculate_centroids_cluster_stream, chunks)
-        return map(self.calculate_centroids_cluster_stream, chunks)
+        with Pool(self.number_of_processes) as p:
+            return p.map(self.calculate_centroids_cluster_stream, chunks)
+        #return map(self.calculate_centroids_cluster_stream, chunks)
 
     def calculate_centroids_dbscan(self, chunk):
         shot, x, y, tof, tot = chunk
