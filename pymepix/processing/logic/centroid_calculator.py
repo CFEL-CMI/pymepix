@@ -19,6 +19,7 @@
 # see <https://www.gnu.org/licenses/>.
 import multiprocessing as mp
 from multiprocessing.pool import Pool
+from threading import current_thread
 
 import numpy as np
 import scipy.ndimage as nd
@@ -52,7 +53,6 @@ class CentroidCalculator(ProcessingStep):
 
         cs_sensor_size=256,
         cs_min_cluster_size=3,
-        cs_tot_tolerance=0.5,
         cs_max_dist_tof=5e-8,
         cs_tot_offset=0.5,
 
@@ -86,6 +86,7 @@ class CentroidCalculator(ProcessingStep):
         """
 
         super().__init__("CentroidCalculator", *args, **kwargs)
+
         self._epsilon = self.parameter_wrapper_class(epsilon)
         self._min_samples = self.parameter_wrapper_class(min_samples)
         self._tot_threshold = self.parameter_wrapper_class(tot_threshold)
@@ -93,7 +94,6 @@ class CentroidCalculator(ProcessingStep):
 
         self._cs_sensor_size = self.parameter_wrapper_class(cs_sensor_size)
         self._cs_min_cluster_size = self.parameter_wrapper_class(cs_min_cluster_size)
-        self._cs_tot_tolerance = self.parameter_wrapper_class(cs_tot_tolerance)
         self._cs_max_dist_tof = self.parameter_wrapper_class(cs_max_dist_tof)
         self._cs_tot_offset = self.parameter_wrapper_class(cs_tot_offset)
 
@@ -103,6 +103,7 @@ class CentroidCalculator(ProcessingStep):
         self._dbscan_clustering = dbscan_clustering
 
         self.number_of_processes = number_of_processes
+        self.daemon = current_thread().daemon
 
 
     @property
@@ -162,15 +163,6 @@ class CentroidCalculator(ProcessingStep):
         self._cs_min_cluster_size.value = cs_min_cluster_size
 
     @property
-    def cs_tot_tolerance(self):
-        """ Setting for the number of packets skipped during processing. Every packet_skip packet is processed.
-        This means for a value of 1 every packet is processed. For 2 only every 2nd packet is processed. """
-        return self._cs_tot_tolerance.value
-    @cs_tot_tolerance.setter
-    def cs_tot_tolerance(self, cs_tot_tolerance):
-        self._cs_tot_tolerance.value = cs_tot_tolerance
-
-    @property
     def cs_max_dist_tof(self):
         """ Setting for the number of packets skipped during processing. Every packet_skip packet is processed.
         This means for a value of 1 every packet is processed. For 2 only every 2nd packet is processed. """
@@ -201,11 +193,9 @@ class CentroidCalculator(ProcessingStep):
             shot, x, y, tof, tot = self.__skip_triggers(*data)
             chunks = self.__divide_into_chunks(shot, x, y, tof, tot)
             centroids_in_chunks = self.perform_centroiding_dbscan(chunks)
-
         else:
             chunks = self.cluster_stream_preprocess(*data)
             centroids_in_chunks = self.perform_centroiding_cluster_stream(chunks)
-
 
         return self.centroid_chunks_to_centroids(centroids_in_chunks)
 
@@ -289,16 +279,20 @@ class CentroidCalculator(ProcessingStep):
             return None
 
     def perform_centroiding_dbscan(self, chunks):
-        with Pool(self.number_of_processes) as p:
-            return p.map(self.calculate_centroids_dbscan, chunks)
-        #return map(self.calculate_centroids_dbscan, chunks)
+        if not self.daemon:
+            with Pool(self.number_of_processes) as p:
+                return p.map(self.calculate_centroids_dbscan, chunks)
+        else:
+            return map(self.calculate_centroids_dbscan, chunks)
 
     def perform_centroiding_cluster_stream(self, chunks):
         self.cstream = ClusterStream(self._cs_sensor_size.value, self._cs_max_dist_tof.value,\
                                      self._cs_min_cluster_size.value, self._cs_tot_offset.value)
-        with Pool(self.number_of_processes) as p:
-            return p.map(self.calculate_centroids_cluster_stream, chunks)
-        #return map(self.calculate_centroids_cluster_stream, chunks)
+        if not self.daemon:
+            with Pool(self.number_of_processes) as p:
+                return p.map(self.calculate_centroids_cluster_stream, chunks)
+        else:
+            return map(self.calculate_centroids_cluster_stream, chunks)
 
     def calculate_centroids_dbscan(self, chunk):
         shot, x, y, tof, tot = chunk
