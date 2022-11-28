@@ -103,7 +103,6 @@ class CentroidCalculator(ProcessingStep):
         self._dbscan_clustering = dbscan_clustering
 
         self.number_of_processes = number_of_processes
-        self.daemon = current_thread().daemon
 
 
     @property
@@ -279,20 +278,16 @@ class CentroidCalculator(ProcessingStep):
             return None
 
     def perform_centroiding_dbscan(self, chunks):
-        if not self.daemon:
-            with Pool(self.number_of_processes) as p:
-                return p.map(self.calculate_centroids_dbscan, chunks)
-        else:
-            return map(self.calculate_centroids_dbscan, chunks)
+#        with Pool(self.number_of_processes) as p:
+#            return p.map(self.calculate_centroids_dbscan, chunks)
+        return map(self.calculate_centroids_dbscan, chunks)
 
     def perform_centroiding_cluster_stream(self, chunks):
         self.cstream = ClusterStream(self._cs_sensor_size.value, self._cs_max_dist_tof.value,\
                                      self._cs_min_cluster_size.value, self._cs_tot_offset.value)
-        if not self.daemon:
-            with Pool(self.number_of_processes) as p:
-                return p.map(self.calculate_centroids_cluster_stream, chunks)
-        else:
-            return map(self.calculate_centroids_cluster_stream, chunks)
+#        with Pool(self.number_of_processes) as p:
+#            return p.map(self.calculate_centroids_cluster_stream, chunks)
+        return map(self.calculate_centroids_cluster_stream, chunks)
 
     def calculate_centroids_dbscan(self, chunk):
         shot, x, y, tof, tot = chunk
