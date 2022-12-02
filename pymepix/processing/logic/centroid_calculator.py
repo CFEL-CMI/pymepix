@@ -154,8 +154,7 @@ class CentroidCalculator(ProcessingStep):
 
     @property
     def cs_min_cluster_size(self):
-        """ Setting for the number of packets skipped during processing. Every packet_skip packet is processed.
-        This means for a value of 1 every packet is processed. For 2 only every 2nd packet is processed. """
+        """ Setting the minimal cluster size in Cluster Streaming algorithm"""
         return self._cs_min_cluster_size.value
     @cs_min_cluster_size.setter
     def cs_min_cluster_size(self, cs_min_cluster_size):
@@ -163,8 +162,7 @@ class CentroidCalculator(ProcessingStep):
 
     @property
     def cs_max_dist_tof(self):
-        """ Setting for the number of packets skipped during processing. Every packet_skip packet is processed.
-        This means for a value of 1 every packet is processed. For 2 only every 2nd packet is processed. """
+        """Setting the maximal ToF distance between the voxels belonging to the cluster in Cluster Streaming algorithm"""
         return self._cs_max_dist_tof.value
     @cs_max_dist_tof.setter
     def cs_max_dist_tof(self, cs_max_dist_tof):
@@ -172,16 +170,21 @@ class CentroidCalculator(ProcessingStep):
 
     @property
     def cs_tot_offset(self):
-        """ Setting for the number of packets skipped during processing. Every packet_skip packet is processed.
-        This means for a value of 1 every packet is processed. For 2 only every 2nd packet is processed. """
+        """ Setting the ToT ratio factor of the voxel to the ToT of previous voxel in Cluster Streaming algorithm.
+        Zero factor means ToT of prev. voxel should be larger. 0.5 factor means ToT of prev voxel could be high than
+        the half of the cosidered voxel"""
         return self._cs_tot_offset.value
     @cs_tot_offset.setter
     def cs_tot_offset(self, cs_tot_offset):
         self._cs_tot_offset.value = cs_tot_offset
 
+    @property
+    def dbscan_clustering(self):
+        return self._dbscan_clustering
 
-
-
+    @dbscan_clustering.setter
+    def dbscan_clustering(self, dbscan_clustering):
+        self._dbscan_clustering = dbscan_clustering
 
     def process(self, data):
 
