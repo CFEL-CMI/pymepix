@@ -25,7 +25,7 @@ import numpy as np
 import scipy.ndimage as nd
 from sklearn.cluster import DBSCAN
 
-from pymepix.processing.logic.processing_parameter import ProcessingParameter
+from pymepix.processing.logic.shared_processing_parameter import ProcessingParameter
 from pymepix.processing.logic.processing_step import ProcessingStep
 from pymepix.clustering.cluster_stream import ClusterStream
 
@@ -100,7 +100,7 @@ class CentroidCalculator(ProcessingStep):
         self._chunk_size_limit = chunk_size_limit
         self._tof_scale = 1.7e7
         self._cent_timewalk_lut = cent_timewalk_lut
-        self._dbscan_clustering = dbscan_clustering
+        self._dbscan_clustering = self.parameter_wrapper_class(int(dbscan_clustering))
 
         self.number_of_processes = number_of_processes
 
@@ -172,7 +172,7 @@ class CentroidCalculator(ProcessingStep):
     def cs_tot_offset(self):
         """ Setting the ToT ratio factor of the voxel to the ToT of previous voxel in Cluster Streaming algorithm.
         Zero factor means ToT of prev. voxel should be larger. 0.5 factor means ToT of prev voxel could be high than
-        the half of the cosidered voxel"""
+        the half of the considered voxel"""
         return self._cs_tot_offset.value
     @cs_tot_offset.setter
     def cs_tot_offset(self, cs_tot_offset):
@@ -180,18 +180,17 @@ class CentroidCalculator(ProcessingStep):
 
     @property
     def dbscan_clustering(self):
-        return self._dbscan_clustering
+        return bool(self._dbscan_clustering.value)
 
     @dbscan_clustering.setter
     def dbscan_clustering(self, dbscan_clustering):
-        self._dbscan_clustering = dbscan_clustering
-
+        self._dbscan_clustering.value = int(dbscan_clustering)
     def process(self, data):
 
         if data is None:
             return None
 
-        if self._dbscan_clustering:
+        if self.dbscan_clustering:
             shot, x, y, tof, tot = self.__skip_triggers(*data)
             chunks = self.__divide_into_chunks(shot, x, y, tof, tot)
             centroids_in_chunks = self.perform_centroiding_dbscan(chunks)
@@ -286,8 +285,9 @@ class CentroidCalculator(ProcessingStep):
         return map(self.calculate_centroids_dbscan, chunks)
 
     def perform_centroiding_cluster_stream(self, chunks):
-        self.cstream = ClusterStream(self._cs_sensor_size.value, self._cs_max_dist_tof.value,\
-                                     self._cs_min_cluster_size.value, self._cs_tot_offset.value)
+        self.cstream = ClusterStream(self.cs_sensor_size, self.cs_max_dist_tof,\
+                                     self.cs_min_cluster_size, self.cs_tot_offset)
+
 #        with Pool(self.number_of_processes) as p:
 #            return p.map(self.calculate_centroids_cluster_stream, chunks)
         return map(self.calculate_centroids_cluster_stream, chunks)
