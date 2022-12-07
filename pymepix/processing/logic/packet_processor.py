@@ -23,7 +23,6 @@ from ctypes import c_bool
 
 import numpy as np
 from pymepix.core.log import Logger
-from pymepix.processing.logic.processing_parameter import ProcessingParameter
 
 from pymepix.processing.logic.processing_step import ProcessingStep
 

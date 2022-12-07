@@ -1,7 +1,7 @@
 import numpy as np
 class ClusterStream():
 
-    def __init__(self, dim=256, max_dist_tof=1e-8, min_cluster_size=5, tot_offset=0.0, *args, **kwargs):
+    def __init__(self, dim=256, max_dist_tof=1e-8, min_cluster_size=3, tot_offset=0.5, *args, **kwargs):
         self.dim = dim
         self.max_dist_tof = max_dist_tof
         self.min_cluster_size = min_cluster_size

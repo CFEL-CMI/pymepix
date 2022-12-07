@@ -25,7 +25,6 @@ import numpy as np
 import scipy.ndimage as nd
 from sklearn.cluster import DBSCAN
 
-from pymepix.processing.logic.shared_processing_parameter import ProcessingParameter
 from pymepix.processing.logic.processing_step import ProcessingStep
 from pymepix.clustering.cluster_stream import ClusterStream
 
