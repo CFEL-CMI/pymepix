@@ -45,7 +45,7 @@ class CentroidCalculator(ProcessingStep):
     def __init__(
         self,
         tot_threshold=0,
-        epsilon=2,
+        epsilon=2.0,
         min_samples=3,
         triggers_processed=1,
         chunk_size_limit=6_500,
