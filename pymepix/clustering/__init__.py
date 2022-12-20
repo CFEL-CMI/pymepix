@@ -17,18 +17,3 @@
 #
 # You should have received a copy of the GNU General Public License along with this program. If not,
 # see <https://www.gnu.org/licenses/>.
-
-class ProcessingParameter:
-    """ Wrapper for a parameter. This enables the possibility to exchange the way how parameters are accessed. 
-    It is required to be able to also use the parameters shared among different processes. """
-
-    def __init__(self, value) :
-        self._value = value
-
-    @property
-    def value(self):
-        return self._value
-
-    @value.setter
-    def value(self, value):
-        self._value = value

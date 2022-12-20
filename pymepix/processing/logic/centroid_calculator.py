@@ -18,13 +18,15 @@
 # You should have received a copy of the GNU General Public License along with this program. If not,
 # see <https://www.gnu.org/licenses/>.
 import multiprocessing as mp
+from multiprocessing.pool import Pool
+from threading import current_thread
 
 import numpy as np
 import scipy.ndimage as nd
 from sklearn.cluster import DBSCAN
 
-from pymepix.processing.logic.processing_parameter import ProcessingParameter
 from pymepix.processing.logic.processing_step import ProcessingStep
+from pymepix.clustering.cluster_stream import ClusterStream
 
 
 class CentroidCalculator(ProcessingStep):
@@ -43,11 +45,20 @@ class CentroidCalculator(ProcessingStep):
     def __init__(
         self,
         tot_threshold=0,
-        epsilon=2,
+        epsilon=2.0,
         min_samples=3,
         triggers_processed=1,
         chunk_size_limit=6_500,
+
+        cs_sensor_size=256,
+        cs_min_cluster_size=3,
+        cs_max_dist_tof=5e-8,
+        cs_tot_offset=0.5,
+
         cent_timewalk_lut=None,
+        dbscan_clustering=True,
+
+        number_of_processes=4,
         *args,
         **kwargs,
     ):
@@ -74,14 +85,24 @@ class CentroidCalculator(ProcessingStep):
         """
 
         super().__init__("CentroidCalculator", *args, **kwargs)
+
         self._epsilon = self.parameter_wrapper_class(epsilon)
         self._min_samples = self.parameter_wrapper_class(min_samples)
         self._tot_threshold = self.parameter_wrapper_class(tot_threshold)
         self._triggers_processed = self.parameter_wrapper_class(triggers_processed)
 
+        self._cs_sensor_size = self.parameter_wrapper_class(cs_sensor_size)
+        self._cs_min_cluster_size = self.parameter_wrapper_class(cs_min_cluster_size)
+        self._cs_max_dist_tof = self.parameter_wrapper_class(cs_max_dist_tof)
+        self._cs_tot_offset = self.parameter_wrapper_class(cs_tot_offset)
+
         self._chunk_size_limit = chunk_size_limit
-        self._tof_scale = 1e7
+        self._tof_scale = 1.7e7
         self._cent_timewalk_lut = cent_timewalk_lut
+        self._dbscan_clustering = self.parameter_wrapper_class(int(dbscan_clustering))
+
+        self.number_of_processes = number_of_processes
+
 
     @property
     def epsilon(self):
@@ -113,7 +134,7 @@ class CentroidCalculator(ProcessingStep):
 
     @property
     def triggers_processed(self):
-        """ Setting for the number of packets skiped during processing. Every packet_skip packet is processed.
+        """ Setting for the number of packets skipped during processing. Every packet_skip packet is processed.
         This means for a value of 1 every packet is processed. For 2 only every 2nd packet is processed. """
         return self._triggers_processed.value
 
@@ -121,21 +142,93 @@ class CentroidCalculator(ProcessingStep):
     def triggers_processed(self, triggers_processed):
         self._triggers_processed.value = triggers_processed
 
+    @property
+    def cs_sensor_size(self):
+        """ Setting for the number of packets skipped during processing. Every packet_skip packet is processed.
+        This means for a value of 1 every packet is processed. For 2 only every 2nd packet is processed. """
+        return self._cs_sensor_size.value
+    @cs_sensor_size.setter
+    def cs_sensor_size(self, cs_sensor_size):
+        self._cs_sensor_size.value = cs_sensor_size
+
+    @property
+    def cs_min_cluster_size(self):
+        """ Setting the minimal cluster size in Cluster Streaming algorithm"""
+        return self._cs_min_cluster_size.value
+    @cs_min_cluster_size.setter
+    def cs_min_cluster_size(self, cs_min_cluster_size):
+        self._cs_min_cluster_size.value = cs_min_cluster_size
+
+    @property
+    def cs_max_dist_tof(self):
+        """Setting the maximal ToF distance between the voxels belonging to the cluster in Cluster Streaming algorithm"""
+        return self._cs_max_dist_tof.value
+    @cs_max_dist_tof.setter
+    def cs_max_dist_tof(self, cs_max_dist_tof):
+        self._cs_max_dist_tof.value = cs_max_dist_tof
+
+    @property
+    def cs_tot_offset(self):
+        """ Setting the ToT ratio factor of the voxel to the ToT of previous voxel in Cluster Streaming algorithm.
+        Zero factor means ToT of prev. voxel should be larger. 0.5 factor means ToT of prev voxel could be high than
+        the half of the considered voxel"""
+        return self._cs_tot_offset.value
+    @cs_tot_offset.setter
+    def cs_tot_offset(self, cs_tot_offset):
+        self._cs_tot_offset.value = cs_tot_offset
+
+    @property
+    def dbscan_clustering(self):
+        return bool(self._dbscan_clustering.value)
+
+    @dbscan_clustering.setter
+    def dbscan_clustering(self, dbscan_clustering):
+        self._dbscan_clustering.value = int(dbscan_clustering)
     def process(self, data):
-        if data is not None:
+
+        if data is None:
+            return None
+
+        if self.dbscan_clustering:
             shot, x, y, tof, tot = self.__skip_triggers(*data)
             chunks = self.__divide_into_chunks(shot, x, y, tof, tot)
-            centroids_in_chunks = self.perform_centroiding(chunks)
-
-            return self.centroid_chunks_to_centroids(centroids_in_chunks)
+            centroids_in_chunks = self.perform_centroiding_dbscan(chunks)
         else:
-            return None
+            chunks = self.cluster_stream_preprocess(*data)
+            centroids_in_chunks = self.perform_centroiding_cluster_stream(chunks)
+
+        return self.centroid_chunks_to_centroids(centroids_in_chunks)
 
     def __skip_triggers(self, shot, x, y, tof, tot):
         unique_shots = np.unique(shot)
         selected_shots = unique_shots[:: self.triggers_processed]
         mask = np.isin(shot, selected_shots)
         return shot[mask], x[mask], y[mask], tof[mask], tot[mask]
+
+    def cluster_stream_preprocess(self, shot, x, y, tof, tot):
+
+        order = shot.argsort()
+        shot, x, y, tof, tot = shot[order], x[order], y[order], tof[order], tot[order]
+        _, unique_trig_nr_indices, unique_trig_nr_counts = np.unique(
+            shot, return_index=True, return_counts=True
+        )
+
+        shot, x, y, tof, tot = [
+            np.split(arr, unique_trig_nr_indices[1:]) for arr in [shot, x, y, tof, tot]
+        ]
+
+        for i, sh in enumerate(shot):
+            sorting_indexes = np.lexsort((-tot[i], tof[i]))
+            x[i] = x[i][sorting_indexes]
+            y[i] = y[i][sorting_indexes]
+            tof[i] = tof[i][sorting_indexes]
+            tot[i] = tot[i][sorting_indexes]
+
+        chunks = []
+        for i in range(len(shot)):
+             chunks.append(np.vstack((shot[i], x[i], y[i], tof[i], tot[i])))
+        return chunks
+
 
     def __divide_into_chunks(self, shot, x, y, tof, tot):
         """ Reordering the voxels can have an impact on the clusterings result. See CentroidCalculator.perform_clustering
@@ -185,10 +278,20 @@ class CentroidCalculator(ProcessingStep):
         else:
             return None
 
-    def perform_centroiding(self, chunks):
-        return map(self.calculate_centroids, chunks)
+    def perform_centroiding_dbscan(self, chunks):
+#        with Pool(self.number_of_processes) as p:
+#            return p.map(self.calculate_centroids_dbscan, chunks)
+        return map(self.calculate_centroids_dbscan, chunks)
 
-    def calculate_centroids(self, chunk):
+    def perform_centroiding_cluster_stream(self, chunks):
+        self.cstream = ClusterStream(self.cs_sensor_size, self.cs_max_dist_tof,\
+                                     self.cs_min_cluster_size, self.cs_tot_offset)
+
+#        with Pool(self.number_of_processes) as p:
+#            return p.map(self.calculate_centroids_cluster_stream, chunks)
+        return map(self.calculate_centroids_cluster_stream, chunks)
+
+    def calculate_centroids_dbscan(self, chunk):
         shot, x, y, tof, tot = chunk
 
         tot_filter = tot > self.tot_threshold
@@ -199,7 +302,7 @@ class CentroidCalculator(ProcessingStep):
         tof = tof[tot_filter]
         tot = tot[tot_filter]
 
-        labels = self.perform_clustering(shot, x, y, tof)
+        labels = self.perform_clustering_dbscan(shot, x, y, tof)
 
         label_filter = labels != 0
 
@@ -215,12 +318,32 @@ class CentroidCalculator(ProcessingStep):
 
         return None
 
-    def perform_clustering(self, shot, x, y, tof):
+    def calculate_centroids_cluster_stream(self, chunk):
+
+        labels = self.cstream.perform(np.transpose(chunk[1:,:]))
+
+        label_filter = labels != 0
+
+        shot, x, y, tof, tot = chunk
+
+        if labels is not None and labels[label_filter].size > 0:
+            return self.calculate_centroids_properties(
+                shot[label_filter],
+                x[label_filter],
+                y[label_filter],
+                tof[label_filter],
+                tot[label_filter],
+                labels[label_filter],
+            )
+
+        return None
+
+    def perform_clustering_dbscan(self, shot, x, y, tof):
         """ The clustering with DBSCAN, which is performed in this function is dependent on the
-            order of the data in rare cases. Therefore reordering in any means can
+            order of the data in rare cases. Therefore, reordering in any means can
             lead to slightly changed results, which should not be an issue.
 
-            Martin Ester, Hans-Peter Kriegel, Jiirg Sander, Xiaowei Xu: A Density Based Algorith for
+            Martin Ester, Hans-Peter Kriegel, Jiirg Sander, Xiaowei Xu: A Density Based Algorithm for
             Discovering Clusters [p. 229-230] (https://www.aaai.org/Papers/KDD/1996/KDD96-037.pdf)
             A more specific explaination can be found here:
             https://stats.stackexchange.com/questions/306829/why-is-dbscan-deterministic"""
@@ -239,6 +362,7 @@ class CentroidCalculator(ProcessingStep):
             return dist.labels_ + 1
 
         return None
+
 
     def calculate_centroids_properties(self, shot, x, y, tof, tot, labels):
         """

@@ -18,22 +18,19 @@
 # You should have received a copy of the GNU General Public License along with this program. If not,
 # see <https://www.gnu.org/licenses/>.
 from multiprocessing import Value
-
-from pymepix.processing.logic.processing_parameter import ProcessingParameter
-
 class UnknownParameterTypeException(Exception):
     pass
 
-class SharedProcessingParameter(ProcessingParameter):
+class SharedProcessingParameter(): #ProcessingParameter):
     """ Variang of the ProcessingParameter used for sharing among multiple processes. This class has to be used 
     if running with the multiprocessing pipeline to ensure all instances of the processing classes are updated
     when parameters are changed. """
 
     def __init__(self, value) :
         if isinstance(value, int):
-            super().__init__(Value('i', value, lock=False))
+            self._value = Value('i', value, lock=False)
         elif isinstance(value, float):
-            super().__init__(Value('d', value, lock=False))
+            self._value = Value('d', value, lock=False)
         else:
             raise UnknownParameterTypeException()
 

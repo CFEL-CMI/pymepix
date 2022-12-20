@@ -36,7 +36,9 @@ class RawFileSampler():
         number_of_processes=None,
         timewalk_file=None,
         cent_timewalk_file=None,
-        progress_callback=None
+        progress_callback=None,
+        clustering_args = None,
+        dbscan_clustering=True
     ):
         self._filename = file_name
         self._output_file = output_file
@@ -45,6 +47,10 @@ class RawFileSampler():
 
         self._number_of_processes = number_of_processes
         self._progress_callback = progress_callback
+
+        self._clustering_args = clustering_args
+
+        self._dbscan_clustering = dbscan_clustering
 
     def init_new_process(self, file):
         """create connections and initialize variables in new process"""
@@ -66,7 +72,10 @@ class RawFileSampler():
             cent_timewalk_lut = np.load(self.cent_timewalk_file)
 
         self.packet_processor = PacketProcessor(start_time=self._startTime, timewalk_lut=timewalk_lut)
-        self.centroid_calculator = CentroidCalculator(cent_timewalk_lut=cent_timewalk_lut)
+        self.centroid_calculator = CentroidCalculator(**self._clustering_args,\
+                                                      cent_timewalk_lut=cent_timewalk_lut, \
+                                                      dbscan_clustering=self._dbscan_clustering,\
+                                                      number_of_processes=self._number_of_processes)
 
     def pre_run(self):
         """init stuff which should only be available in new process"""
@@ -205,7 +214,7 @@ class RawFileSampler():
                             dset[-len(raw[i]) :] = raw[i]
                     else:
                         grp = f.create_group("raw")
-                        grp.attrs["description"] = "timewalk correted raw events"
+                        grp.attrs["description"] = "timewalk corrected raw events"
                         grp.attrs["nr events"] = 0
                         grp.create_dataset("trigger nr", data=raw[0].astype(np.uint64), maxshape=(None,))
                         grp.create_dataset("x", data=raw[1].astype(np.uint8), maxshape=(None,))

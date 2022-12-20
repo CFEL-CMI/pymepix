@@ -18,6 +18,7 @@
 # You should have received a copy of the GNU General Public License along with this program. If not,
 # see <https://www.gnu.org/licenses/>.
 
+import argparse
 import socket
 import socketserver
 
@@ -681,10 +682,38 @@ class TPX3Handler(socketserver.BaseRequestHandler, Logger):
             self._process_data()
 
 
-if __name__ == "__main__":
-    HOST, PORT = "192.168.1.10", 50000
+def main():
+
+    parser = argparse.ArgumentParser(description="Dummy TCP server")
+
+    parser.add_argument(
+        "--ip",
+        dest="ip",
+        type=str,
+        default='192.168.1.10',
+        help="IP address of Timepix",
+    )
+    
+    parser.add_argument(
+        "--port",
+        dest="port",
+        type=int,
+        default=50000,
+        help="Port address of Timepix",
+    )
+    
+    
+
+    args = parser.parse_args()
+    HOST, PORT = args.ip, args.port
 
     with socketserver.TCPServer((HOST, PORT), TPX3Handler) as server:
         # Activate the server; this will keep running until you
         # interrupt the program with Ctrl-C
+        print('started...')
         server.serve_forever()
+        
+        
+        
+if __name__ == "__main__":
+    main()
