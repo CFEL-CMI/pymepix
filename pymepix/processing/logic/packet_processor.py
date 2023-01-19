@@ -123,12 +123,26 @@ class PacketProcessor(ProcessingStep):
                     np.logical_or(header == 0x4, header == 0x6), subheader == 0xF
                 )
             ]
+            tid_triggers = packet[
+                np.logical_and(
+                    # sub headers for trigger identification
+                    # TDC1     rising edge: 0xF     falling edge: 0xA
+                    # TDC2     rising edge: 0xE     falling edge: 0xB
+                    header == 0x6, np.logical_or(subheader == 0xE, subheader == 0xB)
+                )
+            ]
+
+            if triggers.size > 0:
+                trigger_data = self.process_triggers(np.int64(triggers), longtime)
+
+
+            if tid_triggers.size > 0:
+                tid_data = self.process_tid_triggers(np.int64(tid_triggers), longtime)
+
+
 
             if pixels.size > 0:
                 pixel_data = self.process_pixels(np.int64(pixels), longtime)
-
-                if triggers.size > 0:
-                    self.process_triggers(np.int64(triggers), longtime)
 
                 if self.handle_events:
                     result = self.find_events_fast()
@@ -188,6 +202,32 @@ class PacketProcessor(ProcessingStep):
                 self._triggers = m_trigTime
             else:
                 self._triggers = np.append(self._triggers, m_trigTime)
+
+        return m_trigTime
+    def process_tid_triggers(self, tidtrigdata, longtime):
+        subheader = ((tidtrigdata & 0x0F00000000000000) >> 56) & 0xF
+        # TDC2     rising edge: 0xE     falling edge: 0xB
+        edge_type = subheader == 0xE
+
+        coarsetime = tidtrigdata >> 12 & 0xFFFFFFFF
+        coarsetime = self.correct_global_time(coarsetime, longtime)
+        tmpfine = (tidtrigdata >> 5) & 0xF
+        tmpfine = ((tmpfine - 1) << 9) // 12
+        trigtime_fine = (tidtrigdata & 0x0000000000000E00) | (tmpfine & 0x00000000000001FF)
+        time_unit = 25.0 / 4096
+        tdc_time = coarsetime * 25e-9 + trigtime_fine * time_unit * 1e-9
+
+        m_trigTime = tdc_time.astype(float)
+
+        m_trigTime[edge_type == False] *= -1
+        # always look at it as abs, sign tells rising or falling edge
+
+        if self.handle_events:
+            if self._tid_edges is None:
+                self._tid_edges = m_trigTime
+            else:
+                self._tid_edges = np.append(self._tid_edges, m_trigTime)
+        return m_trigTime
 
     def orientPixels(self, col, row):
         """ Orient the pixels based on Timepix orientation """
