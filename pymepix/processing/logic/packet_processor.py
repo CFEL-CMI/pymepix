@@ -372,7 +372,7 @@ class PacketProcessor(ProcessingStep):
         return None # Clear out the triggers since they have nothing
 
     def __exist_enough_triggers(self):
-        return self._triggers is not None and self._triggers.size >= 4
+        return self._triggers is not None and self._triggers.size >= 2
 
     def __toa_is_not_empty(self):
         return self._toa is not None and self._toa.size > 0
