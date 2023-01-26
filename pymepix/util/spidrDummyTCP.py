@@ -179,7 +179,11 @@ class TPX3Handler(socketserver.BaseRequestHandler, Logger):
                 )
 
             elif self.cmd == SpidrCmds.CMD_SET_SERVERPORT:
-                print("NEEDS IMPLEMENTATION")
+                reply = self.cmd | SpidrCmds.CMD_REPLY
+                data = [reply, 0, 0, 0, 50000]
+                self.request.sendall(
+                    struct.pack("%sI" % len(data), *[socket.htonl(i) for i in data])
+                )
 
             elif self.cmd == SpidrCmds.CMD_GET_DAC:
                 reply = self.cmd | SpidrCmds.CMD_REPLY
