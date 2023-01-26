@@ -72,10 +72,15 @@ class RawFileSampler():
             cent_timewalk_lut = np.load(self.cent_timewalk_file)
 
         self.packet_processor = PacketProcessor(start_time=self._startTime, timewalk_lut=timewalk_lut)
-        self.centroid_calculator = CentroidCalculator(**self._clustering_args,\
-                                                      cent_timewalk_lut=cent_timewalk_lut, \
-                                                      dbscan_clustering=self._dbscan_clustering,\
-                                                      number_of_processes=self._number_of_processes)
+        if self._clustering_args is not None:
+            self.centroid_calculator = CentroidCalculator(**self._clustering_args,\
+                                                          cent_timewalk_lut=cent_timewalk_lut, \
+                                                          dbscan_clustering=self._dbscan_clustering,\
+                                                          number_of_processes=self._number_of_processes)
+        else:
+            self.centroid_calculator = CentroidCalculator(cent_timewalk_lut=cent_timewalk_lut, \
+                                                          dbscan_clustering=self._dbscan_clustering,\
+                                                          number_of_processes=self._number_of_processes)
 
     def pre_run(self):
         """init stuff which should only be available in new process"""
