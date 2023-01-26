@@ -170,7 +170,7 @@ def main():
         "--config",
         dest="cfg",
         type=str,
-        default="defaut.yaml",
+        default="default.yaml",
         help="Config file",
     )
 
