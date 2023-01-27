@@ -131,12 +131,15 @@ class PacketProcessor(ProcessingStep):
                     # sub headers for trigger identification
                     # TDC1     rising edge: 0xF     falling edge: 0xA
                     # TDC2     rising edge: 0xE     falling edge: 0xB
-                    header == 0x6, np.logical_or(subheader == 0xE, subheader == 0xB)
+                    #header == 0x6, np.logical_or(subheader == 0xE, subheader == 0xB) #from XFEL
+                    np.logical_or(header == 0x4, header == 0x6), subheader == 0xE
                 )
             ]
 
             if triggers.size > 0:
                 trigger1_data = self.process_trigger1(np.int64(triggers), longtime)
+
+            test_trig_data = subheader[np.logical_or(header == 0x4, header == 0x6)]
 
 
             if tid_triggers.size > 0:
@@ -365,8 +368,9 @@ class PacketProcessor(ProcessingStep):
                     )
 
                     if result[0].size > 0:
-                        timeStamps = start[np.unique(event_mapping)] #* 1e9 + self._start_time
-                         # timestamp in ns for trigger event
+                        timeStamps = np.uint64(
+                            start[np.unique(event_mapping)] * 1e9 + self._start_time
+                        )  # timestamp in ns for trigger event
                         return result, (np.unique(result[0]), timeStamps)
 
         return None # Clear out the triggers since they have nothing
@@ -380,10 +384,12 @@ class PacketProcessor(ProcessingStep):
     def find_events_fast_post(self):
         """Call this function at the very end of to also have the last two trigger events processed"""
         # add an imaginary last trigger event after last pixel event for np.digitize to work
-        if self._toa is not None and self._toa.shape[0] > 0:
+        if self._toa is not None and self._toa.shape[0] > 0 and self._triggers is not None:
             self._triggers = np.concatenate(
                 (self._triggers, np.array([self._toa.max() + 1]))
             )
+        else:
+            return None, None, None, None, None
 
         event_data, timestamps = None, None
         result = self.find_events_fast()
