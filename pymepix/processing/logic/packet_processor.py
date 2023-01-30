@@ -139,9 +139,6 @@ class PacketProcessor(ProcessingStep):
             if triggers.size > 0:
                 trigger1_data = self.process_trigger1(np.int64(triggers), longtime)
 
-            test_trig_data = subheader[np.logical_or(header == 0x4, header == 0x6)]
-
-
             if tid_triggers.size > 0:
                 trigger2_data = self.process_trigger2(np.int64(tid_triggers), longtime)
 
