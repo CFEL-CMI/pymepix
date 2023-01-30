@@ -121,12 +121,12 @@ class PacketProcessor(ProcessingStep):
             subheader = ((packet & 0x0F00000000000000) >> 56) & 0xF
 
             pixels = packet[np.logical_or(header == 0xA, header == 0xB)]
-            triggers = packet[
+            triggers1 = packet[
                 np.logical_and(
                     np.logical_or(header == 0x4, header == 0x6), subheader == 0xF
                 )
             ]
-            tid_triggers = packet[
+            triggers2 = packet[
                 np.logical_and(
                     # sub headers for trigger identification
                     # TDC1     rising edge: 0xF     falling edge: 0xA
@@ -136,13 +136,11 @@ class PacketProcessor(ProcessingStep):
                 )
             ]
 
-            if triggers.size > 0:
-                trigger1_data = self.process_trigger1(np.int64(triggers), longtime)
+            if triggers1.size > 0:
+                trigger1_data = self.process_trigger1(np.int64(triggers1), longtime)
 
-            if tid_triggers.size > 0:
-                trigger2_data = self.process_trigger2(np.int64(tid_triggers), longtime)
-
-
+            if triggers2.size > 0:
+                trigger2_data = self.process_trigger2(np.int64(triggers2), longtime)
 
             if pixels.size > 0:
                 pixel_data = self.process_pixels(np.int64(pixels), longtime)
@@ -152,7 +150,7 @@ class PacketProcessor(ProcessingStep):
                     if result is not None:
                         event_data, timestamps = result
             else:
-                self._trigger_counter += triggers.size
+                self._trigger_counter += triggers1.size
 
         return event_data, pixel_data, timestamps, trigger1_data, trigger2_data
 
@@ -227,11 +225,6 @@ class PacketProcessor(ProcessingStep):
         m_trigTime[edge_type == False] *= -1
         # always look at it as abs, sign tells rising or falling edge
 
-        if self.handle_events:
-            if self._tid_edges is None:
-                self._tid_edges = m_trigTime
-            else:
-                self._tid_edges = np.append(self._tid_edges, m_trigTime)
         return m_trigTime
 
     def orientPixels(self, col, row):

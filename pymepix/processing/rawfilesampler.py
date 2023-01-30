@@ -260,7 +260,11 @@ class RawFileSampler():
                         dset.resize(dset.shape[0] + len(trigger1), axis=0)
                         dset[-len(trigger1) :] = trigger1
                     else:
-                        grp = f.create_group("triggers")
+                        if not f.keys().__contains__("triggers"):
+                            grp = f.create_group("triggers")
+                            grp.attrs["description"] = "triggering information from TimePix"
+                        else:
+                            grp = f["triggers"]
                         grp.attrs["description"] = "triggering information from TimePix"
                         subgrp = grp.create_group("trigger1")
                         subgrp.attrs["description"] = "trigger1 time from TimePix starting"
@@ -273,14 +277,17 @@ class RawFileSampler():
                     if f.keys().__contains__("triggers/trigger2"):
                         dset = f["triggers/trigger2/time"]
                         dset.resize(dset.shape[0] + len(trigger2), axis=0)
-                        dset[-len(trigger2) :] = trigger2
+                        dset[-len(trigger2):] = trigger2
                     else:
-                        grp = f.create_group("triggers")
-                        grp.attrs["description"] = "triggering information from TimePix"
+                        if not f.keys().__contains__("triggers"):
+                            grp = f.create_group("triggers")
+                            grp.attrs["description"] = "triggering information from TimePix"
+                        else:
+                            grp = f["triggers"]
                         subgrp = grp.create_group("trigger2")
                         subgrp.attrs["description"] = "trigger2 time from TimePix starting"
                         subgrp.create_dataset(
-                            "time", data=trigger1, maxshape=(None,))
+                            "time", data=trigger2, maxshape=(None,))
                         f["triggers/trigger2/time"].attrs["unit"] = "s"
 
 
