@@ -86,6 +86,9 @@ class PymepixConnection(Logger):
             data_type, data = value
             self._event_callback(data_type, data)
 
+
+            
+
     def __init__(self,
                  spidr_address=(cfg.default_cfg["timepix"]["tpx_ip"], 50000),
                  src_ip_port=('192.168.1.1', 8192), 
@@ -159,7 +162,7 @@ class PymepixConnection(Logger):
 
     @property
     def dataCallback(self):
-        """Function to call when data is recieved from a timepix device
+        """Function to call when data is received from a timepix device
 
         This has the effect of disabling polling.
 

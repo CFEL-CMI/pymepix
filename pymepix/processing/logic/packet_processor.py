@@ -41,7 +41,7 @@ class PixelOrientation(IntEnum):
 
 
 class PacketProcessor(ProcessingStep):
-    """ Class reposnsible to transform the raw data coming from the timepix directly into an easier 
+    """ Class responsible to transform the raw data coming from the timepix directly into an easier
     processible data format. Takes into account the pixel- and trigger data to calculate toa and tof
     dimensions.
 
