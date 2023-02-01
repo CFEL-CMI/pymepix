@@ -16,6 +16,7 @@ Pymepix documentation
     Data Formats <dataformats>
     Examples <examples>
     pymepix-acq <pymepixacq>
+    postprocessing <postprocessing>
     Troubleshooting <troubleshooting>
 
 
