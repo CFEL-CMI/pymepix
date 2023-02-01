@@ -21,7 +21,6 @@
 """ Main module for pymepix """
 
 import os
-import time
 import argparse
 import logging
 import time
