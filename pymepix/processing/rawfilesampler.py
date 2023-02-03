@@ -312,12 +312,12 @@ class RawFileSampler():
             # 0x4X timer configuration
             elif header == 0x4 or header == 0x6:
                 subheader = ((pixdata & 0x0F00000000000000) >> 56) & 0xF
-                if subheader == 0xF or subheader == 0xE or subheader == 0xB:
-                    self.handle_other(pixdata)
-                elif subheader == 0x4:
+                if subheader == 0x4:
                     self.handle_lsb_time(pixdata)
                 elif subheader == 0x5:
                     should_push = self.handle_msb_time(pixdata)
+                else:
+                    self.handle_other(pixdata)
 
             if should_push:
                 self.push_data()
