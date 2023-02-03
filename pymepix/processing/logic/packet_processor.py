@@ -131,8 +131,7 @@ class PacketProcessor(ProcessingStep):
                     # sub headers for trigger identification
                     # TDC1     rising edge: 0xF     falling edge: 0xA
                     # TDC2     rising edge: 0xE     falling edge: 0xB
-                    header == 0x6, np.logical_or(subheader == 0xE, subheader == 0xB) #XFEL
-                    #np.logical_or(header == 0x4, header == 0x6), subheader == 0xE
+                    header == 0x6, np.logical_or(subheader == 0xE, subheader == 0xB)
                 )
             ]
 
