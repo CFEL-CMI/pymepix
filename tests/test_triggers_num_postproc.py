@@ -41,5 +41,7 @@ def test_packets_trigger():
         assert len(hdf_triggers1) == len(triggers1_frombinary)
         assert len(hdf_triggers2) == len(triggers2_frombinary)
 
+        os.remove(tmp_file_name)
+
 
 
