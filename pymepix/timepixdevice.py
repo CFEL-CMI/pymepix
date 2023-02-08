@@ -196,7 +196,7 @@ class TimepixDevice(Logger):
         return self.devIdToString()
 
     def setEthernetFilter(self, eth_filter):
-        """Sets the packet filter, usually set to 0xFFFF to all all packets"""
+        """Sets the packet filter, usually set to 0xFFFF to all packets"""
         eth_mask, cpu_mask = self._device.headerFilter
         eth_mask = eth_filter
         self._device.setHeaderFilter(eth_mask, cpu_mask)
@@ -244,12 +244,10 @@ class TimepixDevice(Logger):
         value : :obj:`numpy.array` of :obj:`int`
             256x256 uint8 threshold mask to set locally
 
-
         Returns
         -----------
         :obj:`numpy.array` of :obj:`int` or :obj:`None`:
             Locally stored pixel mask matrix
-
 
         """
         # self._device.getPixelConfig()

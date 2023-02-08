@@ -27,6 +27,8 @@ from pymepix.core.log import Logger
 from pymepix.processing.acquisition import PixelPipeline
 from .SPIDR.spidrcontroller import SPIDRController
 from .timepixdevice import TimepixDevice
+from pymepix.channel.channel import Channel
+from pymepix.channel.channel_types import ChannelDataType, Commands
 
 
 class PollBufferEmpty(Exception):
@@ -86,13 +88,16 @@ class PymepixConnection(Logger):
             data_type, data = value
             self._event_callback(data_type, data)
 
+            self._channel.send_data_by_message_type(data_type, data)
+
 
             
 
     def __init__(self,
                  spidr_address=(cfg.default_cfg["timepix"]["tpx_ip"], 50000),
                  src_ip_port=('192.168.1.1', 8192), 
-                 pipeline_class=PixelPipeline):
+                 pipeline_class=PixelPipeline,
+                 chan_address=('127.0.0.1', 5056)):
         Logger.__init__(self, "Pymepix")
         self._spidr = SPIDRController(spidr_address, src_ip_port)
 
@@ -108,6 +113,11 @@ class PymepixConnection(Logger):
         self._data_thread.start()
 
         self._running = False
+
+        self._channel_address = chan_address
+        self._channel = Channel()
+        self._channel.start()
+        self._channel.register(f'tcp://{chan_address[0]}:{chan_address[1]}')
 
     @property
     def biasVoltage(self):
@@ -231,6 +241,8 @@ class PymepixConnection(Logger):
 
         self._running = True
 
+        self._channel.send(ChannelDataType.COMMAND, Commands.START)
+
     def stop(self):
         """Stops acquisition"""
 
@@ -252,6 +264,8 @@ class PymepixConnection(Logger):
             t.stop()
         self._running = False
 
+        self._channel.send(ChannelDataType.COMMAND, Commands.STOP)
+
     @property
     def isAcquiring(self):
         return self._running
@@ -259,6 +273,17 @@ class PymepixConnection(Logger):
     @property
     def numDevices(self):
         return self._num_timepix
+
+    @property
+    def chanAddress(self):
+        """Bias voltage in volts"""
+        return self._channel_address
+
+    @chanAddress.setter
+    def chanAddress(self, value):
+        self._channel_address = value
+        self._channel.unregister()
+        self._channel.register(f'tcp://{value[0]}:{value[1]}')
 
     def __getitem__(self, key)-> TimepixDevice:
         return self._timepix_devices[key]
