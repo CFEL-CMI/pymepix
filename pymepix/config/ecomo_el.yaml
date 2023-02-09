@@ -9,3 +9,6 @@ trainID:
    device : '/dev/ttyUSB0'
 tango_api:
    port: 9993
+tcpchannel:
+   ip : '127.0.0.1'
+   port: 5056

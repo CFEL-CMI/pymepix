@@ -1,8 +1,10 @@
 timepix:
    pc_ip : '192.168.1.1'
-#   pc_port: 11112
    tpx_ip : '192.168.1.10'
    sophy_config : 'path_to_sophy_config'
 trainID:
    connected: False
    device : '/dev/ttyUSB0'
+tcpchannel:
+   ip : '127.0.0.1'
+   port: 5056
