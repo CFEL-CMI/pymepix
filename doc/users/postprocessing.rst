@@ -27,7 +27,40 @@ Datagroup **triggers** may contain two subgroups "trigger1" and "trigger2" corre
 Each subgroup consists of only one dataset "time". These are firing times of the corresponding trigger starting from acquisition in seconds.
 In case of first trigger these are the times of rising front of the detected trigger pulse. For the second trigger both rising and falling pulse edges are detected. Negative values corresponf to the falling edge.
 
+Here's an example to retrieve the data from the HDF5 file into a Pandas DataFrame:
 
+.. code:: python
+    :numberlines: 1
+    
+    def get_tpx_data(fname: pathlib.PosixPath) -> pd.DataFrame:
+        '''
+        Get Timepix data from HDF5 file
+        '''
+        try:
+            with h5py.File(fname, "r") as f:
+                rawNr = f["raw/trigger nr"][:]
+                rawTof = f["raw/tof"][:] * 1e6
+                rawTot = f["raw/tot"][:]
+                rawX = f["raw/x"][:]
+                rawY = f["raw/y"][:]
+                centNr = f["centroided/trigger nr"][:]
+                centTof = f["centroided/tof"][:] * 1e6
+                centTot = f["centroided/tot max"][:]
+                centY = f["centroided/y"][:]
+                centX = f["centroided/x"][:]
+                size = f['centroided/clustersize'][:]
+
+            raw_data = pd.DataFrame(
+                np.column_stack((rawNr, rawTof, rawTot, rawX, rawY)),
+                columns=("nr", "tof", "tot", "x", "y"),
+            )
+            cent_data = pd.DataFrame(
+                np.column_stack((centNr, centTof, centTot, centX, centY, size)),
+                columns=("nr", "tof", "tot", "x", "y", 'size'),
+            )
+            return raw_data, cent_data
+        except:
+            print(f'key not known or file "{fname}" not existing')
 
 
 
