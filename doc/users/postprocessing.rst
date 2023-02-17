@@ -3,6 +3,7 @@ Pymepix postprocessing
 ===========================
 
 The raw data acquired from the camera could be processed from command line with the command.
+The processing can also be triggered from the `PymepixViewer`.
 
 Doing::
 
