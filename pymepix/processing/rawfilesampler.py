@@ -37,8 +37,9 @@ class RawFileSampler():
         timewalk_file=None,
         cent_timewalk_file=None,
         progress_callback=None,
-        clustering_args = None,
-        dbscan_clustering=True
+        clustering_args={},
+        dbscan_clustering=True,
+        **kwargs
     ):
         self._filename = file_name
         self._output_file = output_file
@@ -49,7 +50,6 @@ class RawFileSampler():
         self._progress_callback = progress_callback
 
         self._clustering_args = clustering_args
-
         self._dbscan_clustering = dbscan_clustering
 
     def init_new_process(self, file):
@@ -72,15 +72,11 @@ class RawFileSampler():
             cent_timewalk_lut = np.load(self.cent_timewalk_file)
 
         self.packet_processor = PacketProcessor(start_time=self._startTime, timewalk_lut=timewalk_lut)
-        if self._clustering_args is not None:
-            self.centroid_calculator = CentroidCalculator(**self._clustering_args,\
-                                                          cent_timewalk_lut=cent_timewalk_lut, \
-                                                          dbscan_clustering=self._dbscan_clustering,\
-                                                          number_of_processes=self._number_of_processes)
-        else:
-            self.centroid_calculator = CentroidCalculator(cent_timewalk_lut=cent_timewalk_lut, \
-                                                          dbscan_clustering=self._dbscan_clustering,\
-                                                          number_of_processes=self._number_of_processes)
+
+        self.centroid_calculator = CentroidCalculator(cent_timewalk_lut=cent_timewalk_lut,
+                                                      number_of_processes=self._number_of_processes,
+                                                      clustering_args=self._clustering_args,
+                                                      dbscan_clustering=self._dbscan_clustering)
 
     def pre_run(self):
         """init stuff which should only be available in new process"""
