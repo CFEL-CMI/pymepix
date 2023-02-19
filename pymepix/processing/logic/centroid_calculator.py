@@ -44,21 +44,10 @@ class CentroidCalculator(ProcessingStep):
 
     def __init__(
         self,
-        tot_threshold=0,
-        epsilon=2.0,
-        min_samples=3,
-        triggers_processed=1,
-        chunk_size_limit=6_500,
-
-        cs_sensor_size=256,
-        cs_min_cluster_size=3,
-        cs_max_dist_tof=5e-8,
-        cs_tot_offset=0.5,
-
         cent_timewalk_lut=None,
-        dbscan_clustering=True,
-
         number_of_processes=4,
+        clustering_args={},
+        dbscan_clustering = True,
         *args,
         **kwargs,
     ):
@@ -86,19 +75,21 @@ class CentroidCalculator(ProcessingStep):
 
         super().__init__("CentroidCalculator", *args, **kwargs)
 
-        self._epsilon = self.parameter_wrapper_class(epsilon)
-        self._min_samples = self.parameter_wrapper_class(min_samples)
-        self._tot_threshold = self.parameter_wrapper_class(tot_threshold)
-        self._triggers_processed = self.parameter_wrapper_class(triggers_processed)
+        self._epsilon = self.parameter_wrapper_class(clustering_args.pop('epsilon', 2.0))
+        self._min_samples = self.parameter_wrapper_class(clustering_args.pop('min_samples', 3))
+        self._tot_threshold = self.parameter_wrapper_class(clustering_args.pop('tot_threshold', 0))
+        self._triggers_processed = self.parameter_wrapper_class(clustering_args.pop('triggers_processed', 1))
 
-        self._cs_sensor_size = self.parameter_wrapper_class(cs_sensor_size)
-        self._cs_min_cluster_size = self.parameter_wrapper_class(cs_min_cluster_size)
-        self._cs_max_dist_tof = self.parameter_wrapper_class(cs_max_dist_tof)
-        self._cs_tot_offset = self.parameter_wrapper_class(cs_tot_offset)
+        self._cs_sensor_size = self.parameter_wrapper_class(clustering_args.pop('cs_sensor_size', 256))
+        self._cs_min_cluster_size = self.parameter_wrapper_class(clustering_args.pop('cs_min_cluster_size', 3))
+        self._cs_max_dist_tof = self.parameter_wrapper_class(clustering_args.pop('cs_max_dist_tof', 5e-8))
+        self._cs_tot_offset = self.parameter_wrapper_class(clustering_args.pop('cs_tot_offset', 0.5))
 
-        self._chunk_size_limit = chunk_size_limit
+        self._chunk_size_limit = clustering_args.pop('chunk_size_limit',6_500)
+
         self._tof_scale = 1.7e7
         self._cent_timewalk_lut = cent_timewalk_lut
+
         self._dbscan_clustering = self.parameter_wrapper_class(int(dbscan_clustering))
 
         self.number_of_processes = number_of_processes

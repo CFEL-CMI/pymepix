@@ -106,6 +106,9 @@ class PacketProcessor(ProcessingStep):
         self._handle_events.value = handle_events
 
     def process(self, data):
+        trigger1_data = None
+        trigger2_data = None
+
         packet_view = memoryview(data)
         packet = np.frombuffer(packet_view[:-8], dtype=np.uint64)
         # needs to be an integer or "(ltime >> 28) & 0x3" fails
@@ -118,24 +121,37 @@ class PacketProcessor(ProcessingStep):
             subheader = ((packet & 0x0F00000000000000) >> 56) & 0xF
 
             pixels = packet[np.logical_or(header == 0xA, header == 0xB)]
-            triggers = packet[
+            triggers1 = packet[
                 np.logical_and(
                     np.logical_or(header == 0x4, header == 0x6), subheader == 0xF
                 )
             ]
+            triggers2 = packet[
+                np.logical_and(
+                    # sub headers for trigger identification
+                    # TDC1     rising edge: 0xF     falling edge: 0xA
+                    # TDC2     rising edge: 0xE     falling edge: 0xB
+                    header == 0x6, np.logical_or(subheader == 0xE, subheader == 0xB)
+                )
+            ]
+
+            if triggers1.size > 0:
+                trigger1_data = self.process_trigger1(np.int64(triggers1), longtime)
+
+            if triggers2.size > 0:
+                trigger2_data = self.process_trigger2(np.int64(triggers2), longtime)
 
             if pixels.size > 0:
                 pixel_data = self.process_pixels(np.int64(pixels), longtime)
-
-                if triggers.size > 0:
-                    self.process_triggers(np.int64(triggers), longtime)
 
                 if self.handle_events:
                     result = self.find_events_fast()
                     if result is not None:
                         event_data, timestamps = result
+            else:
+                self._trigger_counter += triggers1.size
 
-        return event_data, pixel_data, timestamps
+        return event_data, pixel_data, timestamps, trigger1_data, trigger2_data
 
     def pre_process(self):
         self.info("Running with triggers? {}".format(self.handle_events))
@@ -172,7 +188,7 @@ class PacketProcessor(ProcessingStep):
         self._toa = None
         self._triggers = None
 
-    def process_triggers(self, pixdata, longtime):
+    def process_trigger1(self, pixdata, longtime):
         coarsetime = pixdata >> 12 & 0xFFFFFFFF
         coarsetime = self.correct_global_time(coarsetime, longtime)
         tmpfine = (pixdata >> 5) & 0xF
@@ -188,6 +204,27 @@ class PacketProcessor(ProcessingStep):
                 self._triggers = m_trigTime
             else:
                 self._triggers = np.append(self._triggers, m_trigTime)
+
+        return m_trigTime
+    def process_trigger2(self, tidtrigdata, longtime):
+        subheader = ((tidtrigdata & 0x0F00000000000000) >> 56) & 0xF
+        # TDC2     rising edge: 0xE     falling edge: 0xB
+        edge_type = subheader == 0xE
+
+        coarsetime = tidtrigdata >> 12 & 0xFFFFFFFF
+        coarsetime = self.correct_global_time(coarsetime, longtime)
+        tmpfine = (tidtrigdata >> 5) & 0xF
+        tmpfine = ((tmpfine - 1) << 9) // 12
+        trigtime_fine = (tidtrigdata & 0x0000000000000E00) | (tmpfine & 0x00000000000001FF)
+        time_unit = 25.0 / 4096
+        tdc_time = coarsetime * 25e-9 + trigtime_fine * time_unit * 1e-9
+
+        m_trigTime = tdc_time.astype(float)
+
+        m_trigTime[edge_type == False] *= -1
+        # always look at it as abs, sign tells rising or falling edge
+
+        return m_trigTime
 
     def orientPixels(self, col, row):
         """ Orient the pixels based on Timepix orientation """
@@ -301,7 +338,7 @@ class PacketProcessor(ProcessingStep):
                         self.error("Writing output TOA {}".format(toa))
                         self.error("Writing triggers {}".format(start))
                         self.error("Flushing triggers!!!")
-                        self._triggers = self._triggers[-2:]
+                        self._triggers = self._triggers[-1:]
                         return None
                     self._triggers = self._triggers[-1:]
 
@@ -328,7 +365,7 @@ class PacketProcessor(ProcessingStep):
         return None # Clear out the triggers since they have nothing
 
     def __exist_enough_triggers(self):
-        return self._triggers is not None and self._triggers.size >= 4
+        return self._triggers is not None and self._triggers.size >= 2
 
     def __toa_is_not_empty(self):
         return self._toa is not None and self._toa.size > 0
@@ -336,14 +373,16 @@ class PacketProcessor(ProcessingStep):
     def find_events_fast_post(self):
         """Call this function at the very end of to also have the last two trigger events processed"""
         # add an imaginary last trigger event after last pixel event for np.digitize to work
-        if self._toa is not None and self._toa.shape[0] > 0:
+        if self._toa is not None and self._toa.shape[0] > 0 and self._triggers is not None:
             self._triggers = np.concatenate(
-                (self._triggers, np.array([self._toa.max() + 1, self._toa.max() + 2]))
+                (self._triggers, np.array([self._toa.max() + 1]))
             )
+        else:
+            return None, None, None, None, None
 
         event_data, timestamps = None, None
         result = self.find_events_fast()
         if result is not None:
             event_data, timestamps = result
 
-        return event_data, None, timestamps
+        return event_data, None, timestamps, None, None
