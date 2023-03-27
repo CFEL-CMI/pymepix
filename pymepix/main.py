@@ -216,8 +216,18 @@ def main():
         default=-1,
         help="The number of processes used for the centroiding (default: None which ensures all existing system cores are used')",
     )
+    parser_post_process.add_argument(
+        "--config",
+        dest="cfg",
+        type=str,
+        default="default.yaml",
+        help="Config file",
+    )
+
+
 
     args = parser.parse_args()
+    print(args)
 
     cfg.load_config(args.cfg)
     args.func(args)
