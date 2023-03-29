@@ -398,7 +398,7 @@ class CentroidCalculator(ProcessingStep):
             # cluster_tof -= self._timewalk_lut[(cluster_tot / 25).astype(np.int) - 1]
             # cluster_tof *= 1e6
             cluster_tof -= (
-                self._cent_timewalk_lut[np.int(cluster_totMax // 25) - 1] * 1e3
+                self._cent_timewalk_lut[np.int_(cluster_totMax // 25) - 1] * 1e3
             )
             # TODO: should totAvg not also be timewalk corrected?!
             # cluster_tof *= 1e-6
