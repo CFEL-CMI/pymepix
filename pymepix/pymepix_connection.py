@@ -205,7 +205,7 @@ class PymepixConnection(Logger):
         for x in self._spidr:
             status, enabled, locked = x.linkStatus
             if enabled != 0 and locked == enabled:
-                self._timepix_devices.append(TimepixDevice(x, self._data_queue, pipeline_class))
+                self._timepix_devices.append(TimepixDevice(x, self._data_queue, pipeline_class, self._channel))
 
         self._num_timepix = len(self._timepix_devices)
         self.info("Found {} Timepix/Medipix devices".format(len(self._timepix_devices)))
@@ -241,8 +241,6 @@ class PymepixConnection(Logger):
 
         self._running = True
 
-        self._channel.send(ChannelDataType.COMMAND, Commands.START)
-
     def stop(self):
         """Stops acquisition"""
 
@@ -263,8 +261,6 @@ class PymepixConnection(Logger):
             self.debug("Stopping {}".format(t.deviceName))
             t.stop()
         self._running = False
-
-        self._channel.send(ChannelDataType.COMMAND, Commands.STOP)
 
     @property
     def isAcquiring(self):

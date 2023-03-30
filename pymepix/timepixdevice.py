@@ -30,6 +30,8 @@ from .config import DefaultConfig, SophyConfig, TimepixConfig
 from .core.log import Logger
 from .timepixdef import *
 
+from pymepix.channel.channel_types import ChannelDataType, Commands
+
 
 class ConfigClassException(Exception):
     pass
@@ -62,7 +64,7 @@ class TimepixDevice(Logger):
             )
             time.sleep(1.0)
 
-    def __init__(self, spidr_device, data_queue, pipeline_class=PixelPipeline):
+    def __init__(self, spidr_device, data_queue, pipeline_class=PixelPipeline, tcp_channel=None):
 
         self._device = spidr_device
         Logger.__init__(self, "Timepix " + self.devIdToString())
@@ -92,6 +94,8 @@ class TimepixDevice(Logger):
         self._timer_thread.start()
         self.pauseHeartbeat()
         self._acq_running = False
+
+        self._tcp_channel = tcp_channel
 
     @property
     def config(self):
@@ -318,6 +322,9 @@ class TimepixDevice(Logger):
         else:
             self.warning(f"Error while starting recording: {res}")
 
+        if self._tcp_channel != None:
+            self._tcp_channel.send(ChannelDataType.COMMAND, Commands.START)
+
     def stop_recording(self):
         pipeline = self._acquisition_pipeline._stages[0]
         pipeline._pipeline_objects[0].record = False
@@ -327,6 +334,9 @@ class TimepixDevice(Logger):
             self.info(f"Finished recording")
         else:
             self.warning(f"Error during recording: {res}")
+
+        if self._tcp_channel != None:
+            self._tcp_channel.send(ChannelDataType.COMMAND, Commands.STOP)
 
     # -----General Configuration-------
     @property
