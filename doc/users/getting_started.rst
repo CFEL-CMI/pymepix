@@ -40,7 +40,17 @@ second line must be executed.
 
 
 
-Adapt :code:`pymepix/config/default.yaml` according to your setup.
+Adapt :code:`pymepix/config/default.yaml` according to your setup. Possible options are:
+
+- *pc_ip*: ip address the Timepix is connected to
+- *pc_port*: port of the computer should use for communication (not implemented)
+- *tpx_ip*: ip address of the Timepix camera
+- *sophy_config*: path to the SoPhy config (still required for setting up DAQ values)
+- *remote_processing_host*: ip and port a service listens for receiving filenames to start an external file conversion to hdf5
+trainID: (will soon be deprecated)
+- *connected*: False
+- *device*: '/dev/ttyUSB0'
+
 
 Dependencies
 ------------

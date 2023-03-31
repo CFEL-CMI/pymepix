@@ -3,6 +3,7 @@ timepix:
 #   pc_port: 11112
    tpx_ip : '192.168.1.10'
    sophy_config : 'path_to_sophy_config'
+   remote_processing_host: '131.169.168.130:13049'
 trainID:
    connected: False
    device : '/dev/ttyUSB0'
