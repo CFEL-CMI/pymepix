@@ -44,6 +44,7 @@ install_requires = [
     "pyserial",
     "h5py",
     "tqdm",
+    "joblib",
 ]
 
 console_scripts = ["pymepix-acq=pymepix.main:main"]

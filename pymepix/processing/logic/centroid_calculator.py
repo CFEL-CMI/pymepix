@@ -20,13 +20,127 @@
 import multiprocessing as mp
 from multiprocessing.pool import Pool
 from threading import current_thread
+from time import time
 
 import numpy as np
 import scipy.ndimage as nd
 from sklearn.cluster import DBSCAN
 
+from joblib import Parallel, delayed
+
 from pymepix.processing.logic.processing_step import ProcessingStep
 from pymepix.clustering.cluster_stream import ClusterStream
+
+def perform_clustering_dbscan(shot, x, y, tof, _tof_scale, epsilon, min_samples):
+        """ The clustering with DBSCAN, which is performed in this function is dependent on the
+            order of the data in rare cases. Therefore, reordering in any means can
+            lead to slightly changed results, which should not be an issue.
+
+            Martin Ester, Hans-Peter Kriegel, Jiirg Sander, Xiaowei Xu: A Density Based Algorithm for
+            Discovering Clusters [p. 229-230] (https://www.aaai.org/Papers/KDD/1996/KDD96-037.pdf)
+            A more specific explaination can be found here:
+            https://stats.stackexchange.com/questions/306829/why-is-dbscan-deterministic"""
+        if x.size >= 0:
+            X = np.column_stack(
+                (shot * epsilon * 1_000, x, y, tof * _tof_scale)
+            )
+
+            dist = DBSCAN(
+                eps=epsilon,
+                min_samples=min_samples,
+                metric="euclidean",
+                n_jobs=1,
+            ).fit(X)
+
+            return dist.labels_ + 1
+
+        return None
+    
+def calculate_centroids_properties(shot, x, y, tof, tot, labels, _cent_timewalk_lut):
+        """
+        Calculates the properties of the centroids from labeled data points.
+
+        ATTENTION! The order of the points can have an impact on the result due to errors in
+        the floating point arithmetics.
+
+        Very simple example:
+        arr = np.random.random(100)
+        arr.sum() - np.sort(arr).sum()
+        This example shows that there is a very small difference between the two sums. The inaccuracy of
+        floating point arithmetics can depend on the order of the values. Strongly simplified (3.2 + 3.4) + 2.7
+        and 3.2 + (3.4 + 2.7) can be unequal for floating point numbers.
+
+        Therefore there is no guarantee for strictly equal results. Even after sorting. The error we observed
+        can be about 10^-22 nano seconds.
+
+        Currently this is issue exists only for the TOF-column as the other columns are integer-based values.
+        """
+        label_index, cluster_size = np.unique(labels, return_counts=True)
+        tot_max = np.array(
+            nd.maximum_position(tot, labels=labels, index=label_index)
+        ).flatten()
+
+        tot_sum = nd.sum(tot, labels=labels, index=label_index)
+        tot_mean = nd.mean(tot, labels=labels, index=label_index)
+        cluster_x = np.array(
+            nd.sum(x * tot, labels=labels, index=label_index) / tot_sum
+        ).flatten()
+        cluster_y = np.array(
+            nd.sum(y * tot, labels=labels, index=label_index) / tot_sum
+        ).flatten()
+        cluster_tof = np.array(
+            nd.sum(tof * tot, labels=labels, index=label_index) / tot_sum
+        ).flatten()
+        cluster_totMax = tot[tot_max]
+        cluster_totAvg = tot_mean
+        cluster_shot = shot[tot_max]
+
+        if _cent_timewalk_lut is not None:
+            # cluster_tof -= self._timewalk_lut[(cluster_tot / 25).astype(np.int) - 1]
+            # cluster_tof *= 1e6
+            cluster_tof -= (
+                _cent_timewalk_lut[np.int_(cluster_totMax // 25) - 1] * 1e3
+            )
+            # TODO: should totAvg not also be timewalk corrected?!
+            # cluster_tof *= 1e-6
+
+        return (
+            cluster_shot,
+            cluster_x,
+            cluster_y,
+            cluster_tof,
+            cluster_totAvg,
+            cluster_totMax,
+            cluster_size,
+        )
+
+def calculate_centroids_dbscan(chunk, tot_threshold, _tof_scale, epsilon, min_samples, _cent_timewalk_lut):
+        shot, x, y, tof, tot = chunk
+
+        tot_filter = tot > tot_threshold
+        # Filter out pixels
+        shot = shot[tot_filter]
+        x = x[tot_filter]
+        y = y[tot_filter]
+        tof = tof[tot_filter]
+        tot = tot[tot_filter]
+
+        labels = perform_clustering_dbscan(shot, x, y, tof, _tof_scale, epsilon, min_samples)
+
+        label_filter = labels != 0
+
+        if labels is not None and labels[label_filter].size > 0:
+            return calculate_centroids_properties(
+                shot[label_filter],
+                x[label_filter],
+                y[label_filter],
+                tof[label_filter],
+                tot[label_filter],
+                labels[label_filter],
+                _cent_timewalk_lut
+            )
+
+        return None
 
 
 class CentroidCalculator(ProcessingStep):
@@ -272,6 +386,10 @@ class CentroidCalculator(ProcessingStep):
     def perform_centroiding_dbscan(self, chunks):
 #        with Pool(self.number_of_processes) as p:
 #            return p.map(self.calculate_centroids_dbscan, chunks)
+        
+        if self.number_of_processes>1:
+            return Parallel(n_jobs=self.number_of_processes)(delayed(calculate_centroids_dbscan)(c,self.tot_threshold, self._tof_scale, self.epsilon, self.min_samples, self._cent_timewalk_lut) for c in chunks)
+        
         return map(self.calculate_centroids_dbscan, chunks)
 
     def perform_centroiding_cluster_stream(self, chunks):
@@ -398,7 +516,7 @@ class CentroidCalculator(ProcessingStep):
             # cluster_tof -= self._timewalk_lut[(cluster_tot / 25).astype(np.int) - 1]
             # cluster_tof *= 1e6
             cluster_tof -= (
-                self._cent_timewalk_lut[np.int(cluster_totMax // 25) - 1] * 1e3
+                self._cent_timewalk_lut[np.int_(cluster_totMax // 25) - 1] * 1e3
             )
             # TODO: should totAvg not also be timewalk corrected?!
             # cluster_tof *= 1e-6
