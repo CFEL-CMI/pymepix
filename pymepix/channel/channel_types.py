@@ -8,5 +8,5 @@ class ChannelDataType(Enum):
 
 
 class Commands(Enum):
-    START = 'start'
-    STOP = 'stop'
+    START_RECORD = 'start_record'
+    STOP_RECORD = 'stop_record'
