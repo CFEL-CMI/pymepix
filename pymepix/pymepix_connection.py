@@ -99,6 +99,12 @@ class PymepixConnection(Logger):
                  pipeline_class=PixelPipeline,
                  chan_address=('127.0.0.1', 5056)):
         Logger.__init__(self, "Pymepix")
+
+        self._channel_address = chan_address
+        self._channel = Channel()
+        self._channel.start()
+        self._channel.register(f'tcp://{chan_address[0]}:{chan_address[1]}')
+
         self._spidr = SPIDRController(spidr_address, src_ip_port)
 
         self._timepix_devices: list[TimepixDevice] = []
@@ -113,11 +119,6 @@ class PymepixConnection(Logger):
         self._data_thread.start()
 
         self._running = False
-
-        self._channel_address = chan_address
-        self._channel = Channel()
-        self._channel.start()
-        self._channel.register(f'tcp://{chan_address[0]}:{chan_address[1]}')
 
     @property
     def biasVoltage(self):
