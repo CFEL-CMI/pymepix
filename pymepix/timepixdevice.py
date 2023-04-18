@@ -323,7 +323,7 @@ class TimepixDevice(Logger):
             self.warning(f"Error while starting recording: {res}")
 
         if self._tcp_channel != None:
-            self._tcp_channel.send(ChannelDataType.COMMAND, Commands.START)
+            self._tcp_channel.send(ChannelDataType.COMMAND, Commands.START_RECORD)
 
     def stop_recording(self):
         pipeline = self._acquisition_pipeline._stages[0]
@@ -336,7 +336,7 @@ class TimepixDevice(Logger):
             self.warning(f"Error during recording: {res}")
 
         if self._tcp_channel != None:
-            self._tcp_channel.send(ChannelDataType.COMMAND, Commands.STOP)
+            self._tcp_channel.send(ChannelDataType.COMMAND, Commands.STOP_RECORD)
 
     # -----General Configuration-------
     @property
