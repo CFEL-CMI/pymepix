@@ -220,6 +220,12 @@ class PymepixConnection(Logger):
         self._spidr.enableDecoders(True)
         self._spidr.datadrivenReadout()
 
+    def start_record(self):
+        pass
+
+    def stop_record(self):
+        pass
+
     def start(self):
         """Starts acquisition"""
 
