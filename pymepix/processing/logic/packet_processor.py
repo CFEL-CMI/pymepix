@@ -106,16 +106,16 @@ class PacketProcessor(ProcessingStep):
         self._handle_events.value = handle_events
 
     def process(self, data):
-        trigger1_data = None
-        trigger2_data = None
-
         packet_view = memoryview(data)
         packet = np.frombuffer(packet_view[:-8], dtype=np.uint64)
         # needs to be an integer or "(ltime >> 28) & 0x3" fails
         longtime = int(np.frombuffer(packet_view[-8:], dtype=np.uint64)[0])
 
-        event_data, pixel_data, timestamps = None, None, None
+        event_data, pixel_data, timestamps, triggers = None, None, None, None
         if len(packet) > 0:
+
+            trigger1_data = None
+            trigger2_data = None
 
             header = ((packet & 0xF000000000000000) >> 60) & 0xF
             subheader = ((packet & 0x0F00000000000000) >> 56) & 0xF
@@ -151,7 +151,9 @@ class PacketProcessor(ProcessingStep):
             else:
                 self._trigger_counter += triggers1.size
 
-        return event_data, pixel_data, timestamps, trigger1_data, trigger2_data
+            triggers = [trigger1_data, trigger2_data,]
+
+        return event_data, pixel_data, timestamps, triggers
 
     def pre_process(self):
         self.info("Running with triggers? {}".format(self.handle_events))
@@ -378,11 +380,11 @@ class PacketProcessor(ProcessingStep):
                 (self._triggers, np.array([self._toa.max() + 1]))
             )
         else:
-            return None, None, None, None, None
+            return None, None, None, None
 
         event_data, timestamps = None, None
         result = self.find_events_fast()
         if result is not None:
             event_data, timestamps = result
 
-        return event_data, None, timestamps, None, None
+        return event_data, None, timestamps, None

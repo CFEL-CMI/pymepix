@@ -53,6 +53,14 @@ def main():
         default='',
         help="filename of source data",
     )
+
+    parser.add_argument(
+        "--repeats",
+        dest="repeats",
+        type=int,
+        default=1,
+        help="number of cycles to send the data",
+    )
     
 
     args = parser.parse_args()
@@ -66,21 +74,26 @@ def main():
 
     fName = args.filename
 
+    repeats = args.repeats
+
     data = np.fromfile(fName, dtype=np.uint64)
-    total = len(data)
+
+    total = len(data)*repeats
     last_progress = 0
     startTime = time.time()
-    for i, packet in enumerate(data[:]):
-        sock.sendto(struct.pack("Q", packet), (HOST, PORT))
-        progress = int(i / total * 100)
-        if progress != 0 and progress % 5 == 0 and progress != last_progress:
-            print(f"Progress {i / total * 100:.1f}%")
-            last_progress = progress
-        # received = str(sock.recv(1024), "utf-8")
+    for rep in range(repeats):
+        for i, packet in enumerate(data[:]):
+            sock.sendto(struct.pack("Q", packet), (HOST, PORT))
+            progress = int((i+rep*len(data)) / total * 100)
+            if progress != 0 and progress % 5 == 0 and progress != last_progress:
+                print(f"Progress {progress :.1f}%")
+                last_progress = progress
+            # received = str(sock.recv(1024), "utf-8")
     stopTime = time.time()
     timeDiff = stopTime - startTime
+    num_packets = rep * len(data)
     print(
-        f"sent {i} packets; {64*i*1e-6:.2f}MBits {(64*i*1e-6)/timeDiff:.2f}MBits/sec; {(64*i*1e-6/8)/timeDiff:.2f}MByte/sec"
+        f"sent {num_packets} packets; {64*i*1e-6:.2f}MBits {(64*num_packets*1e-6)/timeDiff:.2f}MBits/sec; {(64*num_packets*1e-6/8)/timeDiff:.2f}MByte/sec"
     )
 
 if __name__ == "__main__":

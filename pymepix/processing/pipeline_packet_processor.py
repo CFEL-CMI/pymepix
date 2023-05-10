@@ -72,7 +72,7 @@ class PipelinePacketProcessor(BasePipelineObject):
         # timestamps are not required for online processing
         result = self.packet_processor.process(self._packet_sock.recv(copy=False))
         if result is not None:
-            event_data, pixel_data, _timestamps, _, _ = result
+            event_data, pixel_data, _timestamps, _ = result
 
             if pixel_data is not None:
                 self.pushOutput(MessageType.PixelData, pixel_data)
@@ -80,3 +80,4 @@ class PipelinePacketProcessor(BasePipelineObject):
             if event_data is not None:
                 return MessageType.EventData, event_data
         return None, None
+
