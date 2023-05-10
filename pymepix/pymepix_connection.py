@@ -30,6 +30,7 @@ from .timepixdevice import TimepixDevice
 from pymepix.api.api_types import Commands, ApiDataType
 from pymepix.api.api import Api
 
+from .timepix4device import Timepix4Device
 
 
 class PollBufferEmpty(Exception):
@@ -55,7 +56,7 @@ class PymepixConnection(Logger):
 
     Startup device
 
-    >>> timepix = Pymepix(('192.168.1.10',50000))
+    >>> timepix = PymepixConnection(('192.168.1.10',50000))
 
     Find how many Timepix are connected
 
@@ -93,12 +94,12 @@ class PymepixConnection(Logger):
 
     def __init__(self,
                  spidr_address=(cfg.default_cfg["timepix"]["tpx_ip"], 50000),
-                 src_ip_port=(cfg.default_cfg['timepix']['pc_ip'], 
-                              # get TPX port for camera, if not specified in config, use default
+                 src_ip_port=(cfg.default_cfg['timepix']['pc_ip'],
                               int(cfg.default_cfg.get('timepix').get('pc_port', 8192))),
                  api_address=(cfg.default_cfg['api_channel']['ip'],
                               cfg.default_cfg['api_channel']['port']),
                  pipeline_class=PixelPipeline,
+                 camera_generation=3,
                  ):
         Logger.__init__(self, "Pymepix")
 
@@ -113,6 +114,7 @@ class PymepixConnection(Logger):
         self._spidr = SPIDRController(spidr_address, src_ip_port)
 
         self._timepix_devices: list[TimepixDevice] = []
+        self.camera_generation = camera_generation
 
         self._data_queue = Queue()
         self._createTimepix(pipeline_class)
@@ -207,11 +209,11 @@ class PymepixConnection(Logger):
         self._poll_buffer.append((data_type, data))
 
     def _createTimepix(self, pipeline_class=PixelPipeline):
-
+        TimepixDeviceClass = self.timepix_device_factory(self.camera_generation)
         for x in self._spidr:
             status, enabled, locked = x.linkStatus
             if enabled != 0 and locked == enabled:
-                self._timepix_devices.append(TimepixDevice(x, self._data_queue, pipeline_class))
+                self._timepix_devices.append(TimepixDeviceClass(x, self._data_queue, pipeline_class))
 
         self._num_timepix = len(self._timepix_devices)
         self.info("Found {} Timepix/Medipix devices".format(len(self._timepix_devices)))
@@ -308,3 +310,14 @@ class PymepixConnection(Logger):
 
     def getDevice(self, num) -> TimepixDevice:
         return self._timepix_devices[num]
+<<<<<<< HEAD
+=======
+
+    def timepix_device_factory(self, camera_generation):
+        timepix_devices = { 3: TimepixDevice, \
+                            4: Timepix4Device}
+        if camera_generation in timepix_devices.keys():
+            return timepix_devices[camera_generation]
+        else:
+            raise  ValueError(f'No timepix device for camera generation {camera_generation}')
+>>>>>>> 63476fc... Timepix4 integration, acquisition/postprocessing pixel data
