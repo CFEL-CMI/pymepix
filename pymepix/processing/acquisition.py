@@ -22,9 +22,11 @@
 
 from pymepix.processing.logic.centroid_calculator import CentroidCalculator
 from pymepix.processing.logic.packet_processor import PacketProcessor
+from pymepix.processing.logic.packet_processor_tpx4 import PacketProcessor_tpx4
 from .baseacquisition import AcquisitionPipeline
 from .pipeline_centroid_calculator import PipelineCentroidCalculator
 from .pipeline_packet_processor import PipelinePacketProcessor
+from .logic.packet_processor_factory import packet_processor_factory
 from .udpsampler import UdpSampler
 
 
@@ -35,13 +37,16 @@ class PixelPipeline(AcquisitionPipeline):
     This class can be used as a base for all acqusition pipelines.
     """
 
-    def __init__(self, data_queue, address, longtime, use_event=False, name="Pixel", event_window=(0, 1E-3)):
+    def __init__(self, data_queue, address, longtime, use_event=False, name="Pixel", event_window=(0, 1E-3),
+                 camera_generation=3):
         """ 
         Parameters:
         use_event (boolean): If packets are forwarded to the centroiding. If True centroids are calculated."""
         AcquisitionPipeline.__init__(self, name, data_queue)
         self.info("Initializing Pixel pipeline")
-        self.packet_processor = PacketProcessor(handle_events=use_event, event_window=event_window)
+
+        PacketProcessorClass = packet_processor_factory(camera_generation)
+        self.packet_processor = PacketProcessorClass(handle_events=use_event, event_window=event_window)
 
         self.addStage(0, UdpSampler, address, longtime)
         self.addStage(2, PipelinePacketProcessor, num_processes=2)
@@ -54,6 +59,7 @@ class PixelPipeline(AcquisitionPipeline):
         )
 
 
+
 class CentroidPipeline(PixelPipeline):
     """A Pixel pipeline that includes centroiding
 
@@ -61,9 +67,10 @@ class CentroidPipeline(PixelPipeline):
     when dealing with a huge number of objects
     """
 
-    def __init__(self, data_queue, address, longtime):
+    def __init__(self, data_queue, address, longtime, camera_generation=3):
         PixelPipeline.__init__(
-            self, data_queue, address, longtime, use_event=True, name="Centroid"
+            self, data_queue, address, longtime, use_event=True, name="Centroid",
+            camera_generation=camera_generation
         )
         self.info("Initializing Centroid pipeline")
         self.centroid_calculator=CentroidCalculator()

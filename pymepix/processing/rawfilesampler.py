@@ -23,8 +23,8 @@ import struct
 
 import numpy as np
 import h5py
-from .logic.packet_processor import PacketProcessor
 from .logic.centroid_calculator import CentroidCalculator, CentroidCalculatorPooled
+from .logic.packet_processor_factory import packet_processor_factory
 
 
 class RawFileSampler():
@@ -37,6 +37,7 @@ class RawFileSampler():
         timewalk_file=None,
         cent_timewalk_file=None,
         progress_callback=None,
+        camera_generation=3,
         clustering_args={},
         dbscan_clustering=True,
         **kwargs
@@ -51,6 +52,7 @@ class RawFileSampler():
 
         self._clustering_args = clustering_args
         self._dbscan_clustering = dbscan_clustering
+        self.camera_generation = camera_generation
 
     def init_new_process(self, file):
         """create connections and initialize variables in new process"""
@@ -71,7 +73,7 @@ class RawFileSampler():
         if self.cent_timewalk_file is not None:
             cent_timewalk_lut = np.load(self.cent_timewalk_file)
 
-        self.packet_processor = PacketProcessor(start_time=self._startTime, timewalk_lut=timewalk_lut)
+        self.packet_processor = packet_processor_factory(self.camera_generation)(start_time=self._startTime, timewalk_lut=timewalk_lut)
 
         self.centroid_calculator = CentroidCalculator(cent_timewalk_lut=cent_timewalk_lut,
                                                       number_of_processes=self._number_of_processes,
@@ -97,14 +99,15 @@ class RawFileSampler():
 
         self._packet_buffer = []
         if result is not None:
+            lenth_of_data = len(result)
             self.__calculate_and_save_centroids(*result)
 
         self.centroid_calculator.post_process()
 
-    def bytes_from_file(self, chunksize=8192):
+    def bytes_from_file(self, data_type="<u8"):
         print("Reading to memory", flush=True)
         with open(self._filename, 'rb') as file:
-            ba = np.fromfile(file, dtype="<u8")
+            ba = np.fromfile(file, dtype=data_type)
         print("Done", flush=True)
 
         packets_to_process = len(ba)
@@ -169,11 +172,11 @@ class RawFileSampler():
 
         return None
 
-    def __calculate_and_save_centroids(self, event_data, _pixel_data, timestamps, trigger1, trigger2):
+    def __calculate_and_save_centroids(self, event_data, _pixel_data, timestamps, _trigger_data):
         centroids = self.centroid_calculator.process(event_data)
-        self.saveToHDF5(self._output_file, event_data, centroids, timestamps, trigger1, trigger2)
+        self.saveToHDF5(self._output_file, event_data, centroids, timestamps, _trigger_data)
 
-    def saveToHDF5(self, output_file, raw, clusters, timeStamps, trigger1, trigger2):
+    def saveToHDF5(self, output_file, raw, clusters, timeStamps, _trigger_data):
         if output_file is not None:
             with h5py.File(output_file, "a") as f:
                 names = ["trigger nr", "x", "y", "tof", "tot avg", "tot max", "clustersize"]
@@ -250,41 +253,26 @@ class RawFileSampler():
                         f["timing/timepix/timestamp"].attrs["unit"] = "ns"
 
                 # save trigger1 data
-                if trigger1 is not None:
-                    if f.keys().__contains__("triggers/trigger1"):
-                        dset = f["triggers/trigger1/time"]
-                        dset.resize(dset.shape[0] + len(trigger1), axis=0)
-                        dset[-len(trigger1) :] = trigger1
-                    else:
-                        if not f.keys().__contains__("triggers"):
-                            grp = f.create_group("triggers")
-                            grp.attrs["description"] = "triggering information from TimePix"
+                if _trigger_data is not None:
+                    for trig_num, trigger in enumerate(_trigger_data):
+                        if trigger is None:
+                            continue
+                        if f.keys().__contains__(f"triggers/trigger{trig_num+1}"):
+                            dset = f[f"triggers/trigger{trig_num+1}/time"]
+                            dset.resize(dset.shape[0] + len(trigger), axis=0)
+                            dset[-len(trigger) :] = trigger
                         else:
-                            grp = f["triggers"]
-                        grp.attrs["description"] = "triggering information from TimePix"
-                        subgrp = grp.create_group("trigger1")
-                        subgrp.attrs["description"] = "trigger1 time from TimePix starting"
-                        subgrp.create_dataset(
-                            "time", data=trigger1, maxshape=(None,))
-                        f["triggers/trigger1/time"].attrs["unit"] = "s"
-
-                # save trigger1 data
-                if trigger2 is not None:
-                    if f.keys().__contains__("triggers/trigger2"):
-                        dset = f["triggers/trigger2/time"]
-                        dset.resize(dset.shape[0] + len(trigger2), axis=0)
-                        dset[-len(trigger2):] = trigger2
-                    else:
-                        if not f.keys().__contains__("triggers"):
-                            grp = f.create_group("triggers")
+                            if not f.keys().__contains__("triggers"):
+                                grp = f.create_group("triggers")
+                                grp.attrs["description"] = "triggering information from TimePix"
+                            else:
+                                grp = f["triggers"]
                             grp.attrs["description"] = "triggering information from TimePix"
-                        else:
-                            grp = f["triggers"]
-                        subgrp = grp.create_group("trigger2")
-                        subgrp.attrs["description"] = "trigger2 time from TimePix starting"
-                        subgrp.create_dataset(
-                            "time", data=trigger2, maxshape=(None,))
-                        f["triggers/trigger2/time"].attrs["unit"] = "s"
+                            subgrp = grp.create_group(f"trigger{trig_num+1}")
+                            subgrp.attrs["description"] = f"trigger{trig_num+1} time from TimePix starting"
+                            subgrp.create_dataset(
+                                "time", data=trigger, maxshape=(None,))
+                            f[f"triggers/trigger{trig_num+1}/time"].attrs["unit"] = "s"
 
 
 
@@ -294,31 +282,51 @@ class RawFileSampler():
         """method which is executed in new process via multiprocessing.Process.start"""
         self.pre_run()
 
-        for packet in self.bytes_from_file():
-            # if we'd leave this with numpy we had to write
-            # ((packet & 0xF000000000000000) >> np.uint64(60)) & np.uint64(0xF)
-            # see: https://stackoverflow.com/questions/30513741/python-bit-shifting-with-numpy
-            pixdata = int(packet)
-            header = ((pixdata & 0xF000000000000000) >> 60) & 0xF
-            should_push = False
-            # Read Pixel Matrix Sequential (Header=0hA0)
-            # Read Pixel Matrix Data-Driven (Header=0hB0)
-            if header == 0xA or header == 0xB:
-                self.handle_other(pixdata)
-            # 0x4X timer configuration
-            elif header == 0x4 or header == 0x6:
-                subheader = ((pixdata & 0x0F00000000000000) >> 56) & 0xF
-                if subheader == 0x4:
-                    self.handle_lsb_time(pixdata)
-                elif subheader == 0x5:
-                    should_push = self.handle_msb_time(pixdata)
-                else:
-                    self.handle_other(pixdata)
+        if self.camera_generation == 4:
 
-            if should_push:
+            chunk_size = 65536 # draft implementation of raw file splitting, will need rework
+            self._longtime = 0
+
+            for i, packet in enumerate(self.bytes_from_file('<i8')):
+                #print(packet)
+                #pixdata = struct.pack('>i', packet)
+                self.handle_other(packet)
+                if i > 0 and i%chunk_size == 0:
+                    self.push_data()
+
+            if len(self._packet_buffer) > 0:
                 self.push_data()
 
-        if len(self._packet_buffer) > 0:
-            self.push_data()
+
+        elif self.camera_generation == 3:
+            for packet in self.bytes_from_file():
+                # if we'd leave this with numpy we had to write
+                # ((packet & 0xF000000000000000) >> np.uint64(60)) & np.uint64(0xF)
+                # see: https://stackoverflow.com/questions/30513741/python-bit-shifting-with-numpy
+                pixdata = int(packet)
+                header = ((pixdata & 0xF000000000000000) >> 60) & 0xF
+                should_push = False
+                # Read Pixel Matrix Sequential (Header=0hA0)
+                # Read Pixel Matrix Data-Driven (Header=0hB0)
+                if header == 0xA or header == 0xB:
+                    self.handle_other(pixdata)
+                # 0x4X timer configuration
+                elif header == 0x4 or header == 0x6:
+                    subheader = ((pixdata & 0x0F00000000000000) >> 56) & 0xF
+                    if subheader == 0x4:
+                        self.handle_lsb_time(pixdata)
+                    elif subheader == 0x5:
+                        should_push = self.handle_msb_time(pixdata)
+                    else:
+                        self.handle_other(pixdata)
+
+                if should_push:
+                    self.push_data()
+
+            if len(self._packet_buffer) > 0:
+                self.push_data()
+
+        else:
+            raise ValueError(f'No implementation of rawfilesampler for camera version {self.camera_generation}')
         
         self.post_run()
