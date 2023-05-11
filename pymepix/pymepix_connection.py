@@ -206,7 +206,7 @@ class PymepixConnection(Logger):
         for x in self._spidr:
             status, enabled, locked = x.linkStatus
             if enabled != 0 and locked == enabled:
-                self._timepix_devices.append(TimepixDevice(x, self._data_queue, pipeline_class, self._channel))
+                self._timepix_devices.append(TimepixDevice(x, self._data_queue, pipeline_class))
 
         self._num_timepix = len(self._timepix_devices)
         self.info("Found {} Timepix/Medipix devices".format(len(self._timepix_devices)))
@@ -220,11 +220,18 @@ class PymepixConnection(Logger):
         self._spidr.enableDecoders(True)
         self._spidr.datadrivenReadout()
 
-    def start_record(self):
-        pass
+    def start_recording(self, path):
+        self._spidr.resetTimers()
+        self._spidr.restartTimers()
+        time.sleep(1)  # give camera time to reset timers
 
-    def stop_record(self):
-        pass
+        self._timepix_devices[0].start_recording(path)
+
+        self._channel.send(ChannelDataType.COMMAND, Commands.START_RECORD)
+
+    def stop_recording(self):
+        self._timepix_devices[0].stop_recording()
+        self._channel.send(ChannelDataType.COMMAND, Commands.STOP_RECORD)
 
     def start(self):
         """Starts acquisition"""
