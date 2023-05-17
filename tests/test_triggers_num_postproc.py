@@ -1,6 +1,5 @@
 import numpy as np
 import h5py
-import pathlib
 import os
 
 from pymepix.post_processing import run_post_processing
@@ -41,7 +40,10 @@ def test_packets_trigger():
         assert len(hdf_triggers1) == len(triggers1_frombinary)
         assert len(hdf_triggers2) == len(triggers2_frombinary)
 
+        print('Done')
+
         os.remove(tmp_file_name)
 
 
-
+if __name__ == "__main__":
+    test_packets_trigger()

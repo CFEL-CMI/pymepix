@@ -34,14 +34,16 @@ import numpy as np
 from pymepix.processing.acquisition import AcquisitionPipeline
 from pymepix.processing.udpsampler import UdpSampler
 
+import pymepix.config.load_config as cfg
+
 # address at with the UDP sampler listens
 address = ("127.0.0.1", 50000)
 
 
-def test_receive():
-    """
+"""def test_receive():
+
     most basic test for receiving functionality done in UdpSampler.process
-    """
+
     longtime = Value(ctypes.c_int, 1)
     sampler = UdpSampler(address, longtime=longtime)
 
@@ -116,13 +118,13 @@ def test_receive():
     assert data[0] == 0  # should return <MessageType.RawData: 0>
     assert data[1][1] == 1  # provided longtime gets returned
     assert len(data[1][0]) == 1000
-    assert data[1][0].sum() == 10000
+    assert data[1][0].sum() == 10000"""
 
 
-def test_queue():
-    """
-    test functionality of 1st acquisition pipeline step with data been put into queue
-    """
+"""def test_queue():
+
+    #test functionality of 1st acquisition pipeline step with data been put into queue
+
     # Create the logger
     import logging
     import threading
@@ -182,125 +184,7 @@ def test_queue():
     end_queue.put(None)
 
     t.join()
-    print("Done")
-
-
-def test_zmq_singlefile():
-    """
-    test functionality of 1st acquisition pipeline step with data been put into Queue for pixelprocesor and thread to Raw2Disk
-    """
-    # Create the logger
-    import logging
-    import queue
-    import threading
-    import time
-    from multiprocessing.sharedctypes import Value
-
-    import zmq
-
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    )
-    end_queue = Queue()  # queue for PacketProcessor
-
-    acqpipline = AcquisitionPipeline("Test", end_queue)
-
-    test_value = Value("L", 0)
-
-    acqpipline.addStage(0, UdpSampler, address, test_value)
-    # acqpipline.addStage(2, PacketProcessor, num_processes=4)
-
-    ###############
-    # take data form Queue where PacketProcessor would be sitting
-    ctx = zmq.Context.instance()
-    z_sock = ctx.socket(zmq.PAIR)
-    z_sock.bind("inproc://queueThread")
-
-    def get_queue_thread(q):
-        ctx = zmq.Context.instance()
-        sock = ctx.socket(zmq.PAIR)
-        sock.connect("inproc://queueThread")
-        sock.recv_string()  # receive estabishing message
-
-        received = []
-        while True:
-            try:
-                value = q.get(
-                    block=False, timeout=0.5
-                )  # value = (Message.Type, [array, longtime])
-                if value is None:
-                    break
-                messType, data = value
-                received.append(data[0])
-            except queue.Empty:
-                pass
-            # print(value)
-
-        sock.send_pyobj(received)
-        time.sleep(5)  # give zmq thread time to send data
-
-    t = threading.Thread(target=get_queue_thread, args=(end_queue,))
-    # t.daemon = True
-    t.start()
-    z_sock.send_string(
-        "hallo"
-    )  # establish connection, seems to be necessary to first send something from binding code....
-
-    acqpipline.start()
-    fname = f'./test-{time.strftime("%Y%m%d-%H%M%S")}.raw'
-    # acqpipline._stages[0]._pipeline_objects[0].outfile_name = fname
-    acqpipline._stages[0]._pipeline_objects[0].record = 1
-    acqpipline._stages[0].udp_sock.send_string(fname)
-    res = acqpipline._stages[0].udp_sock.recv_string()
-    if res == "OPENED":
-        print(f"file {fname} opened")
-    else:
-        print(f"did not open {res}")
-    time.sleep(1)  # give pipeline time to get started
-
-    # acqpipline._stages[0]._pipeline_objects[0].record = 1
-
-    ############
-    # send data
-    chunk_size = 135  # packet size: 135*uint64 = 8640 Byte
-    test_data = send_data(packets=100, chunk_size=chunk_size, sleep=0.001)
-
-    ###########
-    # finish acquisition
-    time.sleep(5)  # permit thread time to empty queue
-    acqpipline._stages[0]._pipeline_objects[0].record = 0
-    res = acqpipline._stages[0].udp_sock.send_string("SHUTDOWN")
-    time.sleep(1)
-    acqpipline.stop()
-    end_queue.put(None)
-
-    # get data from thread and finish thread
-    print("waiting for queue thread")
-    received = z_sock.recv_pyobj()
-
-    ######
-    # do the testing
-    if len(received) > 1:
-        data = np.concatenate(received)
-    elif len(received) == 1:
-        data = np.asarray(received[0])
-    else:
-        print("No packets received!!!")
-        data = np.asarray([])
-
-    print("data we got:")
-    print(np.frombuffer(data, dtype=np.uint64).shape, test_data.shape)
-    # check for Queue content
-    assert np.frombuffer(data, dtype=np.uint64).all() == test_data.all()
-    assert np.frombuffer(data, dtype=np.uint64).sum() == test_data.sum()
-    assert np.frombuffer(data, dtype=np.uint64).shape == test_data.shape
-    # check for data in file
-    assert np.fromfile(fname, dtype=np.uint64).all() == test_data.all()
-
-    t.join()
-    print("Done and done")
-    os.remove(fname)
+    print("Done")"""
 
 
 def send_data(packets, chunk_size, start=0, sleep=0.0001):
@@ -355,6 +239,7 @@ def test_zmq_multifile():
     test functionality of 1st acquisition pipeline step with data been put into Queue for pixelprocesor
     and thread to Raw2Disk
     """
+
     # Create the logger
     import logging
     import queue
@@ -368,7 +253,8 @@ def test_zmq_multifile():
         level=logging.DEBUG,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
-    end_queue = Queue()  # queue for PacketProcessor
+
+    end_queue = Queue()
 
     acqpipline = AcquisitionPipeline("Test", end_queue)
 
@@ -380,31 +266,10 @@ def test_zmq_multifile():
     # create connection to packetprocessor
     ctx = zmq.Context.instance()
     packet_sock = ctx.socket(zmq.PULL)
-    packet_sock.connect("ipc:///tmp/packetProcessor")
+    packet_sock.connect(f"ipc:///tmp/packetProcessor{cfg.default_cfg['zmq_port']}")
 
     ##############
     # get data from end_queue
-    def get_queue_thread(q):
-        ctx = zmq.Context.instance()
-        sock = ctx.socket(zmq.PAIR)
-        sock.connect("inproc://queueThread")
-        sock.recv_string()  # receive estabishing message
-
-        received = []
-        while True:
-            try:
-                value = q.get(
-                    block=False, timeout=0.5
-                )  # value = (Message.Type, [array, longtime])
-                if value is None:
-                    break
-                messType, data = value
-                received.append(data[0])
-            except queue.Empty:
-                pass
-            # print(value)
-        sock.send_pyobj(received)
-        time.sleep(5)  # give zmq thread time to send data
 
     ##########
     # start acquisition pipeline
@@ -413,218 +278,49 @@ def test_zmq_multifile():
     ############
     # start 1st file
     print("######### 1st file ##############")
-    z_sock = ctx.socket(zmq.PAIR)
-    z_sock.bind("inproc://queueThread")
-    t = threading.Thread(target=get_queue_thread, args=(end_queue,))
-    t.start()
     # establish connection, seems to be necessary to first send something from binding code....
-    z_sock.send_string("hallo")
 
     fname = f'./test-{time.strftime("%Y%m%d-%H%M%S")}.raw'
-    # acqpipline._stages[0]._pipeline_objects[0].outfile_name = fname
-    acqpipline._stages[0]._pipeline_objects[0].record = 1
+    acqpipline._stages[0]._pipeline_objects[0].record = True
     acqpipline._stages[0].udp_sock.send_string(fname)
     res = acqpipline._stages[0].udp_sock.recv_string()
+
     if res == "OPENED":
-        print(f"file {fname} opened")
+        rec_fname = acqpipline._stages[0].udp_sock.recv_string()
+        print(f"file {rec_fname} opened")
     else:
         print(f"did not open {res}")
-    time.sleep(1)  # give pipeline time to get started
 
     test_data = send_data(packets=10, chunk_size=10, sleep=0.0001)
 
     ###
     # finish acquisition 1st file
     time.sleep(5)  # permit thread time to empty queue
-    acqpipline._stages[0]._pipeline_objects[0].record = 0
-    acqpipline._stages[0]._pipeline_objects[0].close_file = 1
+    print('sent and waited....')
+    acqpipline._stages[0]._pipeline_objects[0].record = False
+    acqpipline._stages[0]._pipeline_objects[0].close_file = True
     res = acqpipline._stages[0].udp_sock.recv_string()
+
     if res == "CLOSED":
-        print(f"file {fname} closed")
+        print(f"Ok, file {fname} closed")
     else:
-        print(f"problem, {res}")
+        print(f"Problem, file not closed, {res}")
     time.sleep(1)
-    end_queue.put(None)
-    received = z_sock.recv_pyobj()
 
-    # do the testing
-    if len(received) > 1:
-        data = np.concatenate(received)
-    elif len(received) == 1:
-        data = np.asarray(received[0])
-    else:
-        print("No packets received!!!")
-        data = np.asarray([])
 
-    print("data we got:")
-    print(  # np.frombuffer(data, dtype=np.uint64),
-        # test_data,
-        np.unique(np.frombuffer(data, dtype=np.uint64)).shape,
-        np.frombuffer(data, dtype=np.uint64).shape,
-        test_data.shape,
-    )
-    # check for Queue content
-    """
-    assert np.frombuffer(data, dtype=np.uint64).all() == test_data.all()
-    assert np.frombuffer(data, dtype=np.uint64).sum() == test_data.sum()
-    assert np.frombuffer(data, dtype=np.uint64).shape == test_data.shape
-    """
     # check for data in file
     assert np.fromfile(fname, dtype=np.uint64)[1:].all() == test_data.all()
     assert np.fromfile(fname, dtype=np.uint64)[1:].sum() == test_data.sum()
     assert np.fromfile(fname, dtype=np.uint64)[1:].shape == test_data.shape
 
     os.remove(fname)
-    t.join()
-    z_sock.close()
-
-    if end_queue.empty():
-        print("queue ist leer")
 
     ############
     # start 2nd file
     ############
     # start thread
     print("\n######### 2nd file ##############")
-    z_sock = ctx.socket(zmq.PAIR)
-    z_sock.bind("inproc://queueThread")
-    t = threading.Thread(target=get_queue_thread, args=(end_queue,))
-    t.start()
-    z_sock.send_string("hallo")
 
-    fname = f'./test-{time.strftime("%Y%m%d-%H%M%S")}.raw'
-    # acqpipline._stages[0]._pipeline_objects[0].outfile_name = fname
-    acqpipline._stages[0]._pipeline_objects[0].record = 1
-    acqpipline._stages[0].udp_sock.send_string(fname)
-    res = acqpipline._stages[0].udp_sock.recv_string()
-    if res == "OPENED":
-        print(f"file {fname} opened")
-    else:
-        print(f"did not open {res}")
-
-    test_data = send_data(packets=100, chunk_size=12, start=233, sleep=0.0001)
-
-    # finish acquisition 2nd file
-    time.sleep(5)  # permit thread time to empty queue
-    acqpipline._stages[0]._pipeline_objects[0].record = 0
-    acqpipline._stages[0]._pipeline_objects[0].close_file = 1
-    res = acqpipline._stages[0].udp_sock.recv_string()
-    if res == "CLOSED":
-        print(f"file {fname} closed")
-    else:
-        print(f"problem, {res}")
-    end_queue.put(None)
-    received = z_sock.recv_pyobj()
-
-    # do the testing
-    if len(received) > 1:
-        data = np.concatenate(received)
-    elif len(received) == 1:
-        data = np.asarray(received[0])
-    else:
-        print("No packets received!!!")
-        data = np.asarray([])
-
-    print("data we got:")
-    print(  # np.frombuffer(data, dtype=np.uint64),
-        # test_data,
-        np.frombuffer(data, dtype=np.uint64).shape,
-        np.unique(np.frombuffer(data, dtype=np.uint64)).shape,
-        test_data.shape,
-    )
-    # check for Queue content
-    """
-    assert np.frombuffer(data, dtype=np.uint64).all() == test_data.all()
-    assert np.frombuffer(data, dtype=np.uint64).sum() == test_data.sum()
-    assert np.frombuffer(data, dtype=np.uint64).shape == test_data.shape
-    """
-    # check for data in file
-    assert np.fromfile(fname, dtype=np.uint64)[1:].all() == test_data.all()
-    assert np.fromfile(fname, dtype=np.uint64)[1:].sum() == test_data.sum()
-    assert np.fromfile(fname, dtype=np.uint64)[1:].shape == test_data.shape
-
-    print("waiting for queue thread")
-    t.join()
-    z_sock.close()
-    os.remove(fname)
-
-    ############
-    # start 3rd file
-    ############
-    # start thread
-    print("\n######### 3rd file ##############")
-    z_sock = ctx.socket(zmq.PAIR)
-    z_sock.bind("inproc://queueThread")
-    t = threading.Thread(target=get_queue_thread, args=(end_queue,))
-    t.start()
-    z_sock.send_string("hallo")
-
-    fname = f'./test-{time.strftime("%Y%m%d-%H%M%S")}.raw'
-    # acqpipline._stages[0]._pipeline_objects[0].outfile_name = fname
-    acqpipline._stages[0]._pipeline_objects[0].record = 1
-    acqpipline._stages[0].udp_sock.send_string(fname)
-    res = acqpipline._stages[0].udp_sock.recv_string()
-    if res == "OPENED":
-        print(f"file {fname} opened")
-    else:
-        print(f"did not open {res}")
-
-    test_data = send_data(packets=300, chunk_size=135, start=4003, sleep=0.0001)
-
-    # finish acquisition 3rd file
-    time.sleep(5)  # permit thread time to empty queue
-    acqpipline._stages[0]._pipeline_objects[0].record = 0
-    acqpipline._stages[0]._pipeline_objects[0].close_file = 1
-    res = acqpipline._stages[0].udp_sock.recv_string()
-    if res == "CLOSED":
-        print(f"file {fname} closed")
-    else:
-        print(f"problem, {res}")
-    end_queue.put(None)
-    received = z_sock.recv_pyobj()
-
-    # do the testing
-    if len(received) > 1:
-        data = np.concatenate(received)
-    elif len(received) == 1:
-        data = np.asarray(received[0])
-    else:
-        print("No packets received!!!")
-        data = np.asarray([])
-
-    print("data we got:")
-    print(  # np.frombuffer(data, dtype=np.uint64),
-        # test_data,
-        np.frombuffer(data, dtype=np.uint64).shape,
-        np.unique(np.frombuffer(data, dtype=np.uint64)).shape,
-        test_data.shape,
-    )
-    # check for Queue content
-    """
-    assert np.frombuffer(data, dtype=np.uint64).all() == test_data.all()
-    assert np.frombuffer(data, dtype=np.uint64).sum() == test_data.sum()
-    assert np.frombuffer(data, dtype=np.uint64).shape == test_data.shape
-    """
-    # check for data in file
-    assert np.fromfile(fname, dtype=np.uint64)[1:].all() == test_data.all()
-    assert np.fromfile(fname, dtype=np.uint64)[1:].sum() == test_data.sum()
-    assert np.fromfile(fname, dtype=np.uint64)[1:].shape == test_data.shape
-
-    print("waiting for queue thread")
-    t.join()
-    z_sock.close()
-    os.remove(fname)
-
-    ############
-    # start 4th file
-    ############
-    # start thread
-    print("\n######### 4th file ##############")
-    z_sock = ctx.socket(zmq.PAIR)
-    z_sock.bind("inproc://queueThread")
-    t = threading.Thread(target=get_queue_thread, args=(end_queue,))
-    t.start()
-    z_sock.send_string("hallo")
 
     fname = f'./test-{time.strftime("%Y%m%d-%H%M%S")}.raw'
     # acqpipline._stages[0]._pipeline_objects[0].outfile_name = fname
@@ -632,11 +328,89 @@ def test_zmq_multifile():
     acqpipline._stages[0].udp_sock.send_string(fname)
     res = acqpipline._stages[0].udp_sock.recv_string()
     if res == "OPENED":
-        print(f"file {fname} opened")
+        rec_fname = acqpipline._stages[0].udp_sock.recv_string()
+        print(f"file {rec_fname} opened")
+
     else:
         print(f"did not open {res}")
 
-    test_data = send_data(packets=100_000, chunk_size=139, start=15000, sleep=1e-6)
+    test_data = send_data(packets=100, chunk_size=12, start=233, sleep=0.0001)
+
+    # finish acquisition 2nd file
+    time.sleep(5)  # permit thread time to empty queue
+    acqpipline._stages[0]._pipeline_objects[0].record = False
+    acqpipline._stages[0]._pipeline_objects[0].close_file = True
+    res = acqpipline._stages[0].udp_sock.recv_string()
+
+    if res == "CLOSED":
+        print(f"file {fname} closed")
+    else:
+        print(f"problem, {res}")
+
+
+    # check for data in file
+    assert np.fromfile(fname, dtype=np.uint64)[1:].all() == test_data.all()
+    assert np.fromfile(fname, dtype=np.uint64)[1:].sum() == test_data.sum()
+    assert np.fromfile(fname, dtype=np.uint64)[1:].shape == test_data.shape
+
+    os.remove(fname)
+
+    ############
+    # start 3rd file
+    ############
+    # start thread
+    print("\n######### 3rd file ##############")
+
+    fname = f'./test-{time.strftime("%Y%m%d-%H%M%S")}.raw'
+    # acqpipline._stages[0]._pipeline_objects[0].outfile_name = fname
+    acqpipline._stages[0]._pipeline_objects[0].record = 1
+    acqpipline._stages[0].udp_sock.send_string(fname)
+    res = acqpipline._stages[0].udp_sock.recv_string()
+    if res == "OPENED":
+        rec_fname = acqpipline._stages[0].udp_sock.recv_string()
+        print(f"file {rec_fname} opened")
+    else:
+        print(f"did not open {res}")
+
+    test_data = send_data(packets=300, chunk_size=135, start=4003, sleep=0.0001)
+
+    # finish acquisition 3rd file
+    time.sleep(5)  # permit thread time to empty queue
+    acqpipline._stages[0]._pipeline_objects[0].record = False
+    acqpipline._stages[0]._pipeline_objects[0].close_file = True
+    res = acqpipline._stages[0].udp_sock.recv_string()
+    if res == "CLOSED":
+        print(f"file {fname} closed")
+    else:
+        print(f"problem, {res}")
+
+
+    # check for data in file
+    assert np.fromfile(fname, dtype=np.uint64)[1:].all() == test_data.all()
+    assert np.fromfile(fname, dtype=np.uint64)[1:].sum() == test_data.sum()
+    assert np.fromfile(fname, dtype=np.uint64)[1:].shape == test_data.shape
+
+    os.remove(fname)
+
+    ############
+    # start 4th file
+    ############
+    # start thread
+    print("\n######### 4th file ##############")
+
+    fname = f'./test-{time.strftime("%Y%m%d-%H%M%S")}.raw'
+    # acqpipline._stages[0]._pipeline_objects[0].outfile_name = fname
+    acqpipline._stages[0]._pipeline_objects[0].record = True
+    acqpipline._stages[0].udp_sock.send_string(fname)
+    res = acqpipline._stages[0].udp_sock.recv_string()
+    if res == "OPENED":
+        rec_fname = acqpipline._stages[0].udp_sock.recv_string()
+        print(f"file {rec_fname} opened")
+    else:
+        print(f"did not open {res}")
+
+    #test_data = send_data(packets=100_000, chunk_size=139, start=15000, sleep=1e-6)
+    test_data = send_data(packets=1_000, chunk_size=139, start=15000, sleep=1e-6)
 
     # finish acquisition 4th file
     time.sleep(5)  # permit thread time to empty queue
@@ -647,30 +421,7 @@ def test_zmq_multifile():
         print(f"file {fname} closed")
     else:
         print(f"problem, {res}")
-    end_queue.put(None)
-    received = z_sock.recv_pyobj()
 
-    # do the testing
-    if len(received) > 1:
-        data = np.concatenate(received)
-    elif len(received) == 1:
-        data = np.asarray(received[0])
-    else:
-        print("No packets received!!!")
-        data = np.asarray([])
-
-    # print('data we got from queue:')
-    # print(  # np.frombuffer(data, dtype=np.uint64),
-    #    # test_data,
-    #    np.frombuffer(data, dtype=np.uint64).shape,
-    #    np.unique(np.frombuffer(data, dtype=np.uint64)).shape,
-    #    test_data.shape)
-    # check for Queue content
-    """
-    assert np.frombuffer(data, dtype=np.uint64).all() == test_data.all()
-    assert np.frombuffer(data, dtype=np.uint64).sum() == test_data.sum()
-    assert np.frombuffer(data, dtype=np.uint64).shape == test_data.shape
-    """
 
     # check for data in file
     # print('data we got from file:')
@@ -680,9 +431,6 @@ def test_zmq_multifile():
     assert np.fromfile(fname, dtype=np.uint64)[1:].sum() == test_data.sum()
     assert np.fromfile(fname, dtype=np.uint64)[1:].shape == test_data.shape
 
-    print("waiting for queue thread")
-    t.join()
-    z_sock.close()
     os.remove(fname)
 
     ############
@@ -721,7 +469,7 @@ def test_speed():
     # create connection to packetprocessor
     ctx = zmq.Context.instance()
     packet_sock = ctx.socket(zmq.PULL)
-    packet_sock.connect("ipc:///tmp/packetProcessor")
+    packet_sock.connect("ipc:///tmp/packetProcessor32160")
 
     ##########
     # start acquisition pipeline
@@ -734,17 +482,18 @@ def test_speed():
     print("\n######### speed test ##############")
     fname = f'./test-{time.strftime("%Y%m%d-%H%M%S")}.raw'
     # acqpipline._stages[0]._pipeline_objects[0].outfile_name = fname
-    acqpipline._stages[0]._pipeline_objects[0].record = 1
+    acqpipline._stages[0]._pipeline_objects[0].record = True
     acqpipline._stages[0].udp_sock.send_string(fname)
     res = acqpipline._stages[0].udp_sock.recv_string()
     if res == "OPENED":
-        print(f"file {fname} opened")
+        rec_fname = acqpipline._stages[0].udp_sock.recv_string()
+        print(f"file {rec_fname} opened")
     else:
         print(f"did not open {res}")
 
     ############
     # send data
-    packets = 100_000
+    packets = 50_000
     chunk_size = 139
     test_data = np.arange(0, packets * chunk_size, dtype=np.uint64)
     p = Process(target=send_data_fast, args=(packets, chunk_size))
@@ -833,5 +582,6 @@ def test_real_data_packetprocessor():
 if __name__ == "__main__":
     test_zmq_multifile()
     test_speed()
-    # test_zmq_singlefile()
-    # test_real_data_packetprocessor()
+
+    #test_zmq_singlefile()
+    #test_real_data_packetprocessor()

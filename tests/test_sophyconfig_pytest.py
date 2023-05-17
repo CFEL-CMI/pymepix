@@ -84,8 +84,8 @@ def test_pixelmask():
     """Check whether the pixelmask is in an appropriate format"""
     spx = SophyConfig(CONFIG_PATH)
     mask = spx.maskPixels
-    test = spx.testPixels()
-    thresh = spx.thresholdPixels()
+    test = spx.testPixels
+    thresh = spx.thresholdPixels
 
     # check for correct range of values
     assert mask.min() >= 0 and mask.max() <= 1
@@ -202,7 +202,7 @@ def test_send_config():
 
 
 if __name__ == "__main__":
-    #test_read_config()
-    #test_pixelmask()
-    #test_send_config()
+    test_read_config()
+    test_pixelmask()
+    test_send_config()
     test_save_pixelmask()
