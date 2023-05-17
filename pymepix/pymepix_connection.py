@@ -90,9 +90,6 @@ class PymepixConnection(Logger):
 
             self._channel.send_data_by_message_type(data_type, data)
 
-
-            
-
     def __init__(self,
                  spidr_address=(cfg.default_cfg["timepix"]["tpx_ip"], 50000),
                  pipeline_class=PixelPipeline):
@@ -295,7 +292,7 @@ class PymepixConnection(Logger):
         self._channel.unregister()
         self._channel.register(f'tcp://{value[0]}:{value[1]}')
 
-    def __getitem__(self, key)-> TimepixDevice:
+    def __getitem__(self, key) -> TimepixDevice:
         return self._timepix_devices[key]
 
     def __len__(self):

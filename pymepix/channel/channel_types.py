@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class ChannelDataType(Enum):
     COMMAND = 'comm'
     PIXEL = 'pixel'

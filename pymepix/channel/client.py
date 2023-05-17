@@ -3,6 +3,7 @@ import zmq
 
 import queue
 
+
 class Client(threading.Thread):
 
     def __init__(self, channel_address, callback=None, queue_maxsize=32):

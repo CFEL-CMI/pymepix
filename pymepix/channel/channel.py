@@ -6,6 +6,7 @@ import numpy as np
 from pymepix.channel.channel_types import ChannelDataType
 from pymepix.processing.datatypes import MessageType
 
+
 class Channel(threading.Thread):
 
     def __init__(self):
