@@ -5,6 +5,9 @@ timepix:
 trainID:
    connected: False
    device : '/dev/ttyUSB0'
-tcpchannel:
-   ip : '127.0.0.1'
-   port: 5056
+src_ip_port:
+   - '192.168.1.1'
+   - 8192
+tcp_channel:
+   - '127.0.0.1'
+   - 5056

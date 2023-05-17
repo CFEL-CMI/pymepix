@@ -95,15 +95,15 @@ class PymepixConnection(Logger):
 
     def __init__(self,
                  spidr_address=(cfg.default_cfg["timepix"]["tpx_ip"], 50000),
-                 src_ip_port=('192.168.1.1', 8192), 
-                 pipeline_class=PixelPipeline,
-                 chan_address=('127.0.0.1', 5056)):
+                 pipeline_class=PixelPipeline):
         Logger.__init__(self, "Pymepix")
 
-        self._channel_address = chan_address
         self._channel = Channel()
         self._channel.start()
-        self._channel.register(f'tcp://{chan_address[0]}:{chan_address[1]}')
+        self._channel_address = tuple(cfg.default_cfg.get('tcp_channel', ['127.0.0.1', 5056]))
+        self._channel.register(f'tcp://{self._channel_address[0]}:{self._channel_address[1]}')
+
+        src_ip_port = tuple(cfg.default_cfg.get('src_ip_port', ['192.168.1.1', 8192]))
 
         self._spidr = SPIDRController(spidr_address, src_ip_port)
 
