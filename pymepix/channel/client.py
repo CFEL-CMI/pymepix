@@ -6,7 +6,7 @@ import queue
 
 class Client(threading.Thread):
 
-    def __init__(self, channel_address, callback=None, queue_maxsize=32):
+    def __init__(self, channel_address, callback=None, queue_maxsize=4):
         threading.Thread.__init__(self)
         self.daemon = True
         self._socket = None
