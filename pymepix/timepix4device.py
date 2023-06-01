@@ -164,7 +164,7 @@ class Timepix4Device(Logger):
 
         """
         # NEEDS IMPLEMENTATION
-        return 'debug string'
+        return ''
 
 
     @property
@@ -172,8 +172,6 @@ class Timepix4Device(Logger):
         return self.devIdToString()
 
     def setEthernetFilter(self, eth_filter):
-        pass
-        '''
         """Sets the packet filter, usually set to 0xFFFF to all all packets"""
         eth_mask, cpu_mask = self._device.headerFilter
         eth_mask = eth_filter
@@ -184,11 +182,13 @@ class Timepix4Device(Logger):
                 self._device.deviceId, eth_mask, cpu_mask
             )
         )
-        '''
 
     def resetPixels(self):
         """Clears pixel configuration"""
+
+        # NEEDS IMPLEMENTATION
         pass
+
         #self._device.clearPixelConfig()
         #self._device.resetPixels()
 
@@ -209,12 +209,14 @@ class Timepix4Device(Logger):
             Locally stored threshold  matrix
 
         """
-        # self._device.getPixelConfig()
+        # NEEDS IMPLEMENTATION
         pass
+        # self._device.getPixelConfig()
         #return self._device._pixel_threshold
 
     @pixelThreshold.setter
     def pixelThreshold(self, value):
+        # NEEDS IMPLEMENTATION
         pass
         #self._device._pixel_threshold = value
 
@@ -235,12 +237,16 @@ class Timepix4Device(Logger):
 
 
         """
-        # self._device.getPixelConfig()
+
+        # NEEDS IMPLEMENTATION
         pass
+
+        # self._device.getPixelConfig()
         #return self._device._pixel_mask
 
     @pixelMask.setter
     def pixelMask(self, value):
+        # NEEDS IMPLEMENTATION
         pass
         #self._device._pixel_mask = value
 
@@ -261,8 +267,10 @@ class Timepix4Device(Logger):
 
 
         """
-        # self._device.getPixelConfig()
+        # NEEDS IMPLEMENTATION
         pass
+
+        # self._device.getPixelConfig()
         #return self._device._pixel_test
 
     @pixelTest.setter
@@ -317,6 +325,38 @@ class Timepix4Device(Logger):
             self.info(f"Finished recording")
         else:
             self.warning(f"Error during recording: {res}")
+
+
+    @property
+    def Vthreshold_fine(self):
+
+        # NEEDS IMPLEMENTATION
+
+        return 0
+
+    @Vthreshold_fine.setter
+    def Vthreshold_fine(self, value):
+
+        # NEEDS IMPLEMENTATION
+
+        pass
+
+    @property
+    def Vthreshold_coarse(self):
+
+        # NEEDS IMPLEMENTATION
+
+        return 0
+
+    @Vthreshold_coarse.setter
+    def Vthreshold_coarse(self, value):
+
+        # NEEDS IMPLEMENTATION
+
+        pass
+
+
+
 
 
 

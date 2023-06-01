@@ -500,7 +500,7 @@ class SPIDRController(Logger):
         return self.requestGetInt(SpidrCmds.CMD_GET_FANSPEED, 0, 0)
 
     @property
-    def spidrFanSpeed(self):
+    def boardFanSpeed(self):
         return self.requestGetInt(SpidrCmds.CMD_GET_FANSPEED, 0, 1)
 
     @property
@@ -1075,6 +1075,13 @@ class SPIDRController(Logger):
         self._req_buffer[5:].view(dtype=np.uint8)[:num_bytes] = value_bytes[:]
 
         self.request(cmd, dev_nr, msg_length, 20)
+
+    def prepare(self):
+        self.disableExternalRefClock()
+        TdcEnable = 0x0000
+        self.setSpidrReg(0x2B8, TdcEnable)
+        self.enableDecoders(True)
+        self.datadrivenReadout()
 
 
 def main():

@@ -3,6 +3,7 @@ timepix:
 #   pc_port: 11112
    tpx_ip : '192.168.1.10'
    sophy_config : 'path_to_sophy_config'
+   camera_generation: 3
 trainID:
    connected: False
    device : '/dev/ttyUSB0'

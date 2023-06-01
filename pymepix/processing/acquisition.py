@@ -21,8 +21,6 @@
 """Module that contains predefined acquisition pipelines for the user to use"""
 
 from pymepix.processing.logic.centroid_calculator import CentroidCalculator
-from pymepix.processing.logic.packet_processor import PacketProcessor
-from pymepix.processing.logic.packet_processor_tpx4 import PacketProcessor_tpx4
 from .baseacquisition import AcquisitionPipeline
 from .pipeline_centroid_calculator import PipelineCentroidCalculator
 from .pipeline_packet_processor import PipelinePacketProcessor
@@ -33,13 +31,13 @@ from .udpsampler import UdpSampler
 class PixelPipeline(AcquisitionPipeline):
     """An acquisition pipeline that includes the udpsampler and pixel processor
 
-    A pipeline that will read from a UDP address and decode the pixels a useable form.
-    This class can be used as a base for all acqusition pipelines.
+    A pipeline that will read from a UDP address and decode the pixels in a usable form.
+    This class can be used as a base for all acquisition pipelines.
     """
 
     def __init__(self, data_queue, address, longtime, use_event=False, name="Pixel", event_window=(0, 1E-3),
                  camera_generation=3):
-        """ 
+        """
         Parameters:
         use_event (boolean): If packets are forwarded to the centroiding. If True centroids are calculated."""
         AcquisitionPipeline.__init__(self, name, data_queue)
