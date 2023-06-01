@@ -144,50 +144,48 @@ class PacketProcessor_tpx4(ProcessingStep):
             lut[inval] = inv
         return lut
 
-
     def process(self, data):
 
         event_data, pixel_data, timestamps, triggers = None, None, None, None
 
         packet_view = memoryview(data)
-        rawpacketarray = np.frombuffer(packet_view, self.int64be)
+        rawpacketarray = np.frombuffer(packet_view[:-8], self.int64be)
 
-        #longtime = int(np.frombuffer(packet_view[-8:], dtype=np.uint64)[0])
+        longtime = int(np.frombuffer(packet_view[-8:], dtype=np.uint64)[0])
 
-        if len(rawpacketarray) == 1:  # longtime data sent from spidr TCP server, probably will be not needed
-            return None
+        if len(rawpacketarray) > 0:  # longtime data sent from spidr TCP server, probably will be not needed
 
-        arange_index = np.arange(len(rawpacketarray))
+            arange_index = np.arange(len(rawpacketarray))
 
-        endofcol = ((rawpacketarray & 0x7F80000000000000) >> 55)
+            endofcol = ((rawpacketarray & 0x7F80000000000000) >> 55)
 
-        pixel_entries = endofcol <= 0xDF
+            pixel_entries = endofcol <= 0xDF
 
-        timing_entries = np.logical_and(PacketType.Heartbeat.value <= endofcol,
-                                        endofcol <= PacketType.CtrlDataTest.value)
+            timing_entries = np.logical_and(PacketType.Heartbeat.value <= endofcol,
+                                            endofcol <= PacketType.CtrlDataTest.value)
 
-        pixel_packets = rawpacketarray[pixel_entries]
-        if len(pixel_packets) == 0:
-            return None
+            pixel_packets = rawpacketarray[pixel_entries]
+            if len(pixel_packets) == 0:
+                return None
 
-        if self.PC24bit==False:
-            #x, y, ToA, ToT = self.dataPC24bitdecode(rawpacketarray[pixel_entries])
-            raise NotImplementedError("Not implemented PC24bitdecode!")
-        else:
-            x, y, ToA, ToT = self.process_pixels(pixel_packets)
+            if self.PC24bit==False:
+                #x, y, ToA, ToT = self.dataPC24bitdecode(rawpacketarray[pixel_entries])
+                raise NotImplementedError("Not implemented PC24bitdecode!")
+            else:
+                x, y, ToA, ToT = self.process_pixels(pixel_packets)
 
-        decodedtimestamps = self.timestampeventdecode(rawpacketarray[timing_entries])
+            decodedtimestamps = self.timestampeventdecode(rawpacketarray[timing_entries])
 
-        ToA = self.correct_coarsetime(ToA, arange_index[pixel_entries], decodedtimestamps, arange_index[timing_entries])
+            ToA = self.correct_coarsetime(ToA, arange_index[pixel_entries], decodedtimestamps, arange_index[timing_entries])
 
-        triggers = self.find_triggers(x, y, ToA)
+            triggers = self.find_triggers(x, y, ToA)
 
-        pixel_data = (x,y,ToA,ToT)
+            pixel_data = (x,y,ToA,ToT)
 
-        if self.handle_events:
-            result = self.find_events_fast()
-            if result is not None:
-                event_data, timestamps = result
+            if self.handle_events:
+                result = self.find_events_fast()
+                if result is not None:
+                    event_data, timestamps = result
 
         return event_data, pixel_data, timestamps, triggers
 
@@ -543,13 +541,15 @@ class PacketProcessor_tpx4(ProcessingStep):
 
 
 def main():
-    filename = '/home/samartse/TPX4/2023-03-15_30MHz_events_1min_4700_EQ_cosmics_bias_100V_08.bin'
+    filename = '/home/samartse/TPX4/2023-03-15_30MHz_events_1min_4700_EQ_cosmics_bias_100V_08.raw'
+    filename = '/home/samartse/TPX4/2023-05-30_events_HV100_cosmic_30s_bytes.bin'
     # file = open(filename,"rb")
     # bin_data = file.read()
     with open(filename, 'rb') as data_file:
-        bin_data = np.load(data_file)
+        #bin_data = np.load(data_file)
+        bin_data = data_file.read()
 
-    packetprocessor = PacketProcessor()
+    packetprocessor = PacketProcessor_tpx4()
     event_data, pixel_data, timestamps, triggers = packetprocessor.process(bin_data)
     print('event_data: ', event_data)
     print('pixel_data: ', pixel_data)

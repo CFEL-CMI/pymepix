@@ -31,7 +31,7 @@ import pymepix.config.load_config as cfg
 class PipelinePacketProcessor(BasePipelineObject):
     """Processes Pixel packets for ToA, ToT, triggers and events
 
-    This class, creates a UDP socket connection to SPIDR and recivies the UDP packets from Timepix
+    This class, creates a UDP socket connection to SPIDR and receives the UDP packets from Timepix
     It then pre-processes them and sends them off for more processing
     """
 
