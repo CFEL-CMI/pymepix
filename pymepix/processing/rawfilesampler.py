@@ -76,7 +76,8 @@ class RawFileSampler():
         self.centroid_calculator = CentroidCalculator(cent_timewalk_lut=cent_timewalk_lut,
                                                       number_of_processes=self._number_of_processes,
                                                       clustering_args=self._clustering_args,
-                                                      dbscan_clustering=self._dbscan_clustering)
+                                                      dbscan_clustering=self._dbscan_clustering
+                                                     )
 
     def pre_run(self):
         """init stuff which should only be available in new process"""
@@ -113,7 +114,7 @@ class RawFileSampler():
         for b in np.nditer(ba):
             yield b
             packets_processed += 1
-            if self._progress_callback is not None:
+            if self._progress_callback is not None and packets_processed%100==0:
                 self._progress_callback(packets_processed / packets_to_process)
 
     def handle_lsb_time(self, pixdata):
