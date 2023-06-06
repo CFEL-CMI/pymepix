@@ -23,7 +23,7 @@ You can clone pymepix from our main git repository::
 
     git clone https://github.com/CFEL-CMI/pymepix.git
 
-Navigate into the pymepix library (:code:`cd pymepix`) and run :code:`pip install .`
+Navigate into the pymepix library (:code:`cd pymepix`) and run :code:`python -m pip install .`
 
 Build Documentation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
