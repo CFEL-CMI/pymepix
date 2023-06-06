@@ -91,7 +91,7 @@ class PymepixConnection(Logger):
 
     def __init__(self,
                  spidr_address=(cfg.default_cfg["timepix"]["tpx_ip"], 50000),
-                 src_ip_port=('192.168.1.1', 8192), 
+                 src_ip_port=(cfg.default_cfg["timepix"]["pc_ip"], 8192),
                  pipeline_class=PixelPipeline):
         Logger.__init__(self, "Pymepix")
         self._spidr = SPIDRController(spidr_address, src_ip_port)

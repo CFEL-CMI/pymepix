@@ -1,0 +1,62 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pymepix"
+version = "1.1.dev0"
+readme = "Readme.md"
+license = {file = "LICENSE.md"}
+#long_description="Readme.md"
+classifiers=[
+   "Development Status :: 5 - Production/Stable",
+   "Environment :: Console",
+   "Environment :: No Input/Output (Daemon)",
+   "Environment :: Win32 (MS Windows)",
+   "Intended Audience :: Developers",
+   "Intended Audience :: Science/Research",
+   "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+   "Operating System :: MacOS :: MacOS X",
+   "Operating System :: Microsoft :: Windows",
+   "Operating System :: POSIX :: Linux",
+   "Operating System :: POSIX",
+   "Operating System :: Unix",
+   "Operating System :: OS Independent",
+   "Programming Language :: Python",
+   "Programming Language :: Python :: 3.7",
+   "Programming Language :: Python :: 3.8",
+   "Programming Language :: Python :: 3.9",
+   "Programming Language :: Python :: 3.10",
+   "Programming Language :: Python :: 3.11",
+   "Topic :: Scientific/Engineering",
+   "Topic :: Software Development :: Libraries",
+   "Topic :: System :: Hardware :: Hardware Drivers",
+]
+dependencies = [
+    #'importlib-metadata; python_version<"3.8"',
+    "numpy >= 1.2",
+    "scikit-learn",
+    "scipy",
+    "pyyaml",
+    "pyzmq",
+    "pyserial",
+    "h5py",
+    "tqdm",
+]
+
+[project.urls]
+download_url="https://github.com/CFEL-CMI/pymepix"
+
+[metadata]
+author_email="cmidaq@cfel.de"
+maintainer="CFEL-CMI group"
+maintainer_email="cmidaq@cfel.de"
+description="Timepix Python library"
+
+[project.scripts]
+pymepix-acq = "pymepix.main:main"
+
+
+[tool.setuptools.packages.find]
+exclude = ["tests", "doc"]
+
