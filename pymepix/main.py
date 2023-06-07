@@ -11,25 +11,23 @@
 # General Public License as published by the Free Software Foundation, either version 3 of the
 # License, or (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
-# even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-# General Public License for more details.
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+# See the GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License along with this program. If not,
-# see <https://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU General Public License along with this program.
+# If not, see <https://www.gnu.org/licenses/>.
 
 """ Main module for pymepix """
 
-import os
-import time
 import argparse
 import logging
+import os
 import time
 
 import pymepix.config.load_config as cfg
 from pymepix.post_processing import run_post_processing
-
-from pymepix.pymepix_connection import PollBufferEmpty, PymepixConnection
+from pymepix.pymepix_connection import PymepixConnection
 
 logging.basicConfig(
     level=logging.INFO,
@@ -52,7 +50,7 @@ def connect_timepix(args):
             )
             quit()
         if args.spx:
-            logging.info("Opening Sophy file {}".format(args.spx))
+            logging.info(f"Opening Sophy file {args.spx}")
             pymepix[0].loadConfig(args.spx)
 
         # Switch to TOF mode if set
