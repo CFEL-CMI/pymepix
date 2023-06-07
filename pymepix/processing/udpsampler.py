@@ -241,7 +241,6 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
                 )  # we should get a response here, but the socket is elsewhere...
                 self.debug("post_run: closed file")
 
-        self._packet_sock.close()
         return None, None
 
     def run(self):
@@ -336,6 +335,7 @@ class UdpSampler(multiprocessing.Process, ProcessLogger):
                 break
         self.post_run()
         self.write2disk.my_sock.close()
+        self._packet_sock.close()
 
 
 def main():
