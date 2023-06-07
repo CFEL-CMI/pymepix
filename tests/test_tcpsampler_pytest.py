@@ -19,7 +19,8 @@
 # see <https://www.gnu.org/licenses/>.
 
 """
-module to test tcpsampler functionality
+FixMe: this test is not working anymore, compare with the one for UDP
+module to test tcpsampler functionality, for benchmarking
 run: pytest test_tcpsampler_pytest.py
 """
 
@@ -275,4 +276,4 @@ def real_data_packetprocessor():
 if __name__ == "__main__":
     # test_zmq_multifile()
     # test_zmq_singlefile()
-    test_real_data_packetprocessor()
+    #test_real_data_packetprocessor()
