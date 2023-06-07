@@ -1,7 +1,8 @@
-import numpy as np
-import h5py
-import pathlib
 import os
+import pathlib
+
+import h5py
+import numpy as np
 
 from pymepix.processing.rawfilesampler import RawFileSampler
 
@@ -17,11 +18,10 @@ your results very carefully if they differ!"""
 def updateProgressBar(progress):
    pass
 
-
+folder_path = pathlib.Path(__file__).parent / "files"
 def test_converted_hdf5():
-    filename = "files/ion-run_0006_20221112-1024.raw"
-    tmp_file_name = "files/ion-run_0006_20221112-1024-temp.hdf5"
-    #file_sampler = RawFileSampler(folder_path / "run_0685_20191217-1533.raw", tmp_file_name)
+    filename = folder_path / "ion-run_0006_20221112-1024.raw"
+    tmp_file_name = folder_path / "ion-run_0006_20221112-1024-temp.hdf5"
     file_sampler = RawFileSampler(filename, tmp_file_name, 4, None, None, updateProgressBar)
     file_sampler.run()
 
@@ -34,7 +34,7 @@ def test_converted_hdf5():
         # for the processing in chunks. This is required as the DBSCAN algorithm can be non-deterministic regarding the order in some rare scenarios.
         # Martin Ester, Hans-Peter Kriegel, Jiirg Sander, Xiaowei Xu: A Density Based Algorith for Discovering Clusters [p. 229-230] (https://www.aaai.org/Papers/KDD/1996/KDD96-037.pdf)
         # https://stats.stackexchange.com/questions/306829/why-is-dbscan-deterministic
-        with h5py.File("files/ion-run_0006_20221112-1024.hdf5") as old_file:
+        with h5py.File(folder_path / "ion-run_0006_20221112-1024.hdf5") as old_file:
             order_new, order_old = new_file['centroided/x'][:].argsort(), old_file['centroided/x'][:].argsort()
             shot_new, shot_old = new_file['centroided/trigger nr'][:][order_new], old_file['centroided/trigger nr'][:][order_old]
             x_new, x_old = new_file['centroided/x'][:][order_new], old_file['centroided/x'][:][order_old]

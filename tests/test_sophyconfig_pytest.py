@@ -1,21 +1,20 @@
 import os
+import pathlib
+import shutil
 import socketserver
 import threading
-import shutil
-import pathlib
-import os
+
 import numpy as np
 
-from pymepix.pymepix_connection import PymepixConnection
 from pymepix.config.sophyconfig import SophyConfig
+from pymepix.pymepix_connection import PymepixConnection
 from pymepix.SPIDR.spidrcmds import SpidrCmds
 from pymepix.timepixdef import DacRegisterCodes
 from pymepix.util.spidrDummyTCP import TPX3Handler
 
-path = pathlib.Path(__file__).parent
-
-CONFIG_PATH = path / "test_assets/test_config_W0028_H06_50V.spx"
-ADDRESS = ("192.168.1.10", 50000)
+path = pathlib.Path(__file__).parent / "files"
+CONFIG_PATH = path / "test_config_W0028_H06_50V.spx"
+ADDRESS = ("127.0.0.10", 50001)
 
 
 def parameter_exact(code, value):
@@ -66,10 +65,7 @@ def parameter_range_of_values(code, value):
         assert 0 <= value <= 15
     elif code in [6, 16]:
         assert 0 <= value <= 511
-    elif code == 18:
-        assert (
-            True
-        )  # TODO: @firode waiting for answer with information about PLL_VCNTRL
+    # TODO: implement code == 18
 
 
 def test_read_config():
@@ -112,7 +108,7 @@ def test_save_pixelmask():
 
     assert np.array_equal(mask, new_mask)
 
-class TestTPX3Handler(TPX3Handler):
+class TPX3Handler_Test(TPX3Handler):
     """The handler class for a socketserver to capture and evaluate the config packets from pymepix
 
         This class uses the main functionality of the spidrDummyTCP to collect config packets.
@@ -137,7 +133,7 @@ class TestTPX3Handler(TPX3Handler):
             self._process_data()
 
             if self.cmd == SpidrCmds.CMD_SET_PIXCONF:
-                assert len(self.data) in [53, 149]
+                assert len(self.data) in {53, 149}
                 # marks the next row
                 assert 0 <= self.data[4] <= 255
 
@@ -187,7 +183,7 @@ def test_send_config():
     Check for correct format and values.
     """
     shutdown_event = threading.Event()
-    server = CustomTCPServer(ADDRESS, TestTPX3Handler, event=shutdown_event)
+    server = CustomTCPServer(ADDRESS, TPX3Handler_Test, event=shutdown_event)
     server.timeout = 5
     server_thread = threading.Thread(target=server.handle_request)
     server_thread.daemon = True

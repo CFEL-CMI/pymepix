@@ -1,17 +1,20 @@
-import numpy as np
-import h5py
 import os
+import pathlib
+
+import h5py
+import numpy as np
 
 from pymepix.post_processing import run_post_processing
 
-input_file_name = 'files/out_5sec.raw'
+folder_path = pathlib.Path(__file__).parent / "files"
+input_file_name = folder_path / 'out_5sec.raw'
 
 def test_packets_trigger():
 
     def callback(progress):
         pass
 
-    tmp_file_name = "files/temp.hdf'"
+    tmp_file_name = folder_path / "temp.hdf'"
 
     run_post_processing(input_file_name, tmp_file_name, 4, None, None, callback)
 

@@ -24,16 +24,17 @@ run: pytest test_packetprocessor_pytest.py
 to be able to use this test comment 'elif self._buffer_list_idx == 4:' in udpsampler to send all data
 """
 
+import pathlib
 import socket
+
 import numpy as np
-import struct
 
 address = ("127.0.0.1", 50000)
 
-
+folder_path = pathlib.Path(__file__).parent / "files"
 def send_data(packets=1_000, chunk_size=139, start=0, sleep=0.0001):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    with open('files/centroid_pipeline_test.raw', 'rb+') as data_file:
+    with open(folder_path / 'centroid_pipeline_test.raw', 'rb+') as data_file:
         raw_data = np.fromfile(data_file)
     sock.sendto(raw_data, address)
 
@@ -120,20 +121,20 @@ def test_packets_trigger():
         elif i[0] == MessageType.EventData:
             events = i[1]
 
-    with open("files/raw_test_data_events.bin", "rb") as f:
+    with open(folder_path / "raw_test_data_events.bin", "rb") as f:
         events_orig = pickle.load(f)
-    assert events[0].all() == events_orig[0].all()
-    assert events[1].all() == events_orig[1].all()
-    assert events[2].all() == events_orig[2].all()
-    assert events[3].all() == events_orig[3].all()
-    assert events[4].all() == events_orig[4].all()
+    assert events[0].all() == events_orig[0].all()  # event_nr
+    assert events[1].all() == events_orig[1].all()  # x
+    assert events[2].all() == events_orig[2].all()  # y
+    assert events[3].all() == events_orig[3].all()  # tof
+    assert events[4].all() == events_orig[4].all()  # tot
 
-    with open("files/raw_test_data_pixels.bin", "rb") as f:
+    with open(folder_path / "raw_test_data_pixels.bin", "rb") as f:
         pixels_orig = pickle.load(f)
-    assert pixels[0].all() == pixels_orig[0].all()
-    assert pixels[1].all() == pixels_orig[1].all()
-    assert pixels[2].all() == pixels_orig[1].all()
-    assert pixels[3].all() == pixels_orig[3].all()
+    assert pixels[0].all() == pixels_orig[0].all()  # x
+    assert pixels[1].all() == pixels_orig[1].all()  # y
+    assert pixels[2].all() == pixels_orig[1].all()  # tof
+    assert pixels[3].all() == pixels_orig[3].all()  # tot
 
     #with open("files/raw_test_data_centroids.bin", "rb") as f:
     #    centroids_orig = pickle.load(f)
