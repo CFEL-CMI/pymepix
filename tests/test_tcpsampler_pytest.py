@@ -274,6 +274,7 @@ def real_data_packetprocessor():
 
 
 if __name__ == "__main__":
+    pass
     # test_zmq_multifile()
     # test_zmq_singlefile()
     #test_real_data_packetprocessor()
