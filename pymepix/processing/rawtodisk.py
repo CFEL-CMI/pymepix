@@ -82,8 +82,12 @@ class Raw2Disk(ProcessLogger):
         self.info(f"zmq connect to tcp://127.0.0.1:{cfg.default_cfg['zmq_port']}")
 
         # socket to maxwell
-        max_sock = context.socket(zmq.PUSH)
-        max_sock.connect("tcp://131.169.193.43:13049")
+        if remote_server := cfg.default_cfg.get('remote_processing_host') is not None:
+            self.info(f'connecting to processing server {remote_server}')
+            max_sock = context.socket(zmq.PUSH)
+            max_sock.connect(f"tcp://{remote_server}")
+        else:
+            max_sock = None
 
         # State machine etc. local variables
         waiting = True
@@ -145,14 +149,15 @@ class Raw2Disk(ProcessLogger):
                 self.debug("file closed")
                 z_sock.send_string("CLOSED")
                 filehandle = None
-                max_sock.send_string(
-                    filename
-                )  # send filename to maxwell for conversion
+                if max_sock is not None:
+                    # send filename to maxwell for conversion
+                    max_sock.send_string(filename)
             waiting = True
 
         # We reach this point only after "SHUTDOWN" command received
         self.debug("Thread is finishing")
-        max_sock.close()
+        if max_sock is not None:
+            max_sock.close()
         z_sock.close()
         inproc_sock.close()
         self.debug("Thread is finished")

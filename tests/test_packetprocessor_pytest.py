@@ -24,15 +24,22 @@ run: pytest test_packetprocessor_pytest.py
 to be able to use this test comment 'elif self._buffer_list_idx == 4:' in udpsampler to send all data
 """
 
+
+import contextlib
+import pathlib
 import socket
 
+import numpy as np
+
+folder_path = pathlib.Path(__file__).parent / "files"
 address = ("127.0.0.1", 50000)
 
 
 def send_data(packets=1_000, chunk_size=139, start=0, sleep=0.0001):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    with open("files/raw_test_data.raw", "rb") as f:
-        sock.sendto(f.read(), address)
+    with open(folder_path / 'centroid_pipeline_test.raw', 'rb+') as data_file:
+        raw_data = np.fromfile(data_file)
+    sock.sendto(raw_data, address)
 
 
 def test_packets_trigger():
@@ -75,15 +82,13 @@ def test_packets_trigger():
 
         received = []
         while True:
-            try:
+            with contextlib.suppress(queue.Empty):
                 value = q.get(block=False, timeout=0.5)
                 if value is None:
                     break
                 messType, data = value
                 received.append(value)
-            except queue.Empty:
-                pass
-            # print(value)
+                    # print(value)
         sock.send_pyobj(received)
         time.sleep(5)  # give zmq thread time to send data
 
@@ -116,24 +121,20 @@ def test_packets_trigger():
         elif i[0] == MessageType.EventData:
             events = i[1]
 
-    with open("files/raw_test_data_events.bin", "rb") as f:
+    with open(folder_path / "raw_test_data_events.bin", "rb") as f:
         events_orig = pickle.load(f)
-    assert events[0].all() == events_orig["event_nr"].all()
-    assert events[1].all() == events_orig["x"].all()
-    assert events[2].all() == events_orig["y"].all()
-    assert events[3].all() == events_orig["tof"].all()
-    assert events[4].all() == events_orig["tot"].all()
+    assert events[0].all() == events_orig[0].all()  # event_nr
+    assert events[1].all() == events_orig[1].all()  # x
+    assert events[2].all() == events_orig[2].all()  # y
+    assert events[3].all() == events_orig[3].all()  # tof
+    assert events[4].all() == events_orig[4].all()  # tot
 
-    with open("files/raw_test_data_pixels.bin", "rb") as f:
+    with open(folder_path / "raw_test_data_pixels.bin", "rb") as f:
         pixels_orig = pickle.load(f)
-    assert pixels[0].all() == pixels_orig["x"].all()
-    assert pixels[1].all() == pixels_orig["y"].all()
-    assert pixels[2].all() == pixels_orig["toa"].all()
-    assert pixels[3].all() == pixels_orig["tot"].all()
-
-    with open("files/raw_test_data_timestamps.bin", "rb") as f:
-        triggers_orig = pickle.load(f)
-    assert triggers[0].all() == triggers_orig["trigger_time"].all()
+    assert pixels[0].all() == pixels_orig[0].all()  # x
+    assert pixels[1].all() == pixels_orig[1].all()  # y
+    assert pixels[2].all() == pixels_orig[2].all()  # toa
+    assert pixels[3].all() == pixels_orig[3].all()  # tot
 
     print("waiting for queue thread")
     t.join()

@@ -22,15 +22,16 @@ pymepix should install the prerequisties `numpy` and `sklearn` if not already pr
 ### Installing
 
 Run the installation script through
+```bash
+python3 -m pip install .
 ```
-pip install .
+if you try to install in a Conda or virtual environment, you need to do
+```bash
+python3 -m pip install --user .
 ```
-or to directly use the setup.py run
-```
-python setup.py install
-```
-Standard `setuptools` options such as `develop` or `--user` are available; see the
-[documentation](#documentation) for details.
+
+Standard `setuptools` options such as `-e` for development are available; see, e.g., the
+[PymePix documentation](https://pymepix.readthedocs.io) for some details.
 
 Try importing pymepix outside the actual source code:
 ```

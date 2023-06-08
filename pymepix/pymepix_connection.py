@@ -27,8 +27,9 @@ from pymepix.core.log import Logger
 from pymepix.processing.acquisition import PixelPipeline
 from .SPIDR.spidrcontroller import SPIDRController
 from .timepixdevice import TimepixDevice
-from pymepix.api.api_types import Commands
+from pymepix.api.api_types import Commands, ApiDataType
 from pymepix.api.api import Api
+
 
 
 class PollBufferEmpty(Exception):
@@ -231,11 +232,11 @@ class PymepixConnection(Logger):
 
         self._timepix_devices[0].start_recording(path)
 
-        self._channel.send(ChannelDataType.COMMAND, Commands.START_RECORD)
+        self._channel.send(ApiDataType.COMMAND, Commands.START_RECORD)
 
     def stop_recording(self):
         self._timepix_devices[0].stop_recording()
-        self._channel.send(ChannelDataType.COMMAND, Commands.STOP_RECORD)
+        self._channel.send(ApiDataType.COMMAND, Commands.STOP_RECORD)
 
     def start(self):
         """Starts acquisition"""

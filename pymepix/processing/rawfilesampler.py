@@ -37,8 +37,9 @@ class RawFileSampler():
         timewalk_file=None,
         cent_timewalk_file=None,
         progress_callback=None,
-        clustering_args = None,
-        dbscan_clustering=True
+        clustering_args={},
+        dbscan_clustering=True,
+        **kwargs
     ):
         self._filename = file_name
         self._output_file = output_file
@@ -49,7 +50,6 @@ class RawFileSampler():
         self._progress_callback = progress_callback
 
         self._clustering_args = clustering_args
-
         self._dbscan_clustering = dbscan_clustering
 
     def init_new_process(self, file):
@@ -72,10 +72,12 @@ class RawFileSampler():
             cent_timewalk_lut = np.load(self.cent_timewalk_file)
 
         self.packet_processor = PacketProcessor(start_time=self._startTime, timewalk_lut=timewalk_lut)
-        self.centroid_calculator = CentroidCalculator(**self._clustering_args,\
-                                                      cent_timewalk_lut=cent_timewalk_lut, \
-                                                      dbscan_clustering=self._dbscan_clustering,\
-                                                      number_of_processes=self._number_of_processes)
+
+        self.centroid_calculator = CentroidCalculator(cent_timewalk_lut=cent_timewalk_lut,
+                                                      number_of_processes=self._number_of_processes,
+                                                      clustering_args=self._clustering_args,
+                                                      dbscan_clustering=self._dbscan_clustering
+                                                     )
 
     def pre_run(self):
         """init stuff which should only be available in new process"""
@@ -112,7 +114,7 @@ class RawFileSampler():
         for b in np.nditer(ba):
             yield b
             packets_processed += 1
-            if self._progress_callback is not None:
+            if self._progress_callback is not None and packets_processed%100==0:
                 self._progress_callback(packets_processed / packets_to_process)
 
     def handle_lsb_time(self, pixdata):
@@ -168,11 +170,11 @@ class RawFileSampler():
 
         return None
 
-    def __calculate_and_save_centroids(self, event_data, _pixel_data, timestamps):
+    def __calculate_and_save_centroids(self, event_data, _pixel_data, timestamps, trigger1, trigger2):
         centroids = self.centroid_calculator.process(event_data)
-        self.saveToHDF5(self._output_file, event_data, centroids, timestamps)
+        self.saveToHDF5(self._output_file, event_data, centroids, timestamps, trigger1, trigger2)
 
-    def saveToHDF5(self, output_file, raw, clusters, timeStamps):
+    def saveToHDF5(self, output_file, raw, clusters, timeStamps, trigger1, trigger2):
         if output_file is not None:
             with h5py.File(output_file, "a") as f:
                 names = ["trigger nr", "x", "y", "tof", "tot avg", "tot max", "clustersize"]
@@ -244,9 +246,50 @@ class RawFileSampler():
                         subgrp.attrs["nr events"] = 0
                         for i, key in enumerate(names):
                             subgrp.create_dataset(
-                                key, data=timeStamps[i].astype(np.uint64), maxshape=(None,)
+                                key, data=timeStamps[i], maxshape=(None,)
                             )
                         f["timing/timepix/timestamp"].attrs["unit"] = "ns"
+
+                # save trigger1 data
+                if trigger1 is not None:
+                    if f.keys().__contains__("triggers/trigger1"):
+                        dset = f["triggers/trigger1/time"]
+                        dset.resize(dset.shape[0] + len(trigger1), axis=0)
+                        dset[-len(trigger1) :] = trigger1
+                    else:
+                        if not f.keys().__contains__("triggers"):
+                            grp = f.create_group("triggers")
+                            grp.attrs["description"] = "triggering information from TimePix"
+                        else:
+                            grp = f["triggers"]
+                        grp.attrs["description"] = "triggering information from TimePix"
+                        subgrp = grp.create_group("trigger1")
+                        subgrp.attrs["description"] = "trigger1 time from TimePix starting"
+                        subgrp.create_dataset(
+                            "time", data=trigger1, maxshape=(None,))
+                        f["triggers/trigger1/time"].attrs["unit"] = "s"
+
+                # save trigger1 data
+                if trigger2 is not None:
+                    if f.keys().__contains__("triggers/trigger2"):
+                        dset = f["triggers/trigger2/time"]
+                        dset.resize(dset.shape[0] + len(trigger2), axis=0)
+                        dset[-len(trigger2):] = trigger2
+                    else:
+                        if not f.keys().__contains__("triggers"):
+                            grp = f.create_group("triggers")
+                            grp.attrs["description"] = "triggering information from TimePix"
+                        else:
+                            grp = f["triggers"]
+                        subgrp = grp.create_group("trigger2")
+                        subgrp.attrs["description"] = "trigger2 time from TimePix starting"
+                        subgrp.create_dataset(
+                            "time", data=trigger2, maxshape=(None,))
+                        f["triggers/trigger2/time"].attrs["unit"] = "s"
+
+
+
+
 
     def run(self):
         """method which is executed in new process via multiprocessing.Process.start"""
@@ -266,12 +309,12 @@ class RawFileSampler():
             # 0x4X timer configuration
             elif header == 0x4 or header == 0x6:
                 subheader = ((pixdata & 0x0F00000000000000) >> 56) & 0xF
-                if subheader == 0xF:
-                    self.handle_other(pixdata)
-                elif subheader == 0x4:
+                if subheader == 0x4:
                     self.handle_lsb_time(pixdata)
                 elif subheader == 0x5:
                     should_push = self.handle_msb_time(pixdata)
+                else:
+                    self.handle_other(pixdata)
 
             if should_push:
                 self.push_data()

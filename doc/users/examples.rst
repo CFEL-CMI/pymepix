@@ -12,7 +12,7 @@ Starting timepix and polling data::
     import numpy as np
 
     #Connect to SPIDR
-    timepix = pymepix.Pymepix(('192.168.1.10',50000))
+    timepix = pymepix.pymepix_connection.PymepixConnection(('192.168.1.10', 50000))
 
     #Set bias voltage
     timepix.biasVoltage = 50

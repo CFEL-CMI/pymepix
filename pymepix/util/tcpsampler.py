@@ -35,6 +35,8 @@ class TcpSampler(multiprocessing.Process, ProcessLogger):
     """Recieves tcp packets
 
     The same as UdpSampler just with TCP
+    probably originally written for benchmarking TCP vs UDP
+    FixMe: doesn't work in this state anymore...
 
     """
 
