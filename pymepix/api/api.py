@@ -1,13 +1,12 @@
 import threading
 import zmq
 import queue
-import numpy as np
 
-from pymepix.channel.channel_types import ChannelDataType
+from pymepix.api.api_types import ApiDataType
 from pymepix.processing.datatypes import MessageType
 
 
-class Channel(threading.Thread):
+class Api(threading.Thread):
 
     def __init__(self):
         threading.Thread.__init__(self)
@@ -21,11 +20,11 @@ class Channel(threading.Thread):
     def public_address(self):
         return f"tcp://{self.socket.gethostname()}:{self.port}"
 
-    def register(self, channel_address):
+    def register(self, api_address):
         with self.lock:
             if self.socket is None:
-                self.address = channel_address
-                host, s_port = channel_address.split("//")[-1].split(":")
+                self.address = api_address
+                host, s_port = api_address.split("//")[-1].split(":")
                 self.port = int(s_port)
                 context = zmq.Context()
                 self.socket = context.socket(zmq.PUB)
@@ -44,7 +43,7 @@ class Channel(threading.Thread):
     def run(self):
         while True:
             new_data = self.q.get()
-            if new_data == None:
+            if new_data is None:
                 break
 
             with self.lock:
@@ -52,15 +51,15 @@ class Channel(threading.Thread):
                     self.socket.send_pyobj(new_data)
 
     def send(self, data_type, data):
-        if data_type == ChannelDataType.COMMAND:
+        if data_type == ApiDataType.COMMAND:
             self.q.put_nowait({'type': data_type.value, 'data': data.value})
         else:
             self.q.put_nowait({'type': data_type.value, 'data': data})
 
     def send_data_by_message_type(self, message_type, data):
         if message_type == MessageType.PixelData:
-            self.q.put_nowait({'type': ChannelDataType.PIXEL.value, 'data': data})
+            self.q.put_nowait({'type': ApiDataType.PIXEL.value, 'data': data})
         elif message_type == MessageType.EventData:
-            self.q.put_nowait({'type': ChannelDataType.TOF.value, 'data': data})
+            self.q.put_nowait({'type': ApiDataType.TOF.value, 'data': data})
         elif message_type == MessageType.CentroidData:
-            self.q.put_nowait({'type': ChannelDataType.CENTROID.value, 'data': data})
+            self.q.put_nowait({'type': ApiDataType.CENTROID.value, 'data': data})

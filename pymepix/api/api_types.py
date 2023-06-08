@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class ChannelDataType(Enum):
+class ApiDataType(Enum):
     COMMAND = 'comm'
     PIXEL = 'pixel'
     TOF = 'tof'

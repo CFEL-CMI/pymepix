@@ -8,6 +8,6 @@ trainID:
 src_ip_port:
    - '192.168.1.1'
    - 8192
-tcp_channel:
-   - '127.0.0.1'
-   - 5056
+api_channel:
+   ip: '127.0.0.1'
+   port: 5056

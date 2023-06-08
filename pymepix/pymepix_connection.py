@@ -27,8 +27,8 @@ from pymepix.core.log import Logger
 from pymepix.processing.acquisition import PixelPipeline
 from .SPIDR.spidrcontroller import SPIDRController
 from .timepixdevice import TimepixDevice
-from pymepix.channel.channel import Channel
-from pymepix.channel.channel_types import ChannelDataType, Commands
+from pymepix.api.api_types import Commands
+from pymepix.api.api import Api
 
 
 class PollBufferEmpty(Exception):
@@ -92,16 +92,23 @@ class PymepixConnection(Logger):
 
     def __init__(self,
                  spidr_address=(cfg.default_cfg["timepix"]["tpx_ip"], 50000),
-                 pipeline_class=PixelPipeline):
+                 src_ip_port=(cfg.default_cfg['timepix']['pc_ip'], 
+                              # get TPX port for camera, if not specified in config, use default
+                              int(cfg.default_cfg.get('timepix').get('pc_port', 8192))),
+                 api_address=(cfg.default_cfg['api_channel']['ip'],
+                              cfg.default_cfg['api_channel']['port']),
+                 pipeline_class=PixelPipeline,
+                 ):
         Logger.__init__(self, "Pymepix")
 
-        self._channel = Channel()
+        self._channel = Api()
         self._channel.start()
-        self._channel_address = tuple(cfg.default_cfg.get('tcp_channel', ['127.0.0.1', 5056]))
-        self._channel.register(f'tcp://{self._channel_address[0]}:{self._channel_address[1]}')
+        #self._channel_address = tuple(cfg.default_cfg.get('tcp_channel', ['127.0.0.1', 5056]))
+        self._channel.register(f'tcp://{api_address[0]}:{api_address[1]}')
 
-        src_ip_port = tuple(cfg.default_cfg.get('src_ip_port', ['192.168.1.1', 8192]))
+        src_ip_port = tuple(cfg.default_cfg.get('src_ip_port', ('192.168.1.1', 8192)))
 
+        print(spidr_address)
         self._spidr = SPIDRController(spidr_address, src_ip_port)
 
         self._timepix_devices: list[TimepixDevice] = []

@@ -30,7 +30,6 @@ from .config import DefaultConfig, SophyConfig, TimepixConfig
 from .core.log import Logger
 from .timepixdef import *
 
-from pymepix.channel.channel_types import ChannelDataType, Commands
 
 
 class ConfigClassException(Exception):
@@ -326,7 +325,7 @@ class TimepixDevice(Logger):
         pipeline._pipeline_objects[0].close_file = True
         res = pipeline.udp_sock.recv_string()
         if res == "CLOSED":
-            self.info(f"Finished recording")
+            self.info("Finished recording")
         else:
             self.warning(f"Error during recording: {res}")
 
