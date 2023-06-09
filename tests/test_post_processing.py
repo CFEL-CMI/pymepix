@@ -1,4 +1,3 @@
-import os
 import pathlib
 
 import h5py
@@ -47,7 +46,7 @@ def test_converted_hdf5():
     
     assertCentroidsAlmostEqual((x_new, y_new, tof_new, tot_new, tot_avg_new, size_new), (x_old, y_old, tof_old, tot_old, tot_avg_old, size_old))
 
-    os.remove(tmp_file_name)
+    tmp_file_name.unlink()
 
 def assertCentroidsAlmostEqual(expected, actual):
     np.testing.assert_array_equal(expected[0], actual[0])
@@ -59,6 +58,26 @@ def assertCentroidsAlmostEqual(expected, actual):
     np.testing.assert_array_equal(expected[4], actual[4])
     np.testing.assert_array_equal(expected[5], actual[5])
 
+def test_singleproc_multiproc():
+    '''Test if processing with single process and multiple processes yield the same results.'''
+    import subprocess
+    import hashlib
+    files_root = pathlib.Path(__file__).parent / "files"
+    in_file = files_root / "ion-run_0006_20221112-1024.raw"
+    out_file1 = files_root / "ion-run_0006_20221112-1024_temp1.hdf5"
+    out_file2 = files_root / "ion-run_0006_20221112-1024_temp2.hdf5"
+
+    _ = subprocess.run(["pymepix-acq", "post-process", f"-f={in_file}", f"-o={out_file1}"])
+    _ = subprocess.run(["pymepix-acq", "post-process", '-n 5', f"-f={in_file}", f"-o={out_file2}"])
+    sum_file1 = hashlib.sha1(open(out_file1, 'rb').read()).hexdigest()
+    sum_file2 = hashlib.sha1(open(out_file2, 'rb').read()).hexdigest()
+
+    assert sum_file1 == sum_file2
+
+    out_file1.unlink()
+    out_file2.unlink()
+    
 
 if __name__ == "__main__":
     test_converted_hdf5()
+    test_singleproc_multiproc()
