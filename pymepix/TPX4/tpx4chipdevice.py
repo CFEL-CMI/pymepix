@@ -49,6 +49,7 @@ class Tpx4ChipDevice(Logger):
 
     @property
     def serverPort(self):
+        # NEEDS IMPLEMENTATION
         return 50000
 
     @serverPort.setter
