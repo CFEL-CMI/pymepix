@@ -223,16 +223,12 @@ class PymepixConnection(Logger):
         for idx, tpx in enumerate(self._timepix_devices):
             self.info("Device {} - {}".format(idx, tpx.devIdToString()))
 
-    def _prepare(self):
-        self._spidr.disableExternalRefClock()
-        TdcEnable = 0x0000
-        self._spidr.setSpidrReg(0x2B8, TdcEnable)
-        self._spidr.enableDecoders(True)
-        self._spidr.datadrivenReadout()
+    def prepare(self):
+        self._controller.prepare()
 
     def start_recording(self, path):
-        self._spidr.resetTimers()
-        self._spidr.restartTimers()
+        self._controller.resetTimers()
+        self._controller.restartTimers()
         time.sleep(1)  # give camera time to reset timers
 
         self._timepix_devices[0].start_recording(path)

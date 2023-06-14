@@ -107,6 +107,13 @@ class SPIDRController(Logger):
             self._devices.append(SpidrDevice(self, x))
             self._devices[x].serverPort = self._src_ip_port[1] + x
 
+    def prepare(self):
+        self.disableExternalRefClock()
+        TdcEnable = 0x0000
+        self.setSpidrReg(0x2B8, TdcEnable)
+        self.enableDecoders(True)
+        self.datadrivenReadout()
+
     def resetModule(self, readout_speed):
         """Resets the SPIDR board and sets a new readout speed
 
