@@ -28,8 +28,8 @@ from pymepix.processing.acquisition import PixelPipeline
 from .SPIDR.spidrcontroller import SPIDRController
 from .TPX4.tpx4controller import Timepix4Controller
 from .timepixdevice import TimepixDevice
-from pymepix.api.api_types import Commands, ApiDataType
-from pymepix.api.api import Api
+from pymepix.api.data_types import Commands, ApiDataType
+from pymepix.api.data_channel import Data_Channel
 
 from .timepix4device import Timepix4Device
 
@@ -105,7 +105,7 @@ class PymepixConnection(Logger):
                  ):
         Logger.__init__(self, "Pymepix")
 
-        self._channel = Api()
+        self._channel = Data_Channel()
         self._channel.start()
         #self._channel_address = tuple(cfg.default_cfg.get('tcp_channel', ['127.0.0.1', 5056]))
         self._channel.register(f'tcp://{api_address[0]}:{api_address[1]}')

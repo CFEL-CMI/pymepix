@@ -2,11 +2,11 @@ import threading
 import zmq
 import queue
 
-from pymepix.api.api_types import ApiDataType
+from pymepix.api.data_types import ApiDataType
 from pymepix.processing.datatypes import MessageType
 
 
-class Api(threading.Thread):
+class Data_Channel(threading.Thread):
 
     def __init__(self):
         threading.Thread.__init__(self)
