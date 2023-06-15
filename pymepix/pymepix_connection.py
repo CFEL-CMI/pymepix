@@ -223,9 +223,6 @@ class PymepixConnection(Logger):
         for idx, tpx in enumerate(self._timepix_devices):
             self.info("Device {} - {}".format(idx, tpx.devIdToString()))
 
-    def prepare(self):
-        self._controller.prepare()
-
     def start_recording(self, path):
         self._controller.resetTimers()
         self._controller.restartTimers()
