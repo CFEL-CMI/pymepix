@@ -62,4 +62,4 @@ pymepix-acq = "pymepix.main:main"
 exclude = ["tests", "doc"]
 
 [tool.setuptools.package-data]
-"*" = ["*.yaml"]
+'pymepix.config_files' = ['*.yaml']
