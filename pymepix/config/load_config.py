@@ -32,7 +32,7 @@ global default_cfg
 
 def load_config(config_name = "default.yaml"):
     global default_cfg
-    cfg_file = Path(PurePath(__file__).parent, config_name)
+    cfg_file = Path((PurePath(__file__).parent.parent), 'config_files', config_name)
     if Path(cfg_file).is_file():
         with open(cfg_file, "r") as f:
             default_cfg = yaml.safe_load(f)
