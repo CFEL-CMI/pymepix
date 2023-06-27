@@ -12,10 +12,10 @@ class ProgressBar(tqdm):
 def updateProgressBar(progress):
    pass 
 
-def run_post_processing(input_file_name, output_file, number_processes, timewalk_file, cent_timewalk_file, progress_callback=updateProgressBar,
-                        clustering_args={}, dbscan_clustering=True, **kwargs):
+def run_post_processing(input_file_name, output_file, number_processes, timewalk_file, cent_timewalk_file, camera_generation=3,
+                        progress_callback=updateProgressBar, clustering_args={}, dbscan_clustering=True, **kwargs):
     with ProgressBar(total=1.0, dynamic_ncols=True) as progress_bar:
         progress_bar.gui_bar_fun = progress_callback
         file_sampler = RawFileSampler(input_file_name, output_file, number_processes, timewalk_file, cent_timewalk_file,
-                                      progress_bar.update_to, clustering_args, dbscan_clustering, **kwargs)
+                                      progress_bar.update_to, camera_generation,clustering_args, dbscan_clustering, **kwargs)
         file_sampler.run()

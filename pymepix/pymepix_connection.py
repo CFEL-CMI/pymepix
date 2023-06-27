@@ -26,10 +26,12 @@ import pymepix.config.load_config as cfg
 from pymepix.core.log import Logger
 from pymepix.processing.acquisition import PixelPipeline
 from .SPIDR.spidrcontroller import SPIDRController
+from .TPX4.tpx4controller import Timepix4Controller
 from .timepixdevice import TimepixDevice
-from pymepix.api.api_types import Commands, ApiDataType
-from pymepix.api.api import Api
+from pymepix.api.data_types import Commands, ApiDataType
+from pymepix.api.data_channel import Data_Channel
 
+from .timepix4device import Timepix4Device
 
 
 class PollBufferEmpty(Exception):
@@ -55,7 +57,7 @@ class PymepixConnection(Logger):
 
     Startup device
 
-    >>> timepix = Pymepix(('192.168.1.10',50000))
+    >>> timepix = PymepixConnection(('192.168.1.10',50000))
 
     Find how many Timepix are connected
 
@@ -93,30 +95,33 @@ class PymepixConnection(Logger):
 
     def __init__(self,
                  spidr_address=(cfg.default_cfg["timepix"]["tpx_ip"], 50000),
-                 src_ip_port=(cfg.default_cfg['timepix']['pc_ip'], 
-                              # get TPX port for camera, if not specified in config, use default
+                 src_ip_port=(cfg.default_cfg['timepix']['pc_ip'],
                               int(cfg.default_cfg.get('timepix').get('pc_port', 8192))),
                  api_address=(cfg.default_cfg['api_channel']['ip'],
                               cfg.default_cfg['api_channel']['port']),
+
                  pipeline_class=PixelPipeline,
+                 camera_generation=3,
                  ):
         Logger.__init__(self, "Pymepix")
 
-        self._channel = Api()
+        self._channel = Data_Channel()
         self._channel.start()
         #self._channel_address = tuple(cfg.default_cfg.get('tcp_channel', ['127.0.0.1', 5056]))
         self._channel.register(f'tcp://{api_address[0]}:{api_address[1]}')
 
-        src_ip_port = tuple(cfg.default_cfg.get('src_ip_port', ('192.168.1.1', 8192)))
+        self.camera_generation = camera_generation
 
-        print(spidr_address)
-        self._spidr = SPIDRController(spidr_address, src_ip_port)
+        controllerClass = self.timepix_controller_class_factory(camera_generation)
 
-        self._timepix_devices: list[TimepixDevice] = []
+        self._controller = controllerClass(spidr_address, src_ip_port)
+
+        TimepixDeviceClass = self.timepix_device_class_factory(camera_generation)
+        self._timepix_devices: list[TimepixDeviceClass] = []
 
         self._data_queue = Queue()
         self._createTimepix(pipeline_class)
-        self._spidr.setBiasSupplyEnable(True)
+        self._controller.setBiasSupplyEnable(True)
         self.biasVoltage = 50
         self.enablePolling()
         self._data_thread = threading.Thread(target=self.data_thread)
@@ -133,7 +138,7 @@ class PymepixConnection(Logger):
     @biasVoltage.setter
     def biasVoltage(self, value):
         self._bias_voltage = value
-        self._spidr.biasVoltage = value
+        self._controller.biasVoltage = value
 
     def poll(self, block=False):
         """If polling is used, returns data stored in data buffer.
@@ -207,27 +212,20 @@ class PymepixConnection(Logger):
         self._poll_buffer.append((data_type, data))
 
     def _createTimepix(self, pipeline_class=PixelPipeline):
-
-        for x in self._spidr:
+        TimepixDeviceClass = self.timepix_device_class_factory(self.camera_generation)
+        for x in self._controller:
             status, enabled, locked = x.linkStatus
             if enabled != 0 and locked == enabled:
-                self._timepix_devices.append(TimepixDevice(x, self._data_queue, pipeline_class))
+                self._timepix_devices.append(TimepixDeviceClass(x, self._data_queue, pipeline_class))
 
         self._num_timepix = len(self._timepix_devices)
         self.info("Found {} Timepix/Medipix devices".format(len(self._timepix_devices)))
         for idx, tpx in enumerate(self._timepix_devices):
             self.info("Device {} - {}".format(idx, tpx.devIdToString()))
 
-    def _prepare(self):
-        self._spidr.disableExternalRefClock()
-        TdcEnable = 0x0000
-        self._spidr.setSpidrReg(0x2B8, TdcEnable)
-        self._spidr.enableDecoders(True)
-        self._spidr.datadrivenReadout()
-
     def start_recording(self, path):
-        self._spidr.resetTimers()
-        self._spidr.restartTimers()
+        self._controller.resetTimers()
+        self._controller.restartTimers()
         time.sleep(1)  # give camera time to reset timers
 
         self._timepix_devices[0].start_recording(path)
@@ -245,15 +243,15 @@ class PymepixConnection(Logger):
             self.stop()
 
         self.info("Starting acquisition")
-        self._prepare()
-        self._spidr.resetTimers()
-        self._spidr.restartTimers()
+        self._controller.prepare()
+        self._controller.resetTimers()
+        self._controller.restartTimers()
 
         for t in self._timepix_devices:
             self.info("Setting up {}".format(t.deviceName))
             t.setupDevice()
-        self._spidr.restartTimers()
-        self._spidr.openShutter()
+        self._controller.restartTimers()
+        self._controller.openShutter()
         for t in self._timepix_devices:
             self.info("Starting {}".format(t.deviceName))
             t.start()
@@ -271,10 +269,10 @@ class PymepixConnection(Logger):
         trig_freq_hz = 5
         nr_of_trigs = 1
 
-        self._spidr.setShutterTriggerConfig(
+        self._controller.setShutterTriggerConfig(
             trig_mode, trig_length_us, trig_freq_hz, nr_of_trigs, 0
         )
-        self._spidr.closeShutter()
+        self._controller.closeShutter()
         self.debug("Closing shutter")
         for t in self._timepix_devices:
             self.debug("Stopping {}".format(t.deviceName))
@@ -308,3 +306,21 @@ class PymepixConnection(Logger):
 
     def getDevice(self, num) -> TimepixDevice:
         return self._timepix_devices[num]
+
+    def timepix_device_class_factory(self, camera_generation):
+        timepix_device_classes = {3: TimepixDevice, \
+                                  4: Timepix4Device}
+        if camera_generation in timepix_device_classes:
+            return timepix_device_classes[camera_generation]
+        else:
+            raise ValueError(f'No timepix device for camera generation {camera_generation}')
+
+    def timepix_controller_class_factory(self, camera_generation):
+
+        timepix_controller_classes = {3: SPIDRController, \
+                                      4: Timepix4Controller}
+
+        if camera_generation in timepix_controller_classes:
+            return timepix_controller_classes[camera_generation]
+        else:
+            raise ValueError(f'No timepix controller for camera generation {camera_generation}')
