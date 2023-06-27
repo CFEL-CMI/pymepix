@@ -29,6 +29,13 @@ import pymepix.config.load_config as cfg
 from pymepix.post_processing import run_post_processing
 from pymepix.pymepix_connection import PymepixConnection
 
+from tornado.web import Application, RequestHandler
+import json
+
+from .api.api import make_app
+from tornado.ioloop import IOLoop
+
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -83,6 +90,44 @@ def post_process(args):
         args.timewalk_file,
         args.cent_timewalk_file,
     )
+
+pymepix_obj = None
+
+class RootHandler(RequestHandler):
+    def get(self):
+        self.write({'message': 'Online'})
+
+class ConfigHandler(RequestHandler):
+    def get(self):
+        data=json.loads(self.request.body)
+
+
+    def post(self, _):
+        data=json.loads(self.request.body)
+
+
+class CommandHandler(RequestHandler):
+    def post(self, _):
+        data=json.loads(self.request.body)
+        #self.write({'message': 'new item added'})
+
+
+def make_app():
+    urls = [
+        ("/", RootHandler),
+        (r"/config/([^/]+)?", ConfigHandler),
+        (r"/command/([^/]+)?", CommandHandler)
+    ]
+  return Application(urls, debug=True)
+
+
+def start_api(args):
+    global pymepix_obj
+    pymepix_obj = PymepixConnection(spidr_address=(args.ip, args.port))
+
+    app = make_app(args)
+    app.listen(args.api_port)
+    IOLoop.instance().start()
 
 
 def main():
@@ -218,6 +263,41 @@ def main():
         default="default.yaml",
         help="Config file",
     )
+
+    parser_api_service = subparsers.add_parser(
+        "api-service", help="start api service."
+    )
+
+    parser_api_service.set_defaults(func=start_api)
+
+    parser_api_service.add_argument(
+        "-i",
+        "--ip",
+        dest="ip",
+        type=str,
+        default=cfg.default_cfg["timepix"]["tpx_ip"],
+        help="IP address of Timepix",
+    )
+
+    parser_api_service.add_argument(
+        "-p",
+        "--port",
+        dest="port",
+        type=int,
+        default=50000,
+        help="TCP port to use for the connection",
+    )
+
+    parser_api_service.add_argument(
+        "-api_p",
+        "--api_port",
+        dest="api_port",
+        type=int,
+        default=8080,
+        help="TCP port to use for API",
+    )
+
+
 
 
 
