@@ -25,14 +25,16 @@ import logging
 import os
 import time
 
+import re
+
 import pymepix.config.load_config as cfg
 from pymepix.post_processing import run_post_processing
 from pymepix.pymepix_connection import PymepixConnection
 
-from tornado.web import Application, RequestHandler
+from tornado.web import Application, RequestHandler, HTTPError
 import json
 
-from .api.api import make_app
+#from .api.api import make_app
 from tornado.ioloop import IOLoop
 
 
@@ -44,8 +46,8 @@ logging.basicConfig(
 
 def connect_timepix(args):
     if not os.path.exists(args.output):
-        # Connect to SPIDR
-        pymepix = PymepixConnection(spidr_address=(args.ip, args.port))
+        # Connect to camera
+        pymepix = PymepixConnection(cam_address=(args.ip, args.port))
         # If there are no valid timepix detected then quit()
         if len(pymepix) == 0:
             logging.error(
@@ -91,41 +93,136 @@ def post_process(args):
         args.cent_timewalk_file,
     )
 
-pymepix_obj = None
+pymepix_connection_obj = None
+
+def is_jsonable(x):
+    try:
+        json.dumps(x)
+        return True
+    except (TypeError, OverflowError):
+        return False
+
+def get_path(ref, path):
+    try:
+        for tkn in path:
+            if tkn[0] != '[':
+                ref = getattr(ref, tkn)
+            else:
+                ref = ref[int(tkn[1:-1])]
+    except:
+        raise HTTPError(400, u"Bad request")
+    return ref
 
 class RootHandler(RequestHandler):
     def get(self):
         self.write({'message': 'Online'})
 
-class ConfigHandler(RequestHandler):
+
+class TPXpropertyHandler(RequestHandler):
     def get(self):
-        data=json.loads(self.request.body)
+
+        global pymepix_connection_obj
+
+        arguments = self.get_arguments('param_name')
+
+        tkns = re.findall(r"[\w']+|\[\d+\]", arguments[0])
+
+        ref = pymepix_connection_obj
+        ref = get_path(ref, tkns)
+
+        if is_jsonable(ref):
+            self.write({arguments[0]: ref})
+        else:
+            raise HTTPError(405, u"Parameter value is not JSON serializable")
 
 
-    def post(self, _):
-        data=json.loads(self.request.body)
+    def post(self):
+        global pymepix_connection_obj
+        try:
+            data = json.loads(self.request.body)
+        except:
+            raise HTTPError(400, u"Bad request")
 
+        for key, val in data.items():
+            ref = pymepix_connection_obj
+            tkns = re.findall(r"[\w']+|\[\d+\]", key)
+            ref = get_path(ref, tkns[:-1])
+            if tkns[-1][0] != '[':
+                setattr(ref, tkns[-1], val)
+            else:
+                ref[int(tkns[-1][1:-1])] = val
 
-class CommandHandler(RequestHandler):
-    def post(self, _):
-        data=json.loads(self.request.body)
-        #self.write({'message': 'new item added'})
+        self.write(data)
+
+class TPXmethodHandler(RequestHandler):
+    def post(self):
+        global pymepix_connection_obj
+        try:
+            data = json.loads(self.request.body)
+        except:
+            raise HTTPError(400, u"Bad request")
+
+        try:
+            func_name = data['func_name']
+
+            tkns = re.findall(r"[\w']+|\[\d+\]", func_name)
+
+            ref = pymepix_connection_obj
+            ref = get_path(ref, tkns)
+
+            data.pop('func_name')
+            res = ref(**data)
+            if is_jsonable(res):
+                self.write({'result': res})
+            else:
+                self.write({'result': 'Result is not JSON serializable'})
+        except:
+            raise HTTPError(400, u"Bad request")
+
+class PostprocessHandler(RequestHandler):
+    def post(self):
+        try:
+            data = json.loads(self.request.body)
+        except:
+            raise HTTPError(400, u"Bad request")
+
+        try:
+            run_post_processing(**data)
+        except:
+            raise HTTPError(400, u"Bad request")
 
 
 def make_app():
     urls = [
         ("/", RootHandler),
-        (r"/config/([^/]+)?", ConfigHandler),
-        (r"/command/([^/]+)?", CommandHandler)
+        (r"/tpxproperty", TPXpropertyHandler),
+        (r"/tpxmethod", TPXmethodHandler),
+        (r"/postprocess", PostprocessHandler)
     ]
-  return Application(urls, debug=True)
+    return Application(urls, debug=True)
 
 
 def start_api(args):
-    global pymepix_obj
-    pymepix_obj = PymepixConnection(spidr_address=(args.ip, args.port))
+    global pymepix_connection_obj
+    pymepix_connection_obj = PymepixConnection(cam_address=(args.ip, args.port))
 
-    app = make_app(args)
+    if len(pymepix_connection_obj) == 0:
+        logging.error(
+            "-------ERROR: SPIDR FOUND BUT NO VALID TIMEPIX DEVICE DETECTED ---------- "
+        )
+        quit()
+    if args.spx:
+        logging.info(f"Opening Sophy file {args.spx}")
+        pymepix_connection_obj[0].loadConfig(args.spx)
+
+    # Switch to TOF mode if set
+    if args.decode and args.tof:
+        pymepix_connection_obj[0].acquisition.enableEvents = True
+
+    # Set the bias voltage
+    pymepix_connection_obj.biasVoltage = args.bias
+
+    app = make_app()
     app.listen(args.api_port)
     IOLoop.instance().start()
 
@@ -297,8 +394,43 @@ def main():
         help="TCP port to use for API",
     )
 
+    parser_api_service.add_argument(
+        "--config",
+        dest="cfg",
+        type=str,
+        default="default.yaml",
+        help="Config file",
+    )
 
+    parser_api_service.add_argument(
+        "-s", "--spx", dest="spx", type=str, help="Sophy config file to load"
+    )
 
+    parser_api_service.add_argument(
+        "-d",
+        "--decode",
+        dest="decode",
+        type=bool,
+        help="Store decoded values instead",
+        default=False,
+    )
+    parser_api_service.add_argument(
+        "-T",
+        "--tof",
+        dest="tof",
+        type=bool,
+        help="Compute TOF if decode is enabled",
+        default=False,
+    )
+
+    parser_api_service.add_argument(
+        "-v",
+        "--bias",
+        dest="bias",
+        type=float,
+        default=50,
+        help="Bias voltage in Volts",
+    )
 
 
     args = parser.parse_args()
