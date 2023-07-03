@@ -47,7 +47,8 @@ logging.basicConfig(
 def connect_timepix(args):
     if not os.path.exists(args.output):
         # Connect to camera
-        pymepix = PymepixConnection(cam_address=(args.ip, args.port))
+        pymepix = PymepixConnection(cam_address=(args.ip, args.port),
+                                    camera_generation=args.cam_gen)
         # If there are no valid timepix detected then quit()
         if len(pymepix) == 0:
             logging.error(
@@ -83,7 +84,6 @@ def connect_timepix(args):
             f"Outputfile {args.output} already exists. Please make sure the specified file does not exist."
         )
 
-
 def post_process(args):
     run_post_processing(
         args.file.name,
@@ -91,6 +91,7 @@ def post_process(args):
         args.number_of_processes,
         args.timewalk_file,
         args.cent_timewalk_file,
+        args.cam_gen,
     )
 
 pymepix_connection_obj = None
@@ -204,7 +205,8 @@ def make_app():
 
 def start_api(args):
     global pymepix_connection_obj
-    pymepix_connection_obj = PymepixConnection(cam_address=(args.ip, args.port))
+    pymepix_connection_obj = PymepixConnection(cam_address=(args.ip, args.port),\
+                                               camera_generation=args.cam_gen)
 
     if len(pymepix_connection_obj) == 0:
         logging.error(
@@ -310,6 +312,15 @@ def main():
         help="Config file",
     )
 
+    parser_connect.add_argument(
+        "-g",
+        "--cam_gen",
+        dest="cam_gen",
+        type=int,
+        default=3,
+        help="Camera generation",
+    )
+
     parser_post_process = subparsers.add_parser(
         "post-process", help="Perform post-processing with a acquired raw data file."
     )
@@ -360,6 +371,16 @@ def main():
         default="default.yaml",
         help="Config file",
     )
+
+    parser_post_process.add_argument(
+        "-g",
+        "--cam_gen",
+        dest="cam_gen",
+        type=int,
+        default=3,
+        help="Camera generation",
+    )
+
 
     parser_api_service = subparsers.add_parser(
         "api-service", help="start api service."
@@ -430,6 +451,15 @@ def main():
         type=float,
         default=50,
         help="Bias voltage in Volts",
+    )
+
+    parser_api_service.add_argument(
+        "-g",
+        "--cam_gen",
+        dest="cam_gen",
+        type=int,
+        default=3,
+        help="Camera generation",
     )
 
 
