@@ -431,8 +431,10 @@ class PacketProcessor_tpx4(ProcessingStep):
         heartbeats_entries = Time_events[0] == PacketType.Heartbeat
         coarsetime = np.floor(Time_events[1][heartbeats_entries] / rollovertime)*rollovertime
 
-        return ToA + coarsetime[np.digitize(pixel_indxs, time_indxs[heartbeats_entries])-1]
-
+        if np.shape(coarsetime)[0]> 0:
+            return ToA + coarsetime[np.digitize(pixel_indxs, time_indxs[heartbeats_entries])-1]
+        else:
+            return ToA
     # ToF, triggers = find_trigger_events(decodedpackets[1], decodedpackets[2], decodedpackets[3])
 
     def find_triggers(self, x, y, ToA):
