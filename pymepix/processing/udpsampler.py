@@ -34,7 +34,7 @@ import pymepix.config.load_config as cfg
 
 
 class UdpSampler(multiprocessing.Process, ProcessLogger):
-    """Recieves udp packets from SPDIR
+    """Receives udp packets from SPIDR
 
     This class, creates a UDP socket connection to SPIDR and recivies the UDP packets from Timepix
     It them pre-processes them and sends them off for more processing

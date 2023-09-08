@@ -25,38 +25,31 @@ class Tpx4ChipDevice(Logger):
 
     @property
     def ipAddrSrc(self):
-        # NEEDS IMPLEMENTATION
-
-        return "{}.{}.{}.{}".format(127,0,0,1)
+        return self._ctrl._camera_ip_address[0]
 
     @ipAddrSrc.setter
     def ipAddrSrc(self, ipaddr):
-        # NEEDS IMPLEMENTATION
-        pass
-
-
+        ip_port = list(self._ctrl._camera_ip_address)
+        ip_port[0] = ipaddr
+        self._ctrl._camera_ip_address = tuple(ip_port)
 
     @property
     def ipAddrDest(self):
-        # NEEDS IMPLEMENTATION
-
-        return "{}.{}.{}.{}".format(127,0,0,1)
+        return self._ctrl._camera_ip_address[0]
 
     @ipAddrDest.setter
     def ipAddrDest(self, ipaddr):
-        # NEEDS IMPLEMENTATION
-        pass
+        ip_port = list(self._ctrl._camera_ip_address)
+        ip_port[0] = ipaddr
+        self._ctrl._camera_ip_address = tuple(ip_port)
 
     @property
     def serverPort(self):
-        # NEEDS IMPLEMENTATION
-        return 50000
+        return self._ctrl._udp_port
 
     @serverPort.setter
     def serverPort(self, value):
-        # NEEDS IMPLEMENTATION
-        pass
-
+        self._ctrl._udp_port = value
 
     @property
     def headerFilter(self):

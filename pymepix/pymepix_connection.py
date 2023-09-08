@@ -94,15 +94,16 @@ class PymepixConnection(Logger):
             self._channel.send_data_by_message_type(data_type, data)
 
     def __init__(self,
-                 spidr_address=(cfg.default_cfg["timepix"]["tpx_ip"], 50000),
-                 src_ip_port=(cfg.default_cfg['timepix']['pc_ip'],
-                              int(cfg.default_cfg.get('timepix').get('pc_port', 8192))),
+                 camera_ip_address=(cfg.default_cfg["timepix"]["tpx_ip"],
+                            int(cfg.default_cfg.get('timepix').get('tpx_ctrl_tcp_port', 50000))),
+                 camera_udp_port=int(cfg.default_cfg.get('timepix').get('tpx_data_udp_port', 8192)),
                  api_address=(cfg.default_cfg['api_channel']['ip'],
                               cfg.default_cfg['api_channel']['port']),
 
                  pipeline_class=PixelPipeline,
                  camera_generation=3,
                  ):
+
         Logger.__init__(self, "Pymepix")
 
         self._channel = Data_Channel()
@@ -114,7 +115,7 @@ class PymepixConnection(Logger):
 
         controllerClass = self.timepix_controller_class_factory(camera_generation)
 
-        self._controller = controllerClass(spidr_address, src_ip_port)
+        self._controller = controllerClass(camera_ip_address, camera_udp_port)
 
         TimepixDeviceClass = self.timepix_device_class_factory(camera_generation)
         self._timepix_devices: list[TimepixDeviceClass] = []
