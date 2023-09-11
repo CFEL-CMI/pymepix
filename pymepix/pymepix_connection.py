@@ -28,8 +28,8 @@ from pymepix.processing.acquisition import PixelPipeline
 from .SPIDR.spidrcontroller import SPIDRController
 from .TPX4.tpx4controller import Timepix4Controller
 from .timepixdevice import TimepixDevice
-from pymepix.api.data_types import Commands, ApiDataType
-from pymepix.api.data_channel import Data_Channel
+from pymepix.channel.channel_types import Commands, ChannelDataType
+from pymepix.channel.data_channel import Data_Channel
 
 from .timepix4device import Timepix4Device
 
@@ -230,11 +230,11 @@ class PymepixConnection(Logger):
 
         self._timepix_devices[0].start_recording(path)
 
-        self._channel.send(ApiDataType.COMMAND, Commands.START_RECORD)
+        self._channel.send(ChannelDataType.COMMAND, Commands.START_RECORD)
 
     def stop_recording(self):
         self._timepix_devices[0].stop_recording()
-        self._channel.send(ApiDataType.COMMAND, Commands.STOP_RECORD)
+        self._channel.send(ChannelDataType.COMMAND, Commands.STOP_RECORD)
 
     def start(self):
         """Starts acquisition"""
