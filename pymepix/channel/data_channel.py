@@ -2,7 +2,7 @@ import threading
 import zmq
 import queue
 
-from pymepix.api.data_types import ApiDataType
+from pymepix.channel.channel_types import ChannelDataType
 from pymepix.processing.datatypes import MessageType
 
 
@@ -51,15 +51,15 @@ class Data_Channel(threading.Thread):
                     self.socket.send_pyobj(new_data)
 
     def send(self, data_type, data):
-        if data_type == ApiDataType.COMMAND:
+        if data_type == ChannelDataType.COMMAND:
             self.q.put_nowait({'type': data_type.value, 'data': data.value})
         else:
             self.q.put_nowait({'type': data_type.value, 'data': data})
 
     def send_data_by_message_type(self, message_type, data):
         if message_type == MessageType.PixelData:
-            self.q.put_nowait({'type': ApiDataType.PIXEL.value, 'data': data})
+            self.q.put_nowait({'type': ChannelDataType.PIXEL.value, 'data': data})
         elif message_type == MessageType.EventData:
-            self.q.put_nowait({'type': ApiDataType.TOF.value, 'data': data})
+            self.q.put_nowait({'type': ChannelDataType.TOF.value, 'data': data})
         elif message_type == MessageType.CentroidData:
-            self.q.put_nowait({'type': ApiDataType.CENTROID.value, 'data': data})
+            self.q.put_nowait({'type': ChannelDataType.CENTROID.value, 'data': data})
