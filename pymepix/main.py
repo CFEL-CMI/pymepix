@@ -31,6 +31,8 @@ import pymepix.config.load_config as cfg
 from pymepix.post_processing import run_post_processing
 from pymepix.pymepix_connection import PymepixConnection
 
+from pymepix.processing.acquisition import PixelPipeline, CentroidPipeline
+
 from tornado.web import Application, RequestHandler, HTTPError
 import json
 
@@ -94,7 +96,6 @@ def post_process(args):
         args.cam_gen,
     )
 
-pymepix_connection_obj = None
 
 def is_jsonable(x):
     try:
@@ -139,6 +140,7 @@ class TPXpropertyHandler(RequestHandler):
 
     def post(self):
         global pymepix_connection_obj
+
         try:
             data = json.loads(self.request.body)
         except:
@@ -205,8 +207,16 @@ def make_app():
 
 def start_api(args):
     global pymepix_connection_obj
+
+    if args.pixel_pipeline == 'centroid':
+        pipeline_class = CentroidPipeline
+    else:
+        pipeline_class = PixelPipeline
+
     pymepix_connection_obj = PymepixConnection(cam_address=(args.ip, args.port),\
-                                               camera_generation=args.cam_gen)
+                                               camera_generation=args.cam_gen,
+                                               pipeline_class=pipeline_class)
+
 
     if len(pymepix_connection_obj) == 0:
         logging.error(
@@ -460,6 +470,15 @@ def main():
         type=int,
         default=3,
         help="Camera generation",
+    )
+
+    parser_api_service.add_argument(
+        "-pl",
+        "--pipeline",
+        dest="pixel_pipeline",
+        type=str,
+        default='pixel',
+        help="Processing pipeline, options: centroid, pixel. Default - pixel",
     )
 
 
