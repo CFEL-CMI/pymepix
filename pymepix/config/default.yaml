@@ -1,5 +1,5 @@
 timepix:
-   tpx_ip: '192.168.1.1'
+   tpx_ip: '192.168.1.10'
    tpx_ctrl_tcp_port: 50000
    tpx_data_udp_port: 8192
    sophy_config : 'path_to_sophy_config'
