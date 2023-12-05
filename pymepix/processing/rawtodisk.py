@@ -82,7 +82,9 @@ class Raw2Disk(ProcessLogger):
         self.info(f"zmq connect to tcp://127.0.0.1:{cfg.default_cfg['zmq_port']}")
 
         # socket to maxwell
-        if remote_server := cfg.default_cfg.get('remote_processing_host') is not None:
+        remote_server = cfg.default_cfg.get('remote_processing_host')
+
+        if remote_server is not None:
             self.info(f'connecting to processing server {remote_server}')
             max_sock = context.socket(zmq.PUSH)
             max_sock.connect(f"tcp://{remote_server}")
