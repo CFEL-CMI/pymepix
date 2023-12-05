@@ -25,6 +25,8 @@ from pymepix.processing.logic.processing_step import ProcessingStep
 
 from pymepix.processing.logic.datatypes_tpx4 import PacketType, ReadoutMode
 
+import pymepix.config.load_config as cfg
+
 
 class PixelOrientation(IntEnum):
     """Defines how row and col are intepreted in the output"""
@@ -52,8 +54,7 @@ class PacketProcessor_tpx4(ProcessingStep):
     """
 
     def __init__(self, handle_events=True, event_window=(0.0, 10000.0), position_offset=(0, 0),
-                 orientation=PixelOrientation.Up, start_time=0, timewalk_lut=None,
-                 trigger_pixels_indxs=[0,1,2,3], *args, **kwargs):
+                 orientation=PixelOrientation.Up, start_time=0, timewalk_lut=None, *args, **kwargs):
         """
         Constructor for the PacketProcessor.
 
@@ -99,9 +100,9 @@ class PacketProcessor_tpx4(ProcessingStep):
         self.int64be = np.dtype(np.int64)
         self.int64be = self.int64be.newbyteorder('>')
 
-        self.trigger_pixels_indxs = trigger_pixels_indxs
+        trig_indxs = cfg.default_cfg.get('trig_indxs', [[],[],[],[]])
 
-        #trigger is used for calculation of ToF, by default first one from
+        self.trigger_pixels_indxs = [pix[0] + pix[1]*512 for pix in trig_indxs if pix != []]
 
 
 
@@ -153,7 +154,7 @@ class PacketProcessor_tpx4(ProcessingStep):
 
         longtime = int(np.frombuffer(packet_view[-8:], dtype=np.uint64)[0])
 
-        if len(rawpacketarray) > 0:  # longtime data sent from spidr TCP server, probably will be not needed
+        if len(rawpacketarray) > 0:  # longtime data probably will be not needed
 
             arange_index = np.arange(len(rawpacketarray))
 
@@ -439,11 +440,8 @@ class PacketProcessor_tpx4(ProcessingStep):
 
     def find_triggers(self, x, y, ToA):
         "the first index in trig_indxs will be used for calculation of ToF"
-        trigger_entries = [trig_i == x + 450 * y for trig_i in self.trigger_pixels_indxs]
 
-        #ToF = None
-        #if sum(trigger_entries[0]) > 0:
-        #    ToF = ToA - ToA[np.digitize(ToA, ToA[trigger_entries[0]])]
+        trigger_entries = [trig_i == x + y*512 for trig_i in self.trigger_pixels_indxs]
 
         triggers = [ToA[trig] for trig in trigger_entries]
 
@@ -527,6 +525,9 @@ class PacketProcessor_tpx4(ProcessingStep):
             event_data, timestamps = result
 
         return event_data, None, timestamps, None
+
+    def __toa_is_not_empty(self):
+        return self._toa is not None and self._toa.size > 0
 
 
     def orientPixels(self, col, row):

@@ -27,7 +27,6 @@ from .pipeline_packet_processor import PipelinePacketProcessor
 from .logic.packet_processor_factory import packet_processor_factory
 from .udpsampler import UdpSampler
 
-
 class PixelPipeline(AcquisitionPipeline):
     """An acquisition pipeline that includes the udpsampler and pixel processor
 
@@ -65,10 +64,12 @@ class CentroidPipeline(PixelPipeline):
     when dealing with a huge number of objects
     """
 
-    def __init__(self, data_queue, address, longtime, camera_generation=3):
+    def __init__(self, data_queue, address, longtime, event_window=(0, 1E-3),
+                 camera_generation=3, ):
+
         PixelPipeline.__init__(
             self, data_queue, address, longtime, use_event=True, name="Centroid",
-            camera_generation=camera_generation
+            event_window=event_window, camera_generation=camera_generation
         )
         self.info("Initializing Centroid pipeline")
         self.centroid_calculator=CentroidCalculator()

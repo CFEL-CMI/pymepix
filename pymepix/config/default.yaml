@@ -11,3 +11,4 @@ trainID:
 api_channel:
    ip: '127.0.0.1'
    port: 5056
+trig_indxs: [[220,0],[222,511],[],[]] # list of lists (pixels coordinates)
