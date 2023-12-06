@@ -9,10 +9,11 @@ from .tpx4chipdevice import Tpx4ChipDevice
 
 class Timepix4Controller(Logger):
 
-    def __init__(self, dst_ip_port, src_ip_port):
+    def __init__(self, dst_ip_port, pc_ip, udp_port):
         Logger.__init__(self, Timepix4Controller.__name__)
 
-        self._src_ip_port = src_ip_port
+        self._pc_ip = pc_ip
+        self._udp_port = udp_port
 
         self._devices = []
         self._initDevices()
@@ -31,7 +32,7 @@ class Timepix4Controller(Logger):
 
         for x in range(count):
             self._devices.append(Tpx4ChipDevice(self, x))
-            self._devices[x].serverPort = self._src_ip_port[1] + x
+            self._devices[x].serverPort = self._udp_port + x
 
 
 

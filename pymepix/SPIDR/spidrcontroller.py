@@ -73,13 +73,14 @@ class SPIDRController(Logger):
 
     """
 
-    def __init__(self, dst_ip_port, src_ip_port):
+    def __init__(self, dst_ip_port, pc_ip, udp_port):
         Logger.__init__(self, SPIDRController.__name__)
 
         self.info("Connecting to camera on {}:{}".format(*dst_ip_port))
-        self._src_ip_port = src_ip_port
+        self._pc_ip = pc_ip
+        self._udp_port = udp_port
         # TCP connection
-        self._sock = socket.create_connection(dst_ip_port, source_address=(src_ip_port[0], 0))
+        self._sock = socket.create_connection(dst_ip_port, source_address=(pc_ip, 0))
         self._request_lock = threading.Lock()
         self._req_buffer = np.ndarray(shape=(512,), dtype=np.uint32)
         self._reply_buffer = bytearray(4096)
@@ -105,7 +106,7 @@ class SPIDRController(Logger):
 
         for x in range(count):
             self._devices.append(SpidrDevice(self, x))
-            self._devices[x].serverPort = self._src_ip_port[1] + x
+            self._devices[x].serverPort = self._udp_port + x
 
     def prepare(self):
         self.disableExternalRefClock()

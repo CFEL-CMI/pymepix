@@ -3,8 +3,6 @@
 
 import weakref
 
-import numpy as np
-
 from pymepix.core.log import Logger
 
 class Tpx4ChipDevice(Logger):
@@ -15,6 +13,8 @@ class Tpx4ChipDevice(Logger):
         self._dev_num = device_num
 
         self.info("Device {} with device number {} created".format(self._dev_num, self._dev_num))
+
+        self._serverPort = None
 
 
     @property
@@ -50,12 +50,11 @@ class Tpx4ChipDevice(Logger):
     @property
     def serverPort(self):
         # NEEDS IMPLEMENTATION
-        return 50000
+        return self._serverPort
 
     @serverPort.setter
     def serverPort(self, value):
-        # NEEDS IMPLEMENTATION
-        pass
+        self._serverPort = value
 
 
     @property
