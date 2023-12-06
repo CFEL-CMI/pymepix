@@ -94,7 +94,7 @@ class PymepixConnection(Logger):
     def __init__(self,
                  spidr_address=(cfg.default_cfg['timepix']['tpx_ip'],
                                 int(cfg.default_cfg.get('timepix').get('tpx_port', 50000))),
-                 udp_port=int(cfg.default_cfg.get('timepix').get('udp_port', 8192)),
+                 udp_ip_port=(cfg.default_cfg['timepix']['udp_ip'], cfg.default_cfg['timepix']['udp_port']),
                  pc_ip = cfg.default_cfg['timepix']['pc_ip'],
                  api_address=(cfg.default_cfg['api_channel']['ip'],
                               cfg.default_cfg['api_channel']['port']),
@@ -112,7 +112,7 @@ class PymepixConnection(Logger):
 
         controllerClass = self.timepix_controller_class_factory(camera_generation)
 
-        self._controller = controllerClass(spidr_address, pc_ip, udp_port)
+        self._controller = controllerClass(spidr_address, pc_ip, udp_ip_port)
 
         TimepixDeviceClass = self.timepix_device_class_factory(camera_generation)
         self._timepix_devices: list[TimepixDeviceClass] = []
