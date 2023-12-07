@@ -1,14 +1,18 @@
-name: 'electrons'
+name: 'ions'
 timepix:
    pc_ip : '192.168.1.1'
-   pc_port: 5566
-   tpx_ip : '192.168.1.10'
+   tpx_ip : '192.168.1.11'
+   tpx_port: 50000
+   udp_ip: '192.168.1.11'
+   udp_port: 8192
    sophy_config : '/home/cfelcmi/timepix/ElectronTPX_IKrum150.spx'
+   camera_generation: 3
 trainID:
    connected: False
    device : '/dev/ttyUSB0'
 tango_api:
-   port: 9993
-tcpchannel:
-   ip : '127.0.0.1'
+   port: 9994
+api_channel:
+   ip: '127.0.0.1'
    port: 5056
+
