@@ -1,15 +1,18 @@
+name: 'ions'
 timepix:
    pc_ip : '192.168.1.1'
-   tpx_ip : '192.168.1.10'
+   tpx_ip : '192.168.1.11'
+   tpx_port: 50000
+   udp_ip: '192.168.1.11'
+   udp_port: 8192
    sophy_config : 'path_to_sophy_config'
-   remote_processing_host: '131.169.168.130:13049'
    camera_generation: 3
 trainID:
    connected: False
    device : '/dev/ttyUSB0'
-src_ip_port:
-   - '192.168.1.1'
-   - 8192
+tango_api:
+   port: 9994
 api_channel:
    ip: '127.0.0.1'
    port: 5056
+
