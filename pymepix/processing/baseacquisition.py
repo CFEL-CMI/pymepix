@@ -42,7 +42,6 @@ class AcquisitionStage(Logger):
     ------------
     stage: int
         Initial position in the pipeline, lower stages are executed first
-
     """
 
     def __init__(self, stage, num_processes=1):
@@ -142,7 +141,7 @@ class AcquisitionStage(Logger):
             self.debug("I am creating the queue")
             self._output_queue = Queue()
         else:
-            self.debug("Recieved the queue {}".format(output_queue))
+            self.debug("Received the queue {}".format(output_queue))
         self.debug("Building stage {} ".format(self._stage_number))
         self.info("Creating {} processes".format(self._num_processes))
         for n in range(self._num_processes):
