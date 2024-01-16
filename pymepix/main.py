@@ -49,7 +49,7 @@ logging.basicConfig(
 def connect_timepix(args):
     if not os.path.exists(args.output):
         # Connect to camera
-        pymepix = PymepixConnection(cam_address=(args.ip, args.port),
+        pymepix = PymepixConnection(spidr_address=(args.ip, args.port),
                                     camera_generation=args.cam_gen)
         # If there are no valid timepix detected then quit()
         if len(pymepix) == 0:
@@ -213,7 +213,7 @@ def start_api(args):
     else:
         pipeline_class = PixelPipeline
 
-    pymepix_connection_obj = PymepixConnection(cam_address=(args.ip, args.port),\
+    pymepix_connection_obj = PymepixConnection(spidr_address=(args.ip, args.port),\
                                                camera_generation=args.cam_gen,
                                                pipeline_class=pipeline_class)
 
