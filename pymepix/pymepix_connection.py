@@ -110,11 +110,11 @@ class PymepixConnection(Logger):
 
         self.camera_generation = camera_generation
 
-        controllerClass = self.timepix_controller_class_factory(camera_generation)
+        controllerClass = self._timepix_controller_class_factory(camera_generation)
 
         self._controller = controllerClass(spidr_address, pc_ip, udp_ip_port)
 
-        TimepixDeviceClass = self.timepix_device_class_factory(camera_generation)
+        TimepixDeviceClass = self._timepix_device_class_factory(camera_generation)
         self._timepix_devices: list[TimepixDeviceClass] = []
 
         self._data_queue = Queue()
@@ -210,7 +210,7 @@ class PymepixConnection(Logger):
         self._poll_buffer.append((data_type, data))
 
     def _createTimepix(self, pipeline_class=PixelPipeline):
-        TimepixDeviceClass = self.timepix_device_class_factory(self.camera_generation)
+        TimepixDeviceClass = self._timepix_device_class_factory(self.camera_generation)
         for x in self._controller:
             status, enabled, locked = x.linkStatus
             if enabled != 0 and locked == enabled:
@@ -305,15 +305,15 @@ class PymepixConnection(Logger):
     def getDevice(self, num) -> TimepixDevice:
         return self._timepix_devices[num]
 
-    def timepix_device_class_factory(self, camera_generation):
-        timepix_device_classes = {3: TimepixDevice, \
+    def _timepix_device_class_factory(self, camera_generation):
+        timepix_device_classes = {3: TimepixDevice,\
                                   4: Timepix4Device}
         if camera_generation in timepix_device_classes:
             return timepix_device_classes[camera_generation]
         else:
             raise ValueError(f'No timepix device for camera generation {camera_generation}')
 
-    def timepix_controller_class_factory(self, camera_generation):
+    def _timepix_controller_class_factory(self, camera_generation):
 
         timepix_controller_classes = {3: SPIDRController, \
                                       4: Timepix4Controller}
