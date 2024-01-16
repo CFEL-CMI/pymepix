@@ -3,8 +3,6 @@
 
 import weakref
 
-import numpy as np
-
 from pymepix.core.log import Logger
 
 class Tpx4ChipDevice(Logger):
@@ -16,46 +14,39 @@ class Tpx4ChipDevice(Logger):
 
         self.info("Device {} with device number {} created".format(self._dev_num, self._dev_num))
 
+        self._ipAddrDest = None
+        self._serverPort = None
+
 
     @property
     def linkStatus(self):
         # NEEDS IMPLEMENTATION
-
         return True, True, True
 
     @property
     def ipAddrSrc(self):
         # NEEDS IMPLEMENTATION
-
         return "{}.{}.{}.{}".format(127,0,0,1)
 
     @ipAddrSrc.setter
     def ipAddrSrc(self, ipaddr):
-        # NEEDS IMPLEMENTATION
-        pass
-
-
+        self._ipAddrDest = ipaddr
 
     @property
     def ipAddrDest(self):
-        # NEEDS IMPLEMENTATION
-
-        return "{}.{}.{}.{}".format(127,0,0,1)
+        return self._ipAddrDest
 
     @ipAddrDest.setter
     def ipAddrDest(self, ipaddr):
-        # NEEDS IMPLEMENTATION
-        pass
+        self._ipAddrDest = ipaddr
 
     @property
     def serverPort(self):
-        # NEEDS IMPLEMENTATION
-        return 50000
+        return self._serverPort
 
     @serverPort.setter
     def serverPort(self, value):
-        # NEEDS IMPLEMENTATION
-        pass
+        self._serverPort = value
 
 
     @property

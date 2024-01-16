@@ -32,7 +32,7 @@ from pymepix.processing.usbtrainid import USBTrainID
 class AcquisitionStage(Logger):
     """Defines a single acquisition stage
 
-    Usually not created directly. Instead created by :class:`AcquisitionPipeline`
+    Usually not created directly. Instead, it is created by :class:`AcquisitionPipeline`
     Represent a single pipeline stage and handles management of queues and message passing
     as well as creation and destruction of processing objects.
 
@@ -42,7 +42,6 @@ class AcquisitionStage(Logger):
     ------------
     stage: int
         Initial position in the pipeline, lower stages are executed first
-
     """
 
     def __init__(self, stage, num_processes=1):
@@ -130,7 +129,7 @@ class AcquisitionStage(Logger):
     def processes(self):
         return self._pipeline_objects
 
-    def build(self, input_queue=None, output_queue=None, file_writer=None):
+    def build(self, input_queue=None, output_queue=None):
         self._input_queue = input_queue
         self._output_queue = output_queue
 
@@ -142,7 +141,7 @@ class AcquisitionStage(Logger):
             self.debug("I am creating the queue")
             self._output_queue = Queue()
         else:
-            self.debug("Recieved the queue {}".format(output_queue))
+            self.debug("Received the queue {}".format(output_queue))
         self.debug("Building stage {} ".format(self._stage_number))
         self.info("Creating {} processes".format(self._num_processes))
         for n in range(self._num_processes):
@@ -155,8 +154,8 @@ class AcquisitionStage(Logger):
             )
             p.daemon = True
             self._pipeline_objects.append(p)
-            if self._output_queue is None:
-                self._output_queue = p.outputQueues()[-1]
+#            if self._output_queue is None: do we really need it?
+#                self._output_queue = p.outputQueues()[-1]
 
     @property
     def outputQueue(self):

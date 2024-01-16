@@ -28,8 +28,8 @@ from pymepix.processing.acquisition import PixelPipeline
 from .SPIDR.spidrcontroller import SPIDRController
 from .TPX4.tpx4controller import Timepix4Controller
 from .timepixdevice import TimepixDevice
-from pymepix.api.data_types import Commands, ApiDataType
-from pymepix.api.data_channel import Data_Channel
+from pymepix.channel.channel_types import Commands, ChannelDataType
+from pymepix.channel.data_channel import Data_Channel
 
 from .timepix4device import Timepix4Device
 
@@ -76,8 +76,6 @@ class PymepixConnection(Logger):
 
     >>> timepix[0].loadSophyConfig('W0026_K06_50V.spx')
 
-
-
     """
 
     def data_thread(self):
@@ -94,9 +92,10 @@ class PymepixConnection(Logger):
             self._channel.send_data_by_message_type(data_type, data)
 
     def __init__(self,
-                cam_address=(cfg.default_cfg["timepix"]["tpx_ip"], 50000),
-                 src_ip_port=(cfg.default_cfg['timepix']['pc_ip'],
-                              int(cfg.default_cfg.get('timepix').get('pc_port', 8192))),
+                 spidr_address=(cfg.default_cfg['timepix']['tpx_ip'],
+                                int(cfg.default_cfg.get('timepix').get('tpx_port', 50000))),
+                 udp_ip_port=(cfg.default_cfg['timepix']['udp_ip'], cfg.default_cfg['timepix']['udp_port']),
+                 pc_ip = cfg.default_cfg['timepix']['pc_ip'],
                  api_address=(cfg.default_cfg['api_channel']['ip'],
                               cfg.default_cfg['api_channel']['port']),
 
@@ -107,14 +106,13 @@ class PymepixConnection(Logger):
 
         self._channel = Data_Channel()
         self._channel.start()
-        #self._channel_address = tuple(cfg.default_cfg.get('tcp_channel', ['127.0.0.1', 5056]))
         self._channel.register(f'tcp://{api_address[0]}:{api_address[1]}')
 
         self.camera_generation = camera_generation
 
         controllerClass = self._timepix_controller_class_factory(camera_generation)
 
-        self._controller = controllerClass(cam_address, src_ip_port)
+        self._controller = controllerClass(spidr_address, pc_ip, udp_ip_port)
 
         TimepixDeviceClass = self._timepix_device_class_factory(camera_generation)
         self._timepix_devices: list[TimepixDeviceClass] = []
@@ -230,11 +228,11 @@ class PymepixConnection(Logger):
 
         self._timepix_devices[0].start_recording(path)
 
-        self._channel.send(ApiDataType.COMMAND, Commands.START_RECORD)
+        self._channel.send(ChannelDataType.COMMAND, Commands.START_RECORD)
 
     def stop_recording(self):
         self._timepix_devices[0].stop_recording()
-        self._channel.send(ApiDataType.COMMAND, Commands.STOP_RECORD)
+        self._channel.send(ChannelDataType.COMMAND, Commands.STOP_RECORD)
 
     def start(self):
         """Starts acquisition"""

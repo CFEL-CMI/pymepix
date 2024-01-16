@@ -27,7 +27,7 @@ from .basepipeline import BasePipelineObject
 
 
 class PipelineCentroidCalculator(BasePipelineObject):
-    """Performs centroiding on EventData recieved from Packet processor"""
+    """Performs centroiding on EventData received from Packet processor"""
 
     def __init__(
         self,

@@ -388,7 +388,8 @@ class CentroidCalculator(ProcessingStep):
 #            return p.map(self.calculate_centroids_dbscan, chunks)
         
         if self.number_of_processes>1:
-            return Parallel(n_jobs=self.number_of_processes)(delayed(calculate_centroids_dbscan)(c,self.tot_threshold, self._tof_scale, self.epsilon, self.min_samples, self._cent_timewalk_lut) for c in chunks)
+#            return Parallel(n_jobs=self.number_of_processes)(delayed(calculate_centroids_dbscan)(c,self.tot_threshold, self._tof_scale, self.epsilon, self.min_samples, self._cent_timewalk_lut) for c in chunks)
+            return Parallel(n_jobs=None)(delayed(calculate_centroids_dbscan)(c,self.tot_threshold, self._tof_scale, self.epsilon, self.min_samples, self._cent_timewalk_lut) for c in chunks)
         
         return map(self.calculate_centroids_dbscan, chunks)
 
