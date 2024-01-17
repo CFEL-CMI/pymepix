@@ -174,7 +174,9 @@ class TPXmethodHandler(RequestHandler):
             ref = get_path(ref, tkns)
 
             data.pop('func_name')
+
             res = ref(**data)
+
             if is_jsonable(res):
                 self.write({'result': res})
             else:
@@ -208,14 +210,9 @@ def make_app():
 def start_api(args):
     global pymepix_connection_obj
 
-    if args.pixel_pipeline == 'centroid':
-        pipeline_class = CentroidPipeline
-    else:
-        pipeline_class = PixelPipeline
-
     pymepix_connection_obj = PymepixConnection(spidr_address=(args.ip, args.port),\
                                                camera_generation=args.cam_gen,
-                                               pipeline_class=pipeline_class)
+                                               pipeline_class=CentroidPipeline)
 
 
     if len(pymepix_connection_obj) == 0:
