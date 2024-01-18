@@ -367,7 +367,7 @@ def main():
         "--number_of_processes",
         dest="number_of_processes",
         type=int,
-        default=1,
+        default=4,
         help="The number of processes used for the centroiding (default: 1 => parallel processing disabled')",
     )
     
