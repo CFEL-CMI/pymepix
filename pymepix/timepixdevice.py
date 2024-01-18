@@ -109,7 +109,9 @@ class TimepixDevice(Logger):
         self.loadConfig()
         self.setConfigClass(SophyConfig)
 
-    def setConfigClass(self, klass: TimepixConfig):
+    def setConfigClass(self, klass):
+        if type(klass) == str:
+            klass = globals()[klass]
         if issubclass(klass, TimepixConfig):
             self._config_class = klass
         else:

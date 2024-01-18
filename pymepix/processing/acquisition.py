@@ -55,6 +55,9 @@ class PixelPipeline(AcquisitionPipeline):
             PipelinePacketProcessor,
             packet_processor=self.packet_processor
         )
+    @property
+    def pipeline_packet_processor(self):
+        return self.getStage(2)
 
 
 
