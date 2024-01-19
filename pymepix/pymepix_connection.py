@@ -96,7 +96,7 @@ class PymepixConnection(Logger):
                                 int(cfg.default_cfg.get('timepix').get('tpx_port', 50000))),
                  udp_ip_port=(cfg.default_cfg['timepix']['udp_ip'], cfg.default_cfg['timepix']['udp_port']),
                  pc_ip = cfg.default_cfg['timepix']['pc_ip'],
-                 api_address=(cfg.default_cfg['api_channel']['ip'],
+                 api_channel_address=(cfg.default_cfg['api_channel']['ip'],
                               cfg.default_cfg['api_channel']['port']),
 
                  pipeline_class=PixelPipeline,
@@ -105,8 +105,9 @@ class PymepixConnection(Logger):
         Logger.__init__(self, "Pymepix")
 
         self._channel = Data_Channel()
+        self.chanAddress = api_channel_address
         self._channel.start()
-        self._channel.register(f'tcp://{api_address[0]}:{api_address[1]}')
+        self._channel.register(f'tcp://{api_channel_address[0]}:{api_channel_address[1]}')
 
         self.camera_generation = camera_generation
 
@@ -287,7 +288,6 @@ class PymepixConnection(Logger):
 
     @property
     def chanAddress(self):
-        """Bias voltage in volts"""
         return self._channel_address
 
     @chanAddress.setter
