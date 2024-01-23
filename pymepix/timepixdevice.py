@@ -29,6 +29,7 @@ from .config import DefaultConfig, SophyConfig, TimepixConfig
 # from .config.sophyconfig import SophyConfig
 from .core.log import Logger
 from .timepixdef import *
+import numpy as np
 
 
 
@@ -97,6 +98,15 @@ class TimepixDevice(Logger):
     @property
     def config(self):
         return self.__config
+
+    @property
+    def maskPixelsJsonable(self):
+        return [list(i) for i in self.__config.maskPixels.astype(str)]
+
+    @maskPixelsJsonable.setter
+    def maskPixelsJsonable(self, value):
+        self.__config.maskPixels = np.asarray(value, dtype=np.uint8)
+
 
     def setupAcquisition(self, acquisition_klass, *args, **kwargs):
         self.info("Setting up acquisition class")

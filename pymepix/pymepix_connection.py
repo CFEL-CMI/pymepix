@@ -129,6 +129,8 @@ class PymepixConnection(Logger):
 
         self._running = False
 
+        self.cfg = cfg
+
     @property
     def biasVoltage(self):
         """Bias voltage in volts"""

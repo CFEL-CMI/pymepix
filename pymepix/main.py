@@ -123,13 +123,13 @@ class RootHandler(RequestHandler):
 class TPXpropertyHandler(RequestHandler):
     def get(self):
 
-        global pymepix_connection_obj
+        global timepix_obj
 
         arguments = self.get_arguments('param_name')
 
         tkns = re.findall(r"[\w']+|\[\d+\]", arguments[0])
 
-        ref = pymepix_connection_obj
+        ref = timepix_obj
         ref = get_path(ref, tkns)
 
         if is_jsonable(ref):
@@ -139,7 +139,7 @@ class TPXpropertyHandler(RequestHandler):
 
 
     def post(self):
-        global pymepix_connection_obj
+        global timepix_obj
 
         try:
             data = json.loads(self.request.body)
@@ -147,7 +147,7 @@ class TPXpropertyHandler(RequestHandler):
             raise HTTPError(400, u"Bad request")
 
         for key, val in data.items():
-            ref = pymepix_connection_obj
+            ref = timepix_obj
             tkns = re.findall(r"[\w']+|\[\d+\]", key)
             ref = get_path(ref, tkns[:-1])
             if tkns[-1][0] != '[':
@@ -159,7 +159,7 @@ class TPXpropertyHandler(RequestHandler):
 
 class TPXmethodHandler(RequestHandler):
     def post(self):
-        global pymepix_connection_obj
+        global timepix_obj
         try:
             data = json.loads(self.request.body)
         except:
@@ -170,7 +170,7 @@ class TPXmethodHandler(RequestHandler):
 
             tkns = re.findall(r"[\w']+|\[\d+\]", func_name)
 
-            ref = pymepix_connection_obj
+            ref = timepix_obj
             ref = get_path(ref, tkns)
 
             data.pop('func_name')
@@ -208,28 +208,28 @@ def make_app():
 
 
 def start_api(args):
-    global pymepix_connection_obj
+    global timepix_obj
 
-    pymepix_connection_obj = PymepixConnection(spidr_address=(args.ip, args.port),\
+    timepix_obj = PymepixConnection(spidr_address=(args.ip, args.port),\
                                                camera_generation=args.cam_gen,
                                                pipeline_class=CentroidPipeline)
 
 
-    if len(pymepix_connection_obj) == 0:
+    if len(timepix_obj) == 0:
         logging.error(
             "-------ERROR: SPIDR FOUND BUT NO VALID TIMEPIX DEVICE DETECTED ---------- "
         )
         quit()
     if args.spx:
         logging.info(f"Opening Sophy file {args.spx}")
-        pymepix_connection_obj[0].loadConfig(args.spx)
+        timepix_obj[0].loadConfig(args.spx)
 
     # Switch to TOF mode if set
     if args.decode and args.tof:
-        pymepix_connection_obj[0].acquisition.enableEvents = True
+        timepix_obj[0].acquisition.enableEvents = True
 
     # Set the bias voltage
-    pymepix_connection_obj.biasVoltage = args.bias
+    timepix_obj.biasVoltage = args.bias
 
     app = make_app()
     app.listen(args.api_port)
