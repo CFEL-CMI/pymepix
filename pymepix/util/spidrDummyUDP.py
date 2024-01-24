@@ -61,7 +61,22 @@ def main():
         default=1,
         help="number of cycles to send the data",
     )
-    
+
+    parser.add_argument(
+        "--chunk_size",
+        dest="chunk_size",
+        type=int,
+        default=1,
+        help="size of chunk to be sent at once",
+    )
+
+    parser.add_argument(
+        "--wait_time",
+        dest="wait_time",
+        type=float,
+        default=0.0,
+        help="wait_time between the packet sending",
+    )
 
     args = parser.parse_args()
 
@@ -76,15 +91,21 @@ def main():
 
     repeats = args.repeats
 
+    chunk_size = args.chunk_size
+
+    wait_time = args.wait_time
+
     data = np.fromfile(fName, dtype=np.uint64)
 
     total = len(data)*repeats
     last_progress = 0
     startTime = time.time()
     for rep in range(repeats):
-        for i, packet in enumerate(data[:]):
-            sock.sendto(struct.pack("Q", packet), (HOST, PORT))
-            progress = int((i+rep*len(data)) / total * 100)
+        for i, packet in enumerate(data.reshape((len(data)//chunk_size,chunk_size))[:]):
+            #sock.sendto(struct.pack("Q", packet), (HOST, PORT))
+            sock.sendto(packet.tobytes(), (HOST, PORT))
+            time.sleep(wait_time)
+            progress = int((i*chunk_size+rep*len(data)) / total * 100)
             if progress != 0 and progress % 5 == 0 and progress != last_progress:
                 print(f"Progress {progress :.1f}%")
                 last_progress = progress
