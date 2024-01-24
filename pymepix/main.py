@@ -210,6 +210,8 @@ def make_app():
 def start_api(args):
     global timepix_obj
 
+    logging.getLogger("tornado").setLevel(logging.ERROR)
+
     timepix_obj = PymepixConnection(spidr_address=(args.ip, args.port),\
                                                camera_generation=args.cam_gen,
                                                pipeline_class=CentroidPipeline)
@@ -413,8 +415,9 @@ def main():
         help="TCP port to use for the connection",
     )
 
+
     parser_api_service.add_argument(
-        "-api_p",
+        "-api_port",
         "--api_port",
         dest="api_port",
         type=int,
