@@ -27,7 +27,6 @@ from pymepix.processing.logic.datatypes_tpx4 import PacketType, ReadoutMode
 
 import pymepix.config.load_config as cfg
 
-
 class PixelOrientation(IntEnum):
     """Defines how row and col are intepreted in the output"""
 
@@ -146,15 +145,23 @@ class PacketProcessor_tpx4(ProcessingStep):
         return lut
 
     def process(self, data):
+        """ The data should contain udp packets with headers at the beginning with size 54 bytes, the payload is 4960 bytes, therefore udp packetsize is 5014 bytes:
+        PACKET_HEADER_SIZE = 54
+        PACKET_LOAD_SIZE = 4960
+        PACKET_SIZE = 5014
+        """
 
         event_data, pixel_data, timestamps, triggers = None, None, None, None
 
         packet_view = memoryview(data)
-        rawpacketarray = np.frombuffer(packet_view[:-8], self.int64be)
 
         longtime = int(np.frombuffer(packet_view[-8:], dtype=np.uint64)[0])
 
-        if len(rawpacketarray) > 0:  # longtime data probably will be not needed
+        number_of_udp_packets = int(len(packet_view[:-8])/5014)
+
+        rawpacketarray = np.frombuffer(np.frombuffer(packet_view[:-8], dtype=np.uint8).reshape((number_of_udp_packets, 5014))[:, 54:].flatten().tobytes(), self.int64be)
+
+        if number_of_udp_packets > 0:  # longtime data probably will be not needed
 
             arange_index = np.arange(len(rawpacketarray))
 

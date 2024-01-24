@@ -24,6 +24,8 @@ from multiprocessing.sharedctypes import Value
 
 from pymepix.processing.acquisition import PixelPipeline
 
+from .config import DefaultConfig, SophyConfig, TimepixConfig
+
 from .core.log import Logger
 from .timepix4def import *
 
@@ -81,15 +83,16 @@ class Timepix4Device(Logger):
         #self.loadConfig()
         #self.setConfigClass(SophyConfig)
 
-    def setConfigClass(self,):# klass: TimepixConfig):
+    def setConfigClass(self, klass: TimepixConfig):
         pass
-        #if issubclass(klass, TimepixConfig):
-        #    self._config_class = klass
-        #else:
-        #    raise ConfigClassException
+        if issubclass(klass, TimepixConfig):
+            self._config_class = klass
+        else:
+            raise ConfigClassException
 
     def loadConfig(self, *args, **kwargs):
         """ Loads dac settings from the Config class """
+        pass
 
         self.__config = self._config_class(*args, **kwargs)
 
@@ -351,6 +354,11 @@ class Timepix4Device(Logger):
     @Vthreshold_coarse.setter
     def Vthreshold_coarse(self, value):
 
+        # NEEDS IMPLEMENTATION
+
+        pass
+
+    def setDac(self, code, value):
         # NEEDS IMPLEMENTATION
 
         pass
