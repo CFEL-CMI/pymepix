@@ -149,6 +149,8 @@ class PacketProcessor_tpx4(ProcessingStep):
         PACKET_HEADER_SIZE = 54
         PACKET_LOAD_SIZE = 4960
         PACKET_SIZE = 5014
+        New input:
+        Data is actually started from 61, lst byte to ignore
         """
 
         event_data, pixel_data, timestamps, triggers = None, None, None, None
@@ -159,7 +161,7 @@ class PacketProcessor_tpx4(ProcessingStep):
 
         number_of_udp_packets = int(len(packet_view[:-8])/5014)
 
-        rawpacketarray = np.frombuffer(np.frombuffer(packet_view[:-8], dtype=np.uint8).reshape((number_of_udp_packets, 5014))[:, 54:].flatten().tobytes(), self.int64be)
+        rawpacketarray = np.frombuffer(np.frombuffer(packet_view[:-8], dtype=np.uint8).reshape((number_of_udp_packets, 5014))[:, 61:-1].flatten().tobytes(), self.int64be)
 
         if number_of_udp_packets > 0:  # longtime data probably will be not needed
 
