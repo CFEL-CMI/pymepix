@@ -53,7 +53,7 @@ class PacketProcessor_tpx4(ProcessingStep):
     """
 
     def __init__(self, handle_events=True, event_window=(0.0, 10000.0), position_offset=(0, 0),
-                 orientation=PixelOrientation.Up, start_time=0, timewalk_lut=None, *args, **kwargs):
+                 orientation=PixelOrientation.Up, start_time=0, timewalk_lut=None, reversebytes=False, *args, **kwargs):
         """
         Constructor for the PacketProcessor.
 
@@ -102,6 +102,13 @@ class PacketProcessor_tpx4(ProcessingStep):
         trig_indxs = cfg.default_cfg.get('trig_indxs', [[],[],[],[]])
 
         self.trigger_pixels_indxs = [pix[0] + pix[1]*512 for pix in trig_indxs if pix != []]
+
+        uint64be = np.dtype(np.int64)
+        # With high speed readout, Jan 2024 firmware requires reversing of byte order in packets
+        if reversebytes:
+            self.uint64be = uint64be.newbyteorder('<')
+        else:
+            self.uint64be = uint64be.newbyteorder('>')
 
 
 
@@ -161,7 +168,7 @@ class PacketProcessor_tpx4(ProcessingStep):
 
         number_of_udp_packets = int(len(packet_view[:-8])/5014)
 
-        rawpacketarray = np.frombuffer(np.frombuffer(packet_view[:-8], dtype=np.uint8).reshape((number_of_udp_packets, 5014))[:, 61:-1].flatten().tobytes(), self.int64be)
+        rawpacketarray = np.frombuffer(np.frombuffer(packet_view[:-8], dtype=np.uint8).reshape((number_of_udp_packets, 5014))[:, 54:].flatten().tobytes(), self.uint64be)
 
         if number_of_udp_packets > 0:  # longtime data probably will be not needed
 
