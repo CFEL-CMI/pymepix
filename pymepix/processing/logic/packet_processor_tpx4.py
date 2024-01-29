@@ -172,6 +172,8 @@ class PacketProcessor_tpx4(ProcessingStep):
 
         if number_of_udp_packets > 0:  # longtime data probably will be not needed
 
+            rawpacketarray = rawpacketarray[rawpacketarray != -4294967296] # fix issue with sign
+
             arange_index = np.arange(len(rawpacketarray))
 
             endofcol = ((rawpacketarray & 0x7F80000000000000) >> 55)
@@ -179,7 +181,7 @@ class PacketProcessor_tpx4(ProcessingStep):
             pixel_entries = endofcol <= 0xDF
 
             timing_entries = np.logical_and(PacketType.Heartbeat.value <= endofcol,
-                                            endofcol <= PacketType.CtrlDataTest.value)
+                                            endofcol <= PacketType.CtrlDataTestB.value)
 
             pixel_packets = rawpacketarray[pixel_entries]
             if len(pixel_packets) == 0:
@@ -286,8 +288,13 @@ class PacketProcessor_tpx4(ProcessingStep):
 
         # Ultrafast ToA rise/fall values:
         # These measure time delays between signal and 640 MHz clock
-        ToA = ToA_raw * step_To - fToA_rise_raw * step_fTo + self.npa_decode_ufT[ufToA_start_raw] - self.npa_decode_ufT[
-            ufToA_stop_raw]
+        try:
+            ToA = ToA_raw * step_To - fToA_rise_raw * step_fTo + self.npa_decode_ufT[ufToA_start_raw] -\
+                  self.npa_decode_ufT[ufToA_stop_raw]
+        except KeyError:
+            ToA = ToA_raw * step_To - fToA_rise_raw * step_fTo
+            #pileup = -1
+
         # Additionally, there is a correction related to clock distribution down the columns
         ToA = ToA + (spgroup - 15) * step_DLL
 
@@ -373,13 +380,27 @@ class PacketProcessor_tpx4(ProcessingStep):
 
         endofcol = ((rawpackets & 0x7F80000000000000) >> 55)  # 8 bits, 62:55
 
-        currentpackettype = np.array(list(map(PacketType, endofcol)), dtype=PacketType)
+        currentpackettype = np.array(list(map(self.packettype_mapper, endofcol)), dtype=PacketType)
 
         timestamp_raw = (rawpackets & 0x0000FFFFFFFFFFFF)  # 48 bits, 47:00
         step_To = 25.
         timestamp = timestamp_raw * step_To  # Range up to 7 million seconds
 
         return currentpackettype, timestamp
+
+    def packettype_mapper(self, packet):
+        try:
+            t = PacketType(packet)
+            return t
+        except ValueError:
+            return PacketType.Unknown
+
+    def readout_mapper(self, packet):
+        try:
+            t = ReadoutMode(packet)
+            return t
+        except ValueError:
+            return None
 
     def controleventdecode(self, rawpackets):
         """Decodes special packets in Frame mode aimed at helping image decoding.
@@ -400,18 +421,11 @@ class PacketProcessor_tpx4(ProcessingStep):
             - Readout mode - int Enum defined in datatypes.py, indicating 8 bit or 16 bit.
         """
 
-        def packettype_mapper(packet):
-            try:
-                t = PacketType(packet)
-                return t
-            except ValueError:
-                return PacketType.Unknown
-
         endofcol = ((rawpackets & 0x7F80000000000000) >> 55)  # 8 bits, 62:55
-        currentpackettype = np.array(list(map(packettype_mapper, endofcol)), dtype=PacketType)
+        currentpackettype = np.array(list(map(self.packettype_mapper, endofcol)), dtype=PacketType)
         top = ((rawpackets >> 63) & 0x1)  # 1 bit, 63
         segment = ((rawpackets & 0x0070000000000000) >> 52)  # 3 bit, 54:52
-        readoutmode = np.array(list(map(ReadoutMode, ((rawpackets & 0x000C000000000000) >> 50))),
+        readoutmode = np.array(list(map(self.readout_mapper, ((rawpackets & 0x000C000000000000) >> 50))),
                                dtype=ReadoutMode)  # 2 bit, 51:50. Use enum.
         return currentpackettype, top, segment, readoutmode
 

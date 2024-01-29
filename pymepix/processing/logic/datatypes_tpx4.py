@@ -29,6 +29,8 @@ class PacketType(IntEnum):
     """Configurable input signal fall timestamp"""
     CtrlDataTest = 0xEA
     """Continuous flow of test packets"""
+    CtrlDataTestB = 0xEB
+    """Continuous flow of test packets"""
     FrameStart = 0xF0
     """Indicates start of frame in frame mode"""
     FrameEnd = 0xF1
@@ -49,3 +51,4 @@ class ReadoutMode(IntEnum):
     Frame16bit = 1
     Event = 2
     PC24bit = 3
+
