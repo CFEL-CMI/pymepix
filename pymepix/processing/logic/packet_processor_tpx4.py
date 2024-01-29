@@ -172,7 +172,9 @@ class PacketProcessor_tpx4(ProcessingStep):
 
         if number_of_udp_packets > 0:  # longtime data probably will be not needed
 
-            rawpacketarray = rawpacketarray[rawpacketarray != -4294967296] # fix issue with sign
+            #rawpacketarray = rawpacketarray[rawpacketarray != -4294967296] # fix issue with sign
+
+            #no_data_packets_entries = rawpacketarray == 0xFFFFFFFF00000000
 
             arange_index = np.arange(len(rawpacketarray))
 
