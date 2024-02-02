@@ -123,7 +123,8 @@ class PacketProcessor(ProcessingStep):
             pixels = packet[np.logical_or(header == 0xA, header == 0xB)]
             triggers1 = packet[
                 np.logical_and(
-                    np.logical_or(header == 0x4, header == 0x6), subheader == 0xF
+                    np.logical_or(header == 0x4, header == 0x6), np.logical_or(header == 0x4, header == 0x6),\
+                    np.logical_or(subheader == 0xF, subheader == 0xA)
                 )
             ]
             triggers2 = packet[
@@ -136,7 +137,7 @@ class PacketProcessor(ProcessingStep):
             ]
 
             if triggers1.size > 0:
-                trigger1_data = self.process_trigger1(np.int64(triggers1), longtime)
+                trigger1_front, trigger1_data = self.process_trigger1(np.int64(triggers1), longtime)
 
             if triggers2.size > 0:
                 trigger2_data = self.process_trigger2(np.int64(triggers2), longtime)
@@ -149,7 +150,7 @@ class PacketProcessor(ProcessingStep):
                     if result is not None:
                         event_data, timestamps = result
             else:
-                self._trigger_counter += triggers1.size
+                self._trigger_counter += trigger1_front.size
 
             triggers = [trigger1_data, trigger2_data,]
 
@@ -190,16 +191,21 @@ class PacketProcessor(ProcessingStep):
         self._toa = None
         self._triggers = None
 
-    def process_trigger1(self, pixdata, longtime):
-        coarsetime = pixdata >> 12 & 0xFFFFFFFF
+    def process_trigger1(self, trig1_data, longtime):
+        subheader = ((trig1_data & 0x0F00000000000000) >> 56) & 0xF
+        # TDC1     rising edge: 0xF     falling edge: 0xA
+        front_edge_type = subheader == 0xF
+        coarsetime = trig1_data >> 12 & 0xFFFFFFFF
         coarsetime = self.correct_global_time(coarsetime, longtime)
-        tmpfine = (pixdata >> 5) & 0xF
+        tmpfine = (trig1_data >> 5) & 0xF
         tmpfine = ((tmpfine - 1) << 9) // 12
-        trigtime_fine = (pixdata & 0x0000000000000E00) | (tmpfine & 0x00000000000001FF)
+        trigtime_fine = (trig1_data & 0x0000000000000E00) | (tmpfine & 0x00000000000001FF)
         time_unit = 25.0 / 4096
         tdc_time = coarsetime * 25e-9 + trigtime_fine * time_unit * 1e-9
 
-        m_trigTime = tdc_time
+        m_trigTime = tdc_time[front_edge_type]
+
+        tdc_time[front_edge_type == False] *= -1
 
         if self.handle_events:
             if self._triggers is None:
@@ -207,21 +213,21 @@ class PacketProcessor(ProcessingStep):
             else:
                 self._triggers = np.append(self._triggers, m_trigTime)
 
-        return m_trigTime
-    def process_trigger2(self, tidtrigdata, longtime):
-        subheader = ((tidtrigdata & 0x0F00000000000000) >> 56) & 0xF
+        return m_trigTime, tdc_time
+    def process_trigger2(self, trig2_data, longtime):
+        subheader = ((trig2_data & 0x0F00000000000000) >> 56) & 0xF
         # TDC2     rising edge: 0xE     falling edge: 0xB
         edge_type = subheader == 0xE
 
-        coarsetime = tidtrigdata >> 12 & 0xFFFFFFFF
+        coarsetime = trig2_data >> 12 & 0xFFFFFFFF
         coarsetime = self.correct_global_time(coarsetime, longtime)
-        tmpfine = (tidtrigdata >> 5) & 0xF
+        tmpfine = (trig2_data >> 5) & 0xF
         tmpfine = ((tmpfine - 1) << 9) // 12
-        trigtime_fine = (tidtrigdata & 0x0000000000000E00) | (tmpfine & 0x00000000000001FF)
+        trigtime_fine = (trig2_data & 0x0000000000000E00) | (tmpfine & 0x00000000000001FF)
         time_unit = 25.0 / 4096
         tdc_time = coarsetime * 25e-9 + trigtime_fine * time_unit * 1e-9
 
-        m_trigTime = tdc_time.astype(float)
+        m_trigTime = tdc_time
 
         m_trigTime[edge_type == False] *= -1
         # always look at it as abs, sign tells rising or falling edge
