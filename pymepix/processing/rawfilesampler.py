@@ -23,7 +23,7 @@ import struct
 
 import numpy as np
 import h5py
-from .logic.centroid_calculator import CentroidCalculator, CentroidCalculatorPooled
+from .logic.centroid_calculator import CentroidCalculator
 from .logic.packet_processor_factory import packet_processor_factory
 
 
@@ -235,7 +235,7 @@ class RawFileSampler():
                 ###############
                 # save time stamp data                
                 if timeStamps is not None and self._startTime is not None:
-                    names = ["trigger nr", "timestamp"]
+                    names = ["trigger nr", "event trigger", "timestamp"]
                     if f.keys().__contains__("timing/timepix"):
                         for i, key in enumerate(names):
                             dset = f["timing/timepix"][key]

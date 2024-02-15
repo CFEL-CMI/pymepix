@@ -123,8 +123,7 @@ class PacketProcessor(ProcessingStep):
             pixels = packet[np.logical_or(header == 0xA, header == 0xB)]
             triggers1 = packet[
                 np.logical_and(
-                    np.logical_or(header == 0x4, header == 0x6), np.logical_or(header == 0x4, header == 0x6),\
-                    np.logical_or(subheader == 0xF, subheader == 0xA)
+                    np.logical_or(header == 0x4, header == 0x6), np.logical_or(subheader == 0xF, subheader == 0xA)
                 )
             ]
             triggers2 = packet[
@@ -227,12 +226,10 @@ class PacketProcessor(ProcessingStep):
         time_unit = 25.0 / 4096
         tdc_time = coarsetime * 25e-9 + trigtime_fine * time_unit * 1e-9
 
-        m_trigTime = tdc_time
-
-        m_trigTime[edge_type == False] *= -1
+        tdc_time[edge_type == False] *= -1
         # always look at it as abs, sign tells rising or falling edge
 
-        return m_trigTime
+        return tdc_time
 
     def orientPixels(self, col, row):
         """ Orient the pixels based on Timepix orientation """
@@ -365,10 +362,11 @@ class PacketProcessor(ProcessingStep):
                     )
 
                     if result[0].size > 0:
+                        event_triggers = start[np.unique(event_mapping)]
                         timeStamps = np.uint64(
-                            start[np.unique(event_mapping)] * 1e9 + self._start_time
+                            event_triggers * 1e9 + self._start_time
                         )  # timestamp in ns for trigger event
-                        return result, (np.unique(result[0]), timeStamps)
+                        return result, (np.unique(result[0]), event_triggers, timeStamps)
 
         return None # Clear out the triggers since they have nothing
 
