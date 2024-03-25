@@ -1,3 +1,6 @@
+Thia repository is deprectaed, please see the public project at https://gitlab.desy.de/CMI/CMI-public/pymepix instead.
+
+
 branch for implementing zmq for packetprocessor
 
 # Pymepix
