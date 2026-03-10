@@ -1,4 +1,4 @@
-Since 2025-03-15 this repository is deprecated and archived, please see the public project at https://gitlab.desy.de/CMI/CMI-public/pymepix instead.
+Since 2024-03-15 this repository is deprecated and archived, please see the public project at https://gitlab.desy.de/CMI/CMI-public/pymepix instead.
 
 
 <!-- Put Emacs local variables into HTML comment
